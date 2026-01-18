@@ -93,11 +93,11 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ### Advanced Completion
 
-- **ACOMP-01**: Smart completion linking (complete once → marks all instances)
+- **ACOMP-01**: Smart completion linking (complete once -> marks all instances)
 
 ### Advanced Time
 
-- **ATIME-01**: Configurable time range (not fixed 8:00–20:00)
+- **ATIME-01**: Configurable time range (not fixed 8:00-20:00)
 - **ATIME-02**: Drag-and-drop between days for existing scheduled blocks
 
 ## Out of Scope
@@ -122,50 +122,50 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | — | Pending |
-| DATA-02 | — | Pending |
-| LAYO-01 | — | Pending |
-| ROLE-01 | — | Pending |
-| ROLE-02 | — | Pending |
-| ROLE-03 | — | Pending |
-| ROLE-04 | — | Pending |
-| ROLE-05 | — | Pending |
-| GOAL-01 | — | Pending |
-| GOAL-02 | — | Pending |
-| GOAL-03 | — | Pending |
-| GOAL-04 | — | Pending |
-| GOAL-05 | — | Pending |
-| GOAL-06 | — | Pending |
-| GOAL-07 | — | Pending |
-| CALR-01 | — | Pending |
-| CALR-02 | — | Pending |
-| CALR-03 | — | Pending |
-| CALR-04 | — | Pending |
-| CALR-05 | — | Pending |
-| BLCK-01 | — | Pending |
-| BLCK-02 | — | Pending |
-| BLCK-03 | — | Pending |
-| BLCK-04 | — | Pending |
-| COMP-01 | — | Pending |
-| COMP-02 | — | Pending |
-| COMP-03 | — | Pending |
-| WEEK-01 | — | Pending |
-| WEEK-02 | — | Pending |
-| WEEK-03 | — | Pending |
-| WEEK-04 | — | Pending |
-| WEEK-05 | — | Pending |
-| WEEK-06 | — | Pending |
-| DSGN-01 | — | Pending |
-| DSGN-02 | — | Pending |
-| DSGN-03 | — | Pending |
-| DSGN-04 | — | Pending |
-| DSGN-05 | — | Pending |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| DSGN-01 | Phase 1 | Pending |
+| LAYO-01 | Phase 2 | Pending |
+| CALR-01 | Phase 2 | Pending |
+| CALR-02 | Phase 2 | Pending |
+| CALR-03 | Phase 2 | Pending |
+| CALR-04 | Phase 2 | Pending |
+| CALR-05 | Phase 2 | Pending |
+| ROLE-01 | Phase 3 | Pending |
+| ROLE-02 | Phase 3 | Pending |
+| ROLE-03 | Phase 3 | Pending |
+| ROLE-04 | Phase 3 | Pending |
+| ROLE-05 | Phase 3 | Pending |
+| DSGN-02 | Phase 3 | Pending |
+| GOAL-01 | Phase 4 | Pending |
+| GOAL-02 | Phase 4 | Pending |
+| GOAL-07 | Phase 4 | Pending |
+| GOAL-03 | Phase 5 | Pending |
+| GOAL-04 | Phase 5 | Pending |
+| GOAL-05 | Phase 5 | Pending |
+| GOAL-06 | Phase 5 | Pending |
+| BLCK-04 | Phase 5 | Pending |
+| BLCK-01 | Phase 6 | Pending |
+| BLCK-02 | Phase 6 | Pending |
+| BLCK-03 | Phase 6 | Pending |
+| COMP-01 | Phase 7 | Pending |
+| COMP-02 | Phase 7 | Pending |
+| COMP-03 | Phase 7 | Pending |
+| WEEK-01 | Phase 8 | Pending |
+| WEEK-02 | Phase 8 | Pending |
+| WEEK-03 | Phase 8 | Pending |
+| WEEK-04 | Phase 8 | Pending |
+| WEEK-05 | Phase 8 | Pending |
+| WEEK-06 | Phase 8 | Pending |
+| DSGN-03 | Phase 9 | Pending |
+| DSGN-04 | Phase 9 | Pending |
+| DSGN-05 | Phase 9 | Pending |
 
 **Coverage:**
 - v1 requirements: 38 total
-- Mapped to phases: 0
-- Unmapped: 38 ⚠️
+- Mapped to phases: 38
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-18*
-*Last updated: 2026-01-18 after initial definition*
+*Last updated: 2026-01-18 after roadmap creation*
