@@ -72,19 +72,19 @@ function GoalOverlay({ data }: { data: GoalDragData }) {
  * Simple preview showing block title.
  */
 function BlockOverlay({ data }: { data: BlockDragData }) {
-  // Get block from store to show title
+  // Get block and role from store - ALL hooks must be called before any return
   const block = useWeekStore((state) =>
     state.currentWeek?.timeBlocks.find((b) => b.id === data.blockId)
   );
+  const role = useWeekStore((state) =>
+    state.currentWeek?.roles.find((r) => r.id === block?.roleId)
+  );
 
+  // Early return AFTER all hooks
   if (!block) {
     return null;
   }
 
-  // Get role color if block has a role
-  const role = useWeekStore((state) =>
-    block.roleId ? state.currentWeek?.roles.find((r) => r.id === block.roleId) : null
-  );
   const roleColor = role?.color ?? "teal";
 
   return (
