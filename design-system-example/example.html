@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DDA Dashboard - Design System Demo</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Design System CSS -->
+  <link rel="stylesheet" href="dda-design-system.css">
+  
+  <style>
+    /* Page-specific adjustments */
+    .page-content {
+      padding-top: var(--space-xl);
+      padding-bottom: var(--space-3xl);
+    }
+
+    /* Shield avatar with crown (custom for this design) */
+    .avatar-shield {
+      position: relative;
+      width: 110px;
+      height: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .avatar-shield svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Emoji icons for demo */
+    .emoji-icon {
+      font-size: 1.75rem;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body class="bg-void">
+  <!-- Navigation -->
+  <nav class="nav">
+    <a href="#" class="nav__logo">
+      <svg class="nav__logo-icon" viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M20 8 L32 20 L20 32 L8 20 Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+        <circle cx="20" cy="20" r="6" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      <span class="nav__logo-text">Data<br>Driven<br>Actualization</span>
+    </a>
+    
+    <div class="nav__links">
+      <a href="#" class="nav__link nav__link--active">Dashboard</a>
+      <a href="#" class="nav__link">Community</a>
+    </div>
+    
+    <div class="nav__user">
+      <div class="nav__user-name">
+        <span class="status-dot status-dot-operational"></span>
+        Numair S
+      </div>
+      <button class="btn btn-ghost btn-sm">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container page-content">
+    
+    <!-- Hero Section -->
+    <section class="section">
+      <div class="hero-card jarvis-brackets animate-fade-in-up">
+        <span class="bracket-bl"></span>
+        <span class="bracket-br"></span>
+        
+        <div class="hero-card__content">
+          <div class="avatar-shield">
+            <svg viewBox="0 0 110 110" fill="none">
+              <!-- Shield background -->
+              <path d="M55 5 L100 25 L100 60 Q100 90 55 105 Q10 90 10 60 L10 25 Z" 
+                    fill="#0d1214" stroke="#22c55e" stroke-width="2"/>
+              <!-- Inner shield -->
+              <path d="M55 15 L90 32 L90 58 Q90 82 55 95 Q20 82 20 58 L20 32 Z" 
+                    fill="#111619" stroke="#22c55e" stroke-width="1" opacity="0.5"/>
+              <!-- Crown -->
+              <path d="M35 50 L45 35 L55 45 L65 35 L75 50 L70 55 L40 55 Z" 
+                    fill="#22c55e" opacity="0.9"/>
+              <!-- Shield check mark -->
+              <path d="M42 65 L52 75 L70 55" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </div>
+          
+          <div>
+            <span class="badge badge-primary mb-sm">Master</span>
+            <h1 class="hero-title">Welcome back, Numair</h1>
+            <div class="status-indicator">
+              <span class="status-dot status-dot-operational"></span>
+              <span class="status-text">All systems operational</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Stats Section -->
+    <section class="section">
+      <div class="stats-grid stagger-children">
+        
+        <div class="stats-card">
+          <div class="stats-card__icon">
+            <span class="emoji-icon">📊</span>
+          </div>
+          <div class="stats-card__value">—</div>
+          <div class="stats-card__label">Reports</div>
+          <a href="#" class="stats-card__link">Year Total</a>
+        </div>
+        
+        <div class="stats-card">
+          <div class="stats-card__icon">
+            <span class="emoji-icon">🧘</span>
+          </div>
+          <div class="stats-card__value">—</div>
+          <div class="stats-card__label">Min Meditated</div>
+          <a href="#" class="stats-card__link">Year Total</a>
+        </div>
+        
+        <div class="stats-card">
+          <div class="stats-card__icon">
+            <span class="emoji-icon">💪</span>
+          </div>
+          <div class="stats-card__value">—</div>
+          <div class="stats-card__label">Workouts</div>
+          <a href="#" class="stats-card__link">Year Total</a>
+        </div>
+        
+        <div class="stats-card">
+          <div class="stats-card__icon">
+            <span class="emoji-icon">🔥</span>
+          </div>
+          <div class="stats-card__value">—</div>
+          <div class="stats-card__label">Best Streak</div>
+          <a href="#" class="stats-card__link">Personal Best</a>
+        </div>
+        
+      </div>
+    </section>
+    
+    <!-- Arsenal Section -->
+    <section class="section">
+      <div class="section-bordered jarvis-brackets">
+        <span class="bracket-bl"></span>
+        <span class="bracket-br"></span>
+        
+        <div class="section-header">
+          <h2 class="section-title">Your Arsenal</h2>
+          <span class="section-meta">3 Operations</span>
+        </div>
+        
+        <div class="feature-grid stagger-children">
+          
+          <div class="feature-card feature-card--disabled">
+            <div class="feature-card__header">
+              <div class="feature-card__icon">
+                <span class="emoji-icon">🎁</span>
+              </div>
+              <span class="badge badge-muted">Coming Soon</span>
+            </div>
+            <h3 class="feature-card__title">2026 Year-End Wrapped</h3>
+            <p class="feature-card__description">Your personalized year in review is being prepared. Check back soon!</p>
+          </div>
+          
+          <div class="feature-card feature-card--disabled">
+            <div class="feature-card__header">
+              <div class="feature-card__icon">
+                <span class="emoji-icon">📈</span>
+              </div>
+              <span class="badge badge-muted">Coming Soon</span>
+            </div>
+            <h3 class="feature-card__title">30-Day Progress</h3>
+            <p class="feature-card__description">View your recent progress summary and key metrics from the last month.</p>
+          </div>
+          
+          <div class="feature-card feature-card--disabled">
+            <div class="feature-card__header">
+              <div class="feature-card__icon">
+                <span class="emoji-icon">👥</span>
+              </div>
+              <span class="badge badge-muted">Coming Soon</span>
+            </div>
+            <h3 class="feature-card__title">Community Hub</h3>
+            <p class="feature-card__description">Connect with fellow members, share wins, and participate in challenges.</p>
+          </div>
+          
+        </div>
+      </div>
+    </section>
+
+  </main>
+  
+</body>
+</html>
