@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-18)
 ## Current Position
 
 Phase: 5 of 9 (Drag-Drop Integration)
-Plan: 1 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-18 - Completed 05-01-PLAN.md
+Last activity: 2026-01-18 - Completed 05-03-PLAN.md
 
-Progress: [=====|....] 48%
+Progress: [======|...] 61%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 6 min
-- Total execution time: 1.20 hours
+- Total execution time: 1.30 hours
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [=====|....] 48%
 | 02-layout-calendar-grid | 3/3 | 9 min | 3 min |
 | 03-role-management | 2/2 | 12 min | 6 min |
 | 04-goal-management | 2/2 | 12 min | 6 min |
-| 05-drag-drop-integration | 1/4 | 7 min | 7 min |
+| 05-drag-drop-integration | 2/4 | 13 min | 6.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (8 min), 04-01 (4 min), 04-02 (8 min), 05-01 (7 min)
+- Last 5 plans: 04-01 (4 min), 04-02 (8 min), 05-01 (7 min), 05-03 (6 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -71,6 +71,10 @@ Recent decisions affecting current work:
 - DndProvider inside ThemeProvider for theme context access
 - 8px activation distance on PointerSensor prevents accidental drags
 - DragOverlay always mounted, children conditionally rendered (preserves animations)
+- TimeBlock height = duration * 32px, position = startSlot * 32px
+- TimeGrid restructured with separate columns for absolute positioning
+- 1-hour default duration for dropped goals (2 x 30-min slots)
+- Evening slot silently skips if already occupied
 
 ### Pending Todos
 
@@ -83,6 +87,6 @@ None. Safari persistence handled by DatabaseProvider calling `initializeDatabase
 ## Session Continuity
 
 Last session: 2026-01-18
-Stopped at: Completed 05-01-PLAN.md
+Stopped at: Completed 05-03-PLAN.md
 Resume file: None
-Next: Plan 05-02 - Draggable Goals
+Next: Plan 05-04 - Block Movement
