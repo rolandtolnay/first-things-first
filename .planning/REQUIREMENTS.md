@@ -14,7 +14,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Layout
 
-- [ ] **LAYO-01**: Main view displays roles/goals sidebar on left (~25% width) and calendar on right (~75% width)
+- [x] **LAYO-01**: Main view displays roles/goals sidebar on left (~25% width) and calendar on right (~75% width)
 
 ### Roles
 
@@ -36,11 +36,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Calendar
 
-- [ ] **CALR-01**: Weekly view shows all 7 days simultaneously (desktop, 1440px+)
-- [ ] **CALR-02**: Each day has a Day Priorities section at top (free-form, not time-bound)
-- [ ] **CALR-03**: Time block schedule displays fixed 8:00–20:00 range
-- [ ] **CALR-04**: Evening slot appears below schedule (single block/goal capacity)
-- [ ] **CALR-05**: All time operations use 30-minute granularity
+- [x] **CALR-01**: Weekly view shows all 7 days simultaneously (desktop, 1440px+)
+- [x] **CALR-02**: Each day has a Day Priorities section at top (free-form, not time-bound)
+- [x] **CALR-03**: Time block schedule displays fixed 8:00–20:00 range
+- [x] **CALR-04**: Evening slot appears below schedule (single block/goal capacity)
+- [x] **CALR-05**: All time operations use 30-minute granularity
 
 ### Time Blocks
 
@@ -125,12 +125,12 @@ Which phases cover which requirements. Updated by create-roadmap.
 | DATA-01 | Phase 1 | Complete |
 | DATA-02 | Phase 1 | Complete |
 | DSGN-01 | Phase 1 | Complete |
-| LAYO-01 | Phase 2 | Pending |
-| CALR-01 | Phase 2 | Pending |
-| CALR-02 | Phase 2 | Pending |
-| CALR-03 | Phase 2 | Pending |
-| CALR-04 | Phase 2 | Pending |
-| CALR-05 | Phase 2 | Pending |
+| LAYO-01 | Phase 2 | Complete |
+| CALR-01 | Phase 2 | Complete |
+| CALR-02 | Phase 2 | Complete |
+| CALR-03 | Phase 2 | Complete |
+| CALR-04 | Phase 2 | Complete |
+| CALR-05 | Phase 2 | Complete |
 | ROLE-01 | Phase 3 | Pending |
 | ROLE-02 | Phase 3 | Pending |
 | ROLE-03 | Phase 3 | Pending |
@@ -168,4 +168,4 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 ---
 *Requirements defined: 2026-01-18*
-*Last updated: 2026-01-18 after Phase 1 completion*
+*Last updated: 2026-01-18 after Phase 2 completion*

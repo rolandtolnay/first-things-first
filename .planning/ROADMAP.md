@@ -13,7 +13,7 @@ Transform a manual Google Sheets weekly planning workflow into a dedicated web a
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation & Data Layer** - Project scaffolding, IndexedDB persistence, week snapshot model
-- [ ] **Phase 2: Layout & Calendar Grid** - Sidebar/calendar layout, 7-day view with time slots and evening section
+- [x] **Phase 2: Layout & Calendar Grid** - Sidebar/calendar layout, 7-day view with time slots and evening section
 - [ ] **Phase 3: Role Management** - Create, edit, delete roles with auto-assigned colors
 - [ ] **Phase 4: Goal Management** - Create and manage goals within roles
 - [ ] **Phase 5: Drag-Drop Integration** - Schedule goals via drag-drop to priorities and calendar
@@ -54,9 +54,9 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 02-01: Main layout structure with sidebar and calendar areas
-- [ ] 02-02: Calendar grid with day columns and time slots
-- [ ] 02-03: Day Priorities section and evening slot
+- [x] 02-01: Main layout structure with sidebar and calendar areas
+- [x] 02-02: Calendar grid with day columns and time slots
+- [x] 02-03: Day Priorities section and evening slot
 
 ### Phase 3: Role Management
 **Goal**: Users can manage their life roles with visual color distinction
@@ -188,7 +188,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Data Layer | 3/3 | Complete | 2026-01-18 |
-| 2. Layout & Calendar Grid | 0/3 | Not started | - |
+| 2. Layout & Calendar Grid | 3/3 | Complete | 2026-01-18 |
 | 3. Role Management | 0/2 | Not started | - |
 | 4. Goal Management | 0/2 | Not started | - |
 | 5. Drag-Drop Integration | 0/4 | Not started | - |
