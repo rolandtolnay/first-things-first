@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-18)
 ## Current Position
 
 Phase: 5.1 (Cross-Section Drag-Drop) - IN PROGRESS
-Plan: 1 of ? in current phase
+Plan: 2 of ? in current phase
 Status: Executing Phase 5.1
-Last activity: 2026-01-18 - Completed 05.1-01-PLAN.md
+Last activity: 2026-01-18 - Completed 05.1-02-PLAN.md
 
-Progress: [========|.] 75%
+Progress: [========|.] 78%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
+- Total plans completed: 16
 - Average duration: 5.6 min
-- Total execution time: 1.47 hours
+- Total execution time: 1.57 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [========|.] 75%
 | 03-role-management | 2/2 | 12 min | 6 min |
 | 04-goal-management | 2/2 | 12 min | 6 min |
 | 05-drag-drop-integration | 4/4 | 19 min | 4.8 min |
-| 05.1-cross-section-drag-drop | 1/? | 4 min | 4 min |
+| 05.1-cross-section-drag-drop | 2/? | 10 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-02 (4 min), 05-03 (6 min), 05-04 (2 min), 05.1-01 (4 min)
+- Last 5 plans: 05-03 (6 min), 05-04 (2 min), 05.1-01 (4 min), 05.1-02 (6 min)
 - Trend: Stable/improving
 
 *Updated after each plan completion*
@@ -83,6 +83,9 @@ Recent decisions affecting current work:
 - BlockDragData with blockId and sourceDay for block movement
 - Blocks can overlap (Phase 6 will handle collision prevention)
 - Inner draggable pattern: DraggableEveningBlock inside droppable EveningSlot container
+- Freestyle items silently skip priority drops (priorities need goalId)
+- Same-day drops for priorities/evening are no-op (silently skipped)
+- Drop animation: null for goals (copies), animate for everything else (moves)
 
 ### Pending Todos
 
@@ -99,6 +102,6 @@ None. Safari persistence handled by DatabaseProvider calling `initializeDatabase
 ## Session Continuity
 
 Last session: 2026-01-18
-Stopped at: Completed 05.1-01-PLAN.md
+Stopped at: Completed 05.1-02-PLAN.md
 Resume file: None
-Next: Execute 05.1-02-PLAN.md (Drop Handling)
+Next: Execute 05.1-03-PLAN.md (if exists) or Phase 5.1 complete
