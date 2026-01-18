@@ -26,13 +26,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Goals
 
-- [ ] **GOAL-01**: User can assign multiple goals to a role for the current week
-- [ ] **GOAL-02**: Goals support text content with optional notes
+- [x] **GOAL-01**: User can assign multiple goals to a role for the current week
+- [x] **GOAL-02**: Goals support text content with optional notes
 - [ ] **GOAL-03**: User can drag goal from role column to Day Priorities section
 - [ ] **GOAL-04**: User can drag goal from role column to Day Schedule (creates 1hr default block)
 - [ ] **GOAL-05**: Same goal can appear in multiple places as independent instances
 - [ ] **GOAL-06**: User can drag goal blocks between days for reorganizing
-- [ ] **GOAL-07**: User can delete a goal instance from any location (role column, priorities, or calendar)
+- [x] **GOAL-07**: User can delete a goal instance from any location (role column, priorities, or calendar)
 
 ### Calendar
 
@@ -137,9 +137,9 @@ Which phases cover which requirements. Updated by create-roadmap.
 | ROLE-04 | Phase 3 | Complete |
 | ROLE-05 | Phase 3 | Complete |
 | DSGN-02 | Phase 3 | Complete |
-| GOAL-01 | Phase 4 | Pending |
-| GOAL-02 | Phase 4 | Pending |
-| GOAL-07 | Phase 4 | Pending |
+| GOAL-01 | Phase 4 | Complete |
+| GOAL-02 | Phase 4 | Complete |
+| GOAL-07 | Phase 4 | Complete |
 | GOAL-03 | Phase 5 | Pending |
 | GOAL-04 | Phase 5 | Pending |
 | GOAL-05 | Phase 5 | Pending |
@@ -168,4 +168,4 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 ---
 *Requirements defined: 2026-01-18*
-*Last updated: 2026-01-18 after Phase 3 completion*
+*Last updated: 2026-01-18 after Phase 4 completion*

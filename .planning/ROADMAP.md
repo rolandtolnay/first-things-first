@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation & Data Layer** - Project scaffolding, IndexedDB persistence, week snapshot model
 - [x] **Phase 2: Layout & Calendar Grid** - Sidebar/calendar layout, 7-day view with time slots and evening section
 - [x] **Phase 3: Role Management** - Create, edit, delete roles with auto-assigned colors
-- [ ] **Phase 4: Goal Management** - Create and manage goals within roles
+- [x] **Phase 4: Goal Management** - Create and manage goals within roles
 - [ ] **Phase 5: Drag-Drop Integration** - Schedule goals via drag-drop to priorities and calendar
 - [ ] **Phase 6: Time Block Interactions** - Resize, create freestyle blocks, overlap prevention
 - [ ] **Phase 7: Completion Tracking** - Mark items complete with independent status per instance
@@ -87,8 +87,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 04-01: Goal CRUD operations
-- [ ] 04-02: Goal list UI within role sections
+- [x] 04-01: Goal CRUD operations
+- [x] 04-02: Goal list UI within role sections
 
 ### Phase 5: Drag-Drop Integration
 **Goal**: Goals can be scheduled via drag-drop from sidebar to calendar
@@ -190,7 +190,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 1. Foundation & Data Layer | 3/3 | Complete | 2026-01-18 |
 | 2. Layout & Calendar Grid | 3/3 | Complete | 2026-01-18 |
 | 3. Role Management | 2/2 | Complete | 2026-01-18 |
-| 4. Goal Management | 0/2 | Not started | - |
+| 4. Goal Management | 2/2 | Complete | 2026-01-18 |
 | 5. Drag-Drop Integration | 0/4 | Not started | - |
 | 6. Time Block Interactions | 0/3 | Not started | - |
 | 7. Completion Tracking | 0/2 | Not started | - |
