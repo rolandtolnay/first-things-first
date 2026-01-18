@@ -1,10 +1,22 @@
 /**
  * First Things First - Utility Functions
  *
- * Core utilities for ID generation, date/week calculations.
+ * Core utilities for ID generation, date/week calculations, and CSS helpers.
  */
 
 import type { WeekId } from "@/types";
+
+// ============================================================================
+// CSS Utilities
+// ============================================================================
+
+/**
+ * Merge class names conditionally (simple clsx alternative).
+ * Filters out falsy values and joins with space.
+ */
+export function cn(...classes: (string | boolean | undefined | null)[]): string {
+  return classes.filter(Boolean).join(" ");
+}
 
 // ============================================================================
 // ID Generation
