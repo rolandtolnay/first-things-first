@@ -15,7 +15,7 @@
 
 import { useMemo } from "react";
 import { useDroppable } from "@dnd-kit/core";
-import { useWeekStore, selectDayPriorities } from "@/stores/weekStore";
+import { useWeekStore } from "@/stores/weekStore";
 import { PriorityItem } from "./PriorityItem";
 import type { DayOfWeek } from "@/types";
 import type { DropZoneData } from "@/types/dnd";
@@ -25,19 +25,27 @@ interface DayPrioritiesProps {
 }
 
 export function DayPriorities({ dayIndex }: DayPrioritiesProps) {
-  // Get priorities for this day from store
-  const priorities = useWeekStore((state) => selectDayPriorities(state, dayIndex));
+  // Get raw data from store (stable references)
+  const dayPriorities = useWeekStore((state) => state.currentWeek?.dayPriorities);
+  const goals = useWeekStore((state) => state.currentWeek?.goals);
+  const roles = useWeekStore((state) => state.currentWeek?.roles);
 
-  // Get all goals and roles for lookups
-  const goals = useWeekStore((state) => state.currentWeek?.goals ?? []);
-  const roles = useWeekStore((state) => state.currentWeek?.roles ?? []);
+  // Filter and sort priorities in useMemo (avoids infinite loop)
+  const priorities = useMemo(() => {
+    if (!dayPriorities) return [];
+    return dayPriorities
+      .filter((p) => p.dayIndex === dayIndex)
+      .sort((a, b) => a.order - b.order);
+  }, [dayPriorities, dayIndex]);
 
   // Create lookup maps for efficient rendering (memoized for hydration safety)
   const goalsMap = useMemo(() => {
+    if (!goals) return new Map();
     return new Map(goals.map((g) => [g.id, g]));
   }, [goals]);
 
   const rolesMap = useMemo(() => {
+    if (!roles) return new Map();
     return new Map(roles.map((r) => [r.id, r]));
   }, [roles]);
 

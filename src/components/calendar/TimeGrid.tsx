@@ -10,7 +10,7 @@
 
 import { useMemo } from "react";
 import type { TimeSlotIndex, DayOfWeek } from "@/types";
-import { useWeekStore, selectTimeBlocksByDay } from "@/stores/weekStore";
+import { useWeekStore } from "@/stores/weekStore";
 import { TimeSlot } from "./TimeSlot";
 import { TimeBlock } from "./TimeBlock";
 
@@ -22,10 +22,14 @@ export function TimeGrid({ dayIndex }: TimeGridProps) {
   // Generate 24 slots: 0-23 representing 8:00-19:30
   const slots = Array.from({ length: 24 }, (_, i) => i as TimeSlotIndex);
 
-  // Get time blocks for this day (useMemo for hydration safety)
-  const blocks = useWeekStore((state) =>
-    useMemo(() => selectTimeBlocksByDay(state, dayIndex), [state.currentWeek?.timeBlocks])
-  );
+  // Get raw time blocks from store (stable reference)
+  const timeBlocks = useWeekStore((state) => state.currentWeek?.timeBlocks);
+
+  // Filter blocks for this day in useMemo (avoids infinite loop)
+  const blocks = useMemo(() => {
+    if (!timeBlocks) return [];
+    return timeBlocks.filter((b) => b.dayIndex === dayIndex);
+  }, [timeBlocks, dayIndex]);
 
   return (
     <div className="grid grid-cols-[3rem_1fr]">
