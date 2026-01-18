@@ -8,9 +8,12 @@
  * - Position based on startSlot (startSlot * 32px)
  * - Role color styling (background with opacity, solid left border)
  * - Delete button on hover
+ * - Draggable for repositioning via drag-drop
  */
 
-import type { TimeBlock as TimeBlockType } from "@/types";
+import { useDraggable } from "@dnd-kit/core";
+import type { TimeBlock as TimeBlockType, DayOfWeek } from "@/types";
+import type { BlockDragData } from "@/types/dnd";
 import { getRoleColorStyle } from "@/lib/role-colors";
 import { useWeekStore } from "@/stores/weekStore";
 import { cn } from "@/lib/utils";
@@ -21,6 +24,16 @@ interface TimeBlockProps {
 
 export function TimeBlock({ block }: TimeBlockProps) {
   const deleteTimeBlock = useWeekStore((state) => state.deleteTimeBlock);
+
+  // Set up draggable with block data
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `block-${block.id}`,
+    data: {
+      type: "block",
+      blockId: block.id,
+      sourceDay: block.dayIndex as DayOfWeek,
+    } satisfies BlockDragData,
+  });
 
   // Calculate height based on duration: each slot is 32px (h-8)
   const height = block.duration * 32;
@@ -40,10 +53,15 @@ export function TimeBlock({ block }: TimeBlockProps) {
 
   return (
     <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
       className={cn(
         "absolute left-0 right-0 z-10 rounded-sm overflow-hidden",
         "group flex flex-col justify-start p-1",
-        block.roleId ? "" : "bg-muted"
+        "cursor-grab active:cursor-grabbing",
+        block.roleId ? "" : "bg-muted",
+        isDragging && "opacity-50"
       )}
       style={{
         top: `${top}px`,
