@@ -160,9 +160,15 @@ export function DndProvider({ children }: DndProviderProps) {
       {children}
       {/*
         CRITICAL: Always keep DragOverlay mounted, only conditionally render children.
-        This ensures drop animations work correctly.
+        Drop animation: Only for blocks (which move). Goals create copies, so no swoosh-back.
       */}
-      <DragOverlay dropAnimation={{ duration: 200, easing: "ease" }}>
+      <DragOverlay
+        dropAnimation={
+          activeData?.type === "block"
+            ? { duration: 200, easing: "ease" }
+            : null
+        }
+      >
         {activeData ? <DragOverlayContent data={activeData} /> : null}
       </DragOverlay>
     </DndContext>
