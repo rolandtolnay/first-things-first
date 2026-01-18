@@ -169,6 +169,25 @@ export function getPreviousWeekId(weekId: WeekId): WeekId {
   return getWeekId(monday);
 }
 
+/**
+ * Get array of 7 dates for a week (Sunday through Saturday).
+ * Order: [Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday]
+ * This matches DayOfWeek index (0 = Sunday through 6 = Saturday).
+ */
+export function getWeekDates(weekId: WeekId): Date[] {
+  const monday = parseWeekId(weekId);
+
+  // Generate dates in DayOfWeek order (0=Sunday through 6=Saturday)
+  // Monday is day 1, so Sunday is day 0 (Monday - 1)
+  return Array.from({ length: 7 }, (_, dayIndex) => {
+    const date = new Date(monday);
+    // Offset from Monday: Sunday = -1, Monday = 0, Tue = 1, ..., Sat = 5
+    const offset = dayIndex === 0 ? -1 : dayIndex - 1;
+    date.setDate(monday.getDate() + offset);
+    return date;
+  });
+}
+
 // ============================================================================
 // Time Slot Calculations
 // ============================================================================
