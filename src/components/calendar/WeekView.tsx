@@ -7,8 +7,10 @@
  * Each day column contains priorities, time slots (8:00-20:00), and evening slot.
  */
 
+import { useEffect } from "react";
 import type { WeekId, DayOfWeek } from "@/types";
 import { getCurrentWeekId, getWeekDates } from "@/lib/utils";
+import { useWeekStore } from "@/stores/weekStore";
 import { DayColumn } from "./DayColumn";
 
 interface WeekViewProps {
@@ -19,6 +21,12 @@ export function WeekView({ weekId }: WeekViewProps) {
   // Use provided weekId or get current week
   const currentWeekId = weekId ?? getCurrentWeekId();
   const dates = getWeekDates(currentWeekId);
+  const loadWeek = useWeekStore((state) => state.loadWeek);
+
+  // Load week data on mount or when weekId changes
+  useEffect(() => {
+    loadWeek(currentWeekId);
+  }, [currentWeekId, loadWeek]);
 
   return (
     <div className="h-full flex flex-col">
