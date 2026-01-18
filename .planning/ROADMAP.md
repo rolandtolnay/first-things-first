@@ -17,6 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Role Management** - Create, edit, delete roles with auto-assigned colors
 - [x] **Phase 4: Goal Management** - Create and manage goals within roles
 - [x] **Phase 5: Drag-Drop Integration** - Schedule goals via drag-drop to priorities and calendar
+- [x] **Phase 5.1: Cross-Section Drag-Drop** - Enable drag-drop between all dashboard sections (INSERTED)
 - [ ] **Phase 6: Time Block Interactions** - Resize, create freestyle blocks, overlap prevention
 - [ ] **Phase 7: Completion Tracking** - Mark items complete with independent status per instance
 - [ ] **Phase 8: Week Navigation** - Navigate weeks, create new weeks with carryover options
@@ -124,8 +125,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 05.1-01: Extend drag types and make PriorityItem/EveningBlock draggable
-- [ ] 05.1-02: Handle cross-section drops in DndProvider
+- [x] 05.1-01: Extend drag types and make PriorityItem/EveningBlock draggable
+- [x] 05.1-02: Handle cross-section drops in DndProvider
 
 ### Phase 6: Time Block Interactions
 **Goal**: Time blocks are fully interactive with resize and create capabilities
@@ -209,7 +210,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 3. Role Management | 2/2 | Complete | 2026-01-18 |
 | 4. Goal Management | 2/2 | Complete | 2026-01-18 |
 | 5. Drag-Drop Integration | 4/4 | Complete | 2026-01-18 |
-| 5.1 Cross-Section Drag-Drop | 0/2 | Not started | - |
+| 5.1 Cross-Section Drag-Drop | 2/2 | Complete | 2026-01-18 |
 | 6. Time Block Interactions | 0/3 | Not started | - |
 | 7. Completion Tracking | 0/2 | Not started | - |
 | 8. Week Navigation | 0/2 | Not started | - |
