@@ -12,16 +12,16 @@ See: .planning/PROJECT.md (updated 2026-01-18)
 Phase: 5 of 9 (Drag-Drop Integration)
 Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-18 - Completed 05-03-PLAN.md
+Last activity: 2026-01-18 - Completed 05-02-PLAN.md and 05-03-PLAN.md (parallel)
 
-Progress: [======|...] 61%
+Progress: [======|...] 65%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
+- Total plans completed: 13
 - Average duration: 6 min
-- Total execution time: 1.30 hours
+- Total execution time: 1.37 hours
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [======|...] 61%
 | 02-layout-calendar-grid | 3/3 | 9 min | 3 min |
 | 03-role-management | 2/2 | 12 min | 6 min |
 | 04-goal-management | 2/2 | 12 min | 6 min |
-| 05-drag-drop-integration | 2/4 | 13 min | 6.5 min |
+| 05-drag-drop-integration | 3/4 | 17 min | 5.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (4 min), 04-02 (8 min), 05-01 (7 min), 05-03 (6 min)
+- Last 5 plans: 04-02 (8 min), 05-01 (7 min), 05-02 (4 min), 05-03 (6 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -75,6 +75,9 @@ Recent decisions affecting current work:
 - TimeGrid restructured with separate columns for absolute positioning
 - 1-hour default duration for dropped goals (2 x 30-min slots)
 - Evening slot silently skips if already occupied
+- GoalDragData includes goalId, roleId, text for drop handling
+- Drag disabled during goal text editing (isEditing check)
+- Same goal can be dropped multiple times (no deduplication)
 
 ### Pending Todos
 
@@ -87,6 +90,6 @@ None. Safari persistence handled by DatabaseProvider calling `initializeDatabase
 ## Session Continuity
 
 Last session: 2026-01-18
-Stopped at: Completed 05-03-PLAN.md
+Stopped at: Completed 05-02-PLAN.md and 05-03-PLAN.md (parallel)
 Resume file: None
 Next: Plan 05-04 - Block Movement
