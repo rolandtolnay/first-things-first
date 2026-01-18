@@ -9,6 +9,7 @@
  * - DragOverlay for smooth drag previews
  *
  * Handles drop events for:
+ * - priorities zone: creates DayPriority entry
  * - timegrid zone: creates TimeBlock (1 hour = 2 slots)
  * - evening zone: creates EveningBlock
  *
@@ -42,6 +43,7 @@ export function DndProvider({ children }: DndProviderProps) {
   const [activeData, setActiveData] = useState<DragData | null>(null);
 
   // Get store actions for drop handling
+  const addDayPriority = useWeekStore((state) => state.addDayPriority);
   const addTimeBlock = useWeekStore((state) => state.addTimeBlock);
   const addEveningBlock = useWeekStore((state) => state.addEveningBlock);
 
@@ -81,6 +83,16 @@ export function DndProvider({ children }: DndProviderProps) {
 
       const goalData = dragData as GoalDragData;
 
+      // Handle priorities drops (creates DayPriority entry)
+      if (dropData.zone === "priorities") {
+        addDayPriority({
+          goalId: goalData.goalId,
+          dayIndex: dropData.dayIndex as DayOfWeek,
+          completed: false,
+        });
+        return;
+      }
+
       // Handle timegrid drops (creates 1-hour TimeBlock)
       if (dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
         addTimeBlock({
@@ -118,7 +130,7 @@ export function DndProvider({ children }: DndProviderProps) {
         return;
       }
     },
-    [addTimeBlock, addEveningBlock]
+    [addDayPriority, addTimeBlock, addEveningBlock]
   );
 
   // Handle drag cancel - clear active state
