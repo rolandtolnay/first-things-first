@@ -18,11 +18,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Roles
 
-- [ ] **ROLE-01**: User can create a new role with a name
-- [ ] **ROLE-02**: User can edit an existing role's name
-- [ ] **ROLE-03**: User can delete a role
-- [ ] **ROLE-04**: Role receives auto-assigned color from design system palette
-- [ ] **ROLE-05**: Roles are editable per-week independently (snapshot, not global)
+- [x] **ROLE-01**: User can create a new role with a name
+- [x] **ROLE-02**: User can edit an existing role's name
+- [x] **ROLE-03**: User can delete a role
+- [x] **ROLE-04**: Role receives auto-assigned color from design system palette
+- [x] **ROLE-05**: Roles are editable per-week independently (snapshot, not global)
 
 ### Goals
 
@@ -67,7 +67,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Design
 
 - [x] **DSGN-01**: App supports light mode and dark mode from launch
-- [ ] **DSGN-02**: Blocks and goals are color-coded by role for quick scanning
+- [x] **DSGN-02**: Blocks and goals are color-coded by role for quick scanning
 - [ ] **DSGN-03**: Visual design follows JARVIS-inspired aesthetic (teal/cyan accents, clean geometric style)
 - [ ] **DSGN-04**: Typography-forward, minimal clutter design approach
 - [ ] **DSGN-05**: Design system informed by `design-system-example` reference, using `frontend-design` skill during implementation
@@ -131,12 +131,12 @@ Which phases cover which requirements. Updated by create-roadmap.
 | CALR-03 | Phase 2 | Complete |
 | CALR-04 | Phase 2 | Complete |
 | CALR-05 | Phase 2 | Complete |
-| ROLE-01 | Phase 3 | Pending |
-| ROLE-02 | Phase 3 | Pending |
-| ROLE-03 | Phase 3 | Pending |
-| ROLE-04 | Phase 3 | Pending |
-| ROLE-05 | Phase 3 | Pending |
-| DSGN-02 | Phase 3 | Pending |
+| ROLE-01 | Phase 3 | Complete |
+| ROLE-02 | Phase 3 | Complete |
+| ROLE-03 | Phase 3 | Complete |
+| ROLE-04 | Phase 3 | Complete |
+| ROLE-05 | Phase 3 | Complete |
+| DSGN-02 | Phase 3 | Complete |
 | GOAL-01 | Phase 4 | Pending |
 | GOAL-02 | Phase 4 | Pending |
 | GOAL-07 | Phase 4 | Pending |
@@ -168,4 +168,4 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 ---
 *Requirements defined: 2026-01-18*
-*Last updated: 2026-01-18 after Phase 2 completion*
+*Last updated: 2026-01-18 after Phase 3 completion*

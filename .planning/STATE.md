@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-18)
 
 **Core value:** Help users focus on what matters by making the connection between life roles, weekly goals, and scheduled time explicit and actionable.
-**Current focus:** Phase 3 - Role Management
+**Current focus:** Phase 4 - Goal Management
 
 ## Current Position
 
-Phase: 3 of 9 (Role Management)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-18 - Completed 03-01-PLAN.md
+Phase: 4 of 9 (Goal Management)
+Plan: 0 of 2 in current phase
+Status: Ready to plan
+Last activity: 2026-01-18 - Phase 3 verified and complete
 
-Progress: [===.......] 27%
+Progress: [====......] 33%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: 6 min
-- Total execution time: 0.75 hours
+- Total execution time: 0.88 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [===.......] 27%
 |-------|-------|-------|----------|
 | 01-foundation-data-layer | 3/3 | 30 min | 10 min |
 | 02-layout-calendar-grid | 3/3 | 9 min | 3 min |
-| 03-role-management | 1/2 | 4 min | 4 min |
+| 03-role-management | 2/2 | 12 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (5 min), 02-02 (2 min), 02-03 (2 min), 03-01 (4 min)
-- Trend: Stable/Fast
+- Last 5 plans: 02-02 (2 min), 02-03 (2 min), 03-01 (4 min), 03-02 (8 min)
+- Trend: Stable
 
 *Updated after each plan completion*
 
@@ -57,7 +57,10 @@ Recent decisions affecting current work:
 - cn() utility instead of clsx package for simple class merging
 - 80px min-height for DayPriorities, 48px for EveningSlot
 - data-section attributes on day sections for future drag-drop targeting
-- Role color mapping: RoleColor string -> CSS variable index (1-8) for dynamic Tailwind classes
+- Role color mapping: RoleColor string -> CSS variable index (1-8), use inline styles (Tailwind v4 purges dynamic classes)
+- useMemo for sorted selectors to avoid SSR hydration infinite loops
+- WeekView calls loadWeek on mount to ensure week data is available
+- Role ordering uses max(order)+1 to handle gaps from deletions
 
 ### Pending Todos
 
@@ -70,6 +73,6 @@ None. Safari persistence handled by DatabaseProvider calling `initializeDatabase
 ## Session Continuity
 
 Last session: 2026-01-18
-Stopped at: Completed 03-01-PLAN.md
+Stopped at: Phase 3 verified and complete
 Resume file: None
-Next: Execute 03-02-PLAN.md (RoleList composition)
+Next: Plan Phase 4 - Goal Management
