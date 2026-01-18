@@ -189,6 +189,70 @@ export function DndProvider({ children }: DndProviderProps) {
         return;
       }
 
+      // Handle evening block drops (move existing evening block)
+      if (dragData.type === "evening") {
+        const eveningData = dragData as EveningDragData;
+        const currentWeek = useWeekStore.getState().currentWeek;
+        const eveningBlock = currentWeek?.eveningBlocks.find(
+          (b) => b.id === eveningData.eveningBlockId
+        );
+        if (!eveningBlock) return;
+
+        // Evening → Priorities: Create priority (if goal-based)
+        if (dropData.zone === "priorities") {
+          // Freestyle evening blocks (no goalId) can't become priorities - silently skip
+          if (!eveningData.goalId) return;
+          addDayPriority({
+            goalId: eveningData.goalId,
+            dayIndex: dropData.dayIndex as DayOfWeek,
+            completed: false,
+          });
+          deleteEveningBlock(eveningData.eveningBlockId);
+          return;
+        }
+
+        // Evening → Timegrid: Create time block
+        if (dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
+          addTimeBlock({
+            type: eveningData.goalId ? "goal" : "freestyle",
+            goalId: eveningData.goalId,
+            roleId: eveningData.roleId,
+            dayIndex: dropData.dayIndex as DayOfWeek,
+            startSlot: dropData.slotIndex as TimeSlotIndex,
+            duration: 2, // 1 hour = 2 x 30-min slots
+            title: eveningData.title,
+            completed: false,
+          });
+          deleteEveningBlock(eveningData.eveningBlockId);
+          return;
+        }
+
+        // Evening → Evening (different day): Move evening block
+        if (dropData.zone === "evening") {
+          // Skip if same day (no-op)
+          if (eveningData.sourceDayIndex === dropData.dayIndex) return;
+
+          // Check if target day already has evening block
+          const existingEvening = currentWeek?.eveningBlocks.find(
+            (b) => b.dayIndex === dropData.dayIndex
+          );
+          if (existingEvening) return; // Silently skip if occupied
+
+          // Create new evening block on target day with same data
+          addEveningBlock({
+            type: eveningBlock.type,
+            goalId: eveningBlock.goalId,
+            roleId: eveningBlock.roleId,
+            dayIndex: dropData.dayIndex as DayOfWeek,
+            title: eveningBlock.title,
+            completed: false, // Reset completed status on move
+          });
+          deleteEveningBlock(eveningData.eveningBlockId);
+          return;
+        }
+        return;
+      }
+
       // Handle goal drops
       if (dragData.type !== "goal") return;
 
