@@ -11,7 +11,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useWeekStore } from "@/stores/weekStore";
-import { getRoleColorClass } from "@/lib/role-colors";
+import { getRoleColorStyle } from "@/lib/role-colors";
 import type { Role } from "@/types";
 
 interface RoleItemProps {
@@ -73,13 +73,12 @@ export function RoleItem({ role }: RoleItemProps) {
     }
   };
 
-  const colorClass = getRoleColorClass(role.color);
-
   return (
     <div className="group flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-secondary/50 transition-colors">
       {/* Color indicator */}
       <div
-        className={`w-3 h-3 rounded-full flex-shrink-0 ${colorClass}`}
+        className="w-3 h-3 rounded-full flex-shrink-0"
+        style={{ backgroundColor: getRoleColorStyle(role.color) }}
         aria-hidden="true"
       />
 
