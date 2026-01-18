@@ -4,12 +4,13 @@
  * RoleList Component
  *
  * Container for displaying the list of roles in the sidebar.
- * Connects to weekStore for role data and renders RoleItem for each role.
+ * Connects to weekStore for role data and renders RoleSection for each role
+ * (which includes the role header and its associated goals).
  */
 
 import { useMemo } from "react";
 import { useWeekStore } from "@/stores/weekStore";
-import { RoleItem } from "./RoleItem";
+import { RoleSection } from "./RoleSection";
 import { AddRoleButton } from "./AddRoleButton";
 
 export function RoleList() {
@@ -49,9 +50,9 @@ export function RoleList() {
   // Normal render - roles exist
   return (
     <div className="flex flex-col">
-      <div className="space-y-1">
+      <div className="space-y-2">
         {roles.map((role) => (
-          <RoleItem key={role.id} role={role} />
+          <RoleSection key={role.id} role={role} />
         ))}
       </div>
       <AddRoleButton />
