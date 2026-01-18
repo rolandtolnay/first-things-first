@@ -29,7 +29,7 @@ import {
   closestCenter,
 } from "@dnd-kit/core";
 import type { DayOfWeek, TimeSlotIndex } from "@/types";
-import type { DragData, DropZoneData, GoalDragData, BlockDragData } from "@/types/dnd";
+import type { DragData, DropZoneData, GoalDragData, BlockDragData, PriorityDragData, EveningDragData } from "@/types/dnd";
 import { useWeekStore } from "@/stores/weekStore";
 import { DragOverlayContent } from "./DragOverlayContent";
 
@@ -46,6 +46,9 @@ export function DndProvider({ children }: DndProviderProps) {
   const addTimeBlock = useWeekStore((state) => state.addTimeBlock);
   const addEveningBlock = useWeekStore((state) => state.addEveningBlock);
   const updateTimeBlock = useWeekStore((state) => state.updateTimeBlock);
+  const deleteTimeBlock = useWeekStore((state) => state.deleteTimeBlock);
+  const removeDayPriority = useWeekStore((state) => state.removeDayPriority);
+  const deleteEveningBlock = useWeekStore((state) => state.deleteEveningBlock);
 
   // Configure sensors with activation constraints
   const sensors = useSensors(
@@ -78,14 +81,54 @@ export function DndProvider({ children }: DndProviderProps) {
       const dragData = active.data.current as DragData;
       const dropData = over.data.current as DropZoneData;
 
-      // Handle block drops (move existing block to new position)
-      if (dragData.type === "block" && dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
+      // Handle block drops
+      if (dragData.type === "block") {
         const blockData = dragData as BlockDragData;
-        // Move block to new day/slot (keeps duration, title, goalId, roleId, etc.)
-        updateTimeBlock(blockData.blockId, {
-          dayIndex: dropData.dayIndex as DayOfWeek,
-          startSlot: dropData.slotIndex as TimeSlotIndex,
-        });
+        const currentWeek = useWeekStore.getState().currentWeek;
+        const block = currentWeek?.timeBlocks.find((b) => b.id === blockData.blockId);
+        if (!block) return;
+
+        // Block → Priorities: Create priority from block (if goal-based)
+        if (dropData.zone === "priorities") {
+          // Freestyle blocks (no goalId) can't become priorities - silently skip
+          if (!block.goalId) return;
+          addDayPriority({
+            goalId: block.goalId,
+            dayIndex: dropData.dayIndex as DayOfWeek,
+            completed: false,
+          });
+          deleteTimeBlock(blockData.blockId);
+          return;
+        }
+
+        // Block → Evening: Create evening block from time block
+        if (dropData.zone === "evening") {
+          // Check if evening slot is already occupied
+          const existingEvening = currentWeek?.eveningBlocks.find(
+            (b) => b.dayIndex === dropData.dayIndex
+          );
+          if (existingEvening) return; // Silently skip if occupied
+
+          addEveningBlock({
+            type: block.goalId ? "goal" : "freestyle",
+            goalId: block.goalId,
+            roleId: block.roleId,
+            dayIndex: dropData.dayIndex as DayOfWeek,
+            title: block.title,
+            completed: false,
+          });
+          deleteTimeBlock(blockData.blockId);
+          return;
+        }
+
+        // Block → Timegrid: Move block to new day/slot
+        if (dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
+          updateTimeBlock(blockData.blockId, {
+            dayIndex: dropData.dayIndex as DayOfWeek,
+            startSlot: dropData.slotIndex as TimeSlotIndex,
+          });
+          return;
+        }
         return;
       }
 
