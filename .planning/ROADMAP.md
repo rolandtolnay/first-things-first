@@ -110,6 +110,23 @@ Plans:
 - [x] 05-03: Drag from sidebar to calendar (block creation)
 - [x] 05-04: Drag blocks between days
 
+### Phase 5.1: Cross-Section Drag-Drop (INSERTED)
+**Goal**: Enable drag-drop between all dashboard sections (calendar ↔ priorities ↔ evening)
+**Depends on**: Phase 5
+**Requirements**: GOAL-03 (extended), GOAL-05 (extended)
+**Success Criteria** (what must be TRUE):
+  1. User can drag a time block from calendar and drop onto Day Priorities
+  2. User can drag a time block from calendar and drop onto Evening section
+  3. User can drag from Evening section to Day Priorities, calendar, or different day's Evening
+  4. User can drag from Day Priorities to calendar, Evening, or different day's Priorities
+  5. All cross-section drops maintain goal association and role color
+**Research**: Unlikely (extends existing dnd-kit patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 05.1-01: Extend drag types and make PriorityItem/EveningBlock draggable
+- [ ] 05.1-02: Handle cross-section drops in DndProvider
+
 ### Phase 6: Time Block Interactions
 **Goal**: Time blocks are fully interactive with resize and create capabilities
 **Depends on**: Phase 5
@@ -192,6 +209,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 3. Role Management | 2/2 | Complete | 2026-01-18 |
 | 4. Goal Management | 2/2 | Complete | 2026-01-18 |
 | 5. Drag-Drop Integration | 4/4 | Complete | 2026-01-18 |
+| 5.1 Cross-Section Drag-Drop | 0/2 | Not started | - |
 | 6. Time Block Interactions | 0/3 | Not started | - |
 | 7. Completion Tracking | 0/2 | Not started | - |
 | 8. Week Navigation | 0/2 | Not started | - |

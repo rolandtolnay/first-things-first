@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-01-18)
 
 **Core value:** Help users focus on what matters by making the connection between life roles, weekly goals, and scheduled time explicit and actionable.
-**Current focus:** Phase 5 Complete - Ready for Phase 6
+**Current focus:** Phase 5.1 - Cross-Section Drag-Drop (INSERTED)
 
 ## Current Position
 
-Phase: 5 of 9 (Drag-Drop Integration) - COMPLETE
-Plan: 4 of 4 in current phase
-Status: Phase complete
-Last activity: 2026-01-18 - Completed 05-04-PLAN.md (Block Movement)
+Phase: 5.1 (Cross-Section Drag-Drop) - NOT STARTED
+Plan: 0 of ? in current phase
+Status: Inserted urgent phase - needs planning
+Last activity: 2026-01-18 - Inserted Phase 5.1 after Phase 5
 
 Progress: [=======|..] 70%
 
@@ -86,6 +86,10 @@ Recent decisions affecting current work:
 
 None yet.
 
+### Roadmap Evolution
+
+- Phase 5.1 inserted after Phase 5: Cross-Section Drag-Drop (URGENT) - Enable drag-drop between all dashboard sections (calendar ↔ priorities ↔ evening)
+
 ### Blockers/Concerns
 
 None. Safari persistence handled by DatabaseProvider calling `initializeDatabase()` on mount.
@@ -93,6 +97,6 @@ None. Safari persistence handled by DatabaseProvider calling `initializeDatabase
 ## Session Continuity
 
 Last session: 2026-01-18
-Stopped at: Completed 05-04-PLAN.md (Phase 5 complete)
+Stopped at: Inserted Phase 5.1 (Cross-Section Drag-Drop)
 Resume file: None
-Next: Phase 6 - Time Block Interactions
+Next: Plan Phase 5.1
