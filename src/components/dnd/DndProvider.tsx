@@ -132,6 +132,63 @@ export function DndProvider({ children }: DndProviderProps) {
         return;
       }
 
+      // Handle priority drops (move existing priority)
+      if (dragData.type === "priority") {
+        const priorityData = dragData as PriorityDragData;
+
+        // Priority → Timegrid: Create time block and remove priority
+        if (dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
+          addTimeBlock({
+            type: "goal",
+            goalId: priorityData.goalId,
+            roleId: priorityData.roleId,
+            dayIndex: dropData.dayIndex as DayOfWeek,
+            startSlot: dropData.slotIndex as TimeSlotIndex,
+            duration: 2, // 1 hour = 2 x 30-min slots
+            title: priorityData.text,
+            completed: false,
+          });
+          removeDayPriority(priorityData.priorityId);
+          return;
+        }
+
+        // Priority → Evening: Create evening block and remove priority
+        if (dropData.zone === "evening") {
+          // Check if evening slot is already occupied
+          const currentWeek = useWeekStore.getState().currentWeek;
+          const existingEvening = currentWeek?.eveningBlocks.find(
+            (b) => b.dayIndex === dropData.dayIndex
+          );
+          if (existingEvening) return; // Silently skip if occupied
+
+          addEveningBlock({
+            type: "goal",
+            goalId: priorityData.goalId,
+            roleId: priorityData.roleId,
+            dayIndex: dropData.dayIndex as DayOfWeek,
+            title: priorityData.text,
+            completed: false,
+          });
+          removeDayPriority(priorityData.priorityId);
+          return;
+        }
+
+        // Priority → Priorities (different day): Move priority
+        if (dropData.zone === "priorities") {
+          // Skip if same day (no-op)
+          if (priorityData.sourceDayIndex === dropData.dayIndex) return;
+
+          addDayPriority({
+            goalId: priorityData.goalId,
+            dayIndex: dropData.dayIndex as DayOfWeek,
+            completed: false,
+          });
+          removeDayPriority(priorityData.priorityId);
+          return;
+        }
+        return;
+      }
+
       // Handle goal drops
       if (dragData.type !== "goal") return;
 
