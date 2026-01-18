@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-18)
 
 **Core value:** Help users focus on what matters by making the connection between life roles, weekly goals, and scheduled time explicit and actionable.
-**Current focus:** Phase 4 - Goal Management
+**Current focus:** Phase 5 - Time Block Integration
 
 ## Current Position
 
-Phase: 4 of 9 (Goal Management)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-18 - Completed 04-01-PLAN.md
+Phase: 4 of 9 (Goal Management) - COMPLETE
+Plan: 2 of 2 in current phase - COMPLETE
+Status: Phase complete, ready for Phase 5
+Last activity: 2026-01-18 - Completed 04-02-PLAN.md
 
-Progress: [====......] 37%
+Progress: [====......] 42%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
+- Total plans completed: 10
 - Average duration: 6 min
-- Total execution time: 0.95 hours
+- Total execution time: 1.08 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [====......] 37%
 | 01-foundation-data-layer | 3/3 | 30 min | 10 min |
 | 02-layout-calendar-grid | 3/3 | 9 min | 3 min |
 | 03-role-management | 2/2 | 12 min | 6 min |
-| 04-goal-management | 1/2 | 4 min | 4 min |
+| 04-goal-management | 2/2 | 12 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 (2 min), 03-01 (4 min), 03-02 (8 min), 04-01 (4 min)
+- Last 5 plans: 03-01 (4 min), 03-02 (8 min), 04-01 (4 min), 04-02 (8 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -64,6 +64,9 @@ Recent decisions affecting current work:
 - Role ordering uses max(order)+1 to handle gaps from deletions
 - GoalItem uses left border (3px) for role color accent
 - AddGoalButton takes roleId prop for goal-role association
+- GoalList uses useMemo for filtered goals (hydration safety)
+- RoleSection inlines role header instead of composing RoleItem (simpler)
+- Goals indented 5 units (ml-5) under role header for hierarchy
 
 ### Pending Todos
 
@@ -76,6 +79,6 @@ None. Safari persistence handled by DatabaseProvider calling `initializeDatabase
 ## Session Continuity
 
 Last session: 2026-01-18
-Stopped at: Completed 04-01-PLAN.md
+Stopped at: Completed 04-02-PLAN.md (Phase 4 complete)
 Resume file: None
-Next: Execute 04-02 (GoalList composition)
+Next: Plan Phase 5 (Time Block Integration)
