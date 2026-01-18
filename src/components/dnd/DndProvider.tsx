@@ -5,7 +5,7 @@
  *
  * Wraps the application with dnd-kit's DndContext, configuring:
  * - Pointer and keyboard sensors with activation constraints
- * - Collision detection (pointerWithin) - only detects when cursor is inside drop zone
+ * - Collision detection (rectIntersection) - detects when dragged element overlaps drop zone
  * - DragOverlay for smooth drag previews
  *
  * Handles cross-section drag-drop for all item types:
@@ -30,7 +30,7 @@ import {
   KeyboardSensor,
   useSensor,
   useSensors,
-  pointerWithin,
+  rectIntersection,
 } from "@dnd-kit/core";
 import type { DayOfWeek, TimeSlotIndex } from "@/types";
 import type { DragData, DropZoneData, GoalDragData, BlockDragData, PriorityDragData, EveningDragData } from "@/types/dnd";
@@ -320,7 +320,7 @@ export function DndProvider({ children }: DndProviderProps) {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={pointerWithin}
+      collisionDetection={rectIntersection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
