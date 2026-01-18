@@ -28,10 +28,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **GOAL-01**: User can assign multiple goals to a role for the current week
 - [x] **GOAL-02**: Goals support text content with optional notes
-- [ ] **GOAL-03**: User can drag goal from role column to Day Priorities section
-- [ ] **GOAL-04**: User can drag goal from role column to Day Schedule (creates 1hr default block)
-- [ ] **GOAL-05**: Same goal can appear in multiple places as independent instances
-- [ ] **GOAL-06**: User can drag goal blocks between days for reorganizing
+- [x] **GOAL-03**: User can drag goal from role column to Day Priorities section
+- [x] **GOAL-04**: User can drag goal from role column to Day Schedule (creates 1hr default block)
+- [x] **GOAL-05**: Same goal can appear in multiple places as independent instances
+- [x] **GOAL-06**: User can drag goal blocks between days for reorganizing
 - [x] **GOAL-07**: User can delete a goal instance from any location (role column, priorities, or calendar)
 
 ### Calendar
@@ -47,7 +47,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **BLCK-01**: Blocks are resizable by dragging edges (30min increments, 30min–8hr range, or until end of day)
 - [ ] **BLCK-02**: User can create freestyle blocks directly on calendar (not tied to goals)
 - [ ] **BLCK-03**: Blocks cannot overlap — validation prevents placement/resize into occupied time
-- [ ] **BLCK-04**: Block data model tracks: type (manual vs goal-based) and role reference (if goal-based)
+- [x] **BLCK-04**: Block data model tracks: type (manual vs goal-based) and role reference (if goal-based)
 
 ### Completion
 
@@ -140,11 +140,11 @@ Which phases cover which requirements. Updated by create-roadmap.
 | GOAL-01 | Phase 4 | Complete |
 | GOAL-02 | Phase 4 | Complete |
 | GOAL-07 | Phase 4 | Complete |
-| GOAL-03 | Phase 5 | Pending |
-| GOAL-04 | Phase 5 | Pending |
-| GOAL-05 | Phase 5 | Pending |
-| GOAL-06 | Phase 5 | Pending |
-| BLCK-04 | Phase 5 | Pending |
+| GOAL-03 | Phase 5 | Complete |
+| GOAL-04 | Phase 5 | Complete |
+| GOAL-05 | Phase 5 | Complete |
+| GOAL-06 | Phase 5 | Complete |
+| BLCK-04 | Phase 5 | Complete |
 | BLCK-01 | Phase 6 | Pending |
 | BLCK-02 | Phase 6 | Pending |
 | BLCK-03 | Phase 6 | Pending |
@@ -168,4 +168,4 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 ---
 *Requirements defined: 2026-01-18*
-*Last updated: 2026-01-18 after Phase 4 completion*
+*Last updated: 2026-01-18 after Phase 5 completion*
