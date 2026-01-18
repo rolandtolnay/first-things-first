@@ -1,6 +1,7 @@
 'use client';
 
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { RoleList } from './RoleList';
 
 export function Sidebar() {
   return (
@@ -10,8 +11,10 @@ export function Sidebar() {
         <ThemeToggle />
       </header>
       <div className="flex-1 p-4 overflow-y-auto">
-        {/* Roles and goals will be added in Phase 3 */}
-        <p className="text-muted-foreground text-sm">Roles and goals will appear here</p>
+        <h2 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">
+          Roles
+        </h2>
+        <RoleList />
       </div>
     </div>
   );
