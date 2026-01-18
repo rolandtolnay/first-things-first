@@ -8,11 +8,15 @@
  * - Collision detection (closestCenter)
  * - DragOverlay for smooth drag previews
  *
- * Handles drop events for:
- * - Goals: priorities zone (DayPriority), timegrid (TimeBlock), evening (EveningBlock)
- * - Blocks: timegrid zone (moves existing TimeBlock to new day/slot)
+ * Handles cross-section drag-drop for all item types:
+ * - Goals (sidebar): creates copies in priorities/timegrid/evening
+ * - Blocks (timegrid): moves to priorities/evening/other timegrid slots
+ * - Priorities: moves to timegrid/evening/other day's priorities
+ * - Evening blocks: moves to priorities/timegrid/other day's evening
  *
- * This provider enables drag-drop functionality across the app.
+ * Drop animation plays for moving items (blocks/priorities/evening),
+ * but not for goals which create copies.
+ *
  * Individual components use useDraggable and useDroppable hooks.
  */
 
