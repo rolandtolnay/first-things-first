@@ -33,9 +33,35 @@ export interface BlockDragData {
 }
 
 /**
+ * Data attached to draggable priority items.
+ * Allows moving priorities between days or back to sidebar.
+ */
+export interface PriorityDragData {
+  type: "priority";
+  priorityId: string;
+  goalId: string;
+  roleId: string;
+  text: string;
+  sourceDayIndex: DayOfWeek;
+}
+
+/**
+ * Data attached to draggable evening blocks.
+ * Allows moving evening blocks between days.
+ */
+export interface EveningDragData {
+  type: "evening";
+  eveningBlockId: string;
+  goalId?: string;
+  roleId?: string;
+  title: string;
+  sourceDayIndex: DayOfWeek;
+}
+
+/**
  * Union type for all draggable item data.
  */
-export type DragData = GoalDragData | BlockDragData;
+export type DragData = GoalDragData | BlockDragData | PriorityDragData | EveningDragData;
 
 // ============================================================================
 // Drop Zone Types (attached to droppable zones)
