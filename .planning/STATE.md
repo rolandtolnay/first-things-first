@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-18)
 
 ## Current Position
 
-Phase: 5.1 (Cross-Section Drag-Drop) - NOT STARTED
-Plan: 0 of ? in current phase
-Status: Inserted urgent phase - needs planning
-Last activity: 2026-01-18 - Inserted Phase 5.1 after Phase 5
+Phase: 5.1 (Cross-Section Drag-Drop) - IN PROGRESS
+Plan: 1 of ? in current phase
+Status: Executing Phase 5.1
+Last activity: 2026-01-18 - Completed 05.1-01-PLAN.md
 
-Progress: [=======|..] 70%
+Progress: [========|.] 75%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
-- Average duration: 5.8 min
-- Total execution time: 1.40 hours
+- Total plans completed: 15
+- Average duration: 5.6 min
+- Total execution time: 1.47 hours
 
 **By Phase:**
 
@@ -32,9 +32,10 @@ Progress: [=======|..] 70%
 | 03-role-management | 2/2 | 12 min | 6 min |
 | 04-goal-management | 2/2 | 12 min | 6 min |
 | 05-drag-drop-integration | 4/4 | 19 min | 4.8 min |
+| 05.1-cross-section-drag-drop | 1/? | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (7 min), 05-02 (4 min), 05-03 (6 min), 05-04 (2 min)
+- Last 5 plans: 05-02 (4 min), 05-03 (6 min), 05-04 (2 min), 05.1-01 (4 min)
 - Trend: Stable/improving
 
 *Updated after each plan completion*
@@ -81,6 +82,7 @@ Recent decisions affecting current work:
 - block-{id} draggable ID pattern for TimeBlocks
 - BlockDragData with blockId and sourceDay for block movement
 - Blocks can overlap (Phase 6 will handle collision prevention)
+- Inner draggable pattern: DraggableEveningBlock inside droppable EveningSlot container
 
 ### Pending Todos
 
@@ -97,6 +99,6 @@ None. Safari persistence handled by DatabaseProvider calling `initializeDatabase
 ## Session Continuity
 
 Last session: 2026-01-18
-Stopped at: Inserted Phase 5.1 (Cross-Section Drag-Drop)
+Stopped at: Completed 05.1-01-PLAN.md
 Resume file: None
-Next: Plan Phase 5.1
+Next: Execute 05.1-02-PLAN.md (Drop Handling)
