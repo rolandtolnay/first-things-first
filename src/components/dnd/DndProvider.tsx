@@ -9,9 +9,8 @@
  * - DragOverlay for smooth drag previews
  *
  * Handles drop events for:
- * - priorities zone: creates DayPriority entry
- * - timegrid zone: creates TimeBlock (1 hour = 2 slots)
- * - evening zone: creates EveningBlock
+ * - Goals: priorities zone (DayPriority), timegrid (TimeBlock), evening (EveningBlock)
+ * - Blocks: timegrid zone (moves existing TimeBlock to new day/slot)
  *
  * This provider enables drag-drop functionality across the app.
  * Individual components use useDraggable and useDroppable hooks.
@@ -30,7 +29,7 @@ import {
   closestCenter,
 } from "@dnd-kit/core";
 import type { DayOfWeek, TimeSlotIndex } from "@/types";
-import type { DragData, DropZoneData, GoalDragData } from "@/types/dnd";
+import type { DragData, DropZoneData, GoalDragData, BlockDragData } from "@/types/dnd";
 import { useWeekStore } from "@/stores/weekStore";
 import { DragOverlayContent } from "./DragOverlayContent";
 
@@ -46,6 +45,7 @@ export function DndProvider({ children }: DndProviderProps) {
   const addDayPriority = useWeekStore((state) => state.addDayPriority);
   const addTimeBlock = useWeekStore((state) => state.addTimeBlock);
   const addEveningBlock = useWeekStore((state) => state.addEveningBlock);
+  const updateTimeBlock = useWeekStore((state) => state.updateTimeBlock);
 
   // Configure sensors with activation constraints
   const sensors = useSensors(
@@ -78,7 +78,18 @@ export function DndProvider({ children }: DndProviderProps) {
       const dragData = active.data.current as DragData;
       const dropData = over.data.current as DropZoneData;
 
-      // Only handle goal drops for now
+      // Handle block drops (move existing block to new position)
+      if (dragData.type === "block" && dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
+        const blockData = dragData as BlockDragData;
+        // Move block to new day/slot (keeps duration, title, goalId, roleId, etc.)
+        updateTimeBlock(blockData.blockId, {
+          dayIndex: dropData.dayIndex as DayOfWeek,
+          startSlot: dropData.slotIndex as TimeSlotIndex,
+        });
+        return;
+      }
+
+      // Handle goal drops
       if (dragData.type !== "goal") return;
 
       const goalData = dragData as GoalDragData;
@@ -130,7 +141,7 @@ export function DndProvider({ children }: DndProviderProps) {
         return;
       }
     },
-    [addDayPriority, addTimeBlock, addEveningBlock]
+    [addDayPriority, addTimeBlock, addEveningBlock, updateTimeBlock]
   );
 
   // Handle drag cancel - clear active state
