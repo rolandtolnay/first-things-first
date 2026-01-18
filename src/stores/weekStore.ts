@@ -184,11 +184,15 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     const week = get().currentWeek;
     if (!week) throw new Error("No week loaded");
 
+    // Use max order + 1 to ensure new role appears at end
+    // (roles.length doesn't work after deletions create order gaps)
+    const maxOrder = week.roles.reduce((max, r) => Math.max(max, r.order), -1);
+
     const role: Role = {
       id: generateId(),
       name: input.name,
       color: getNextRoleColor(week.roles),
-      order: week.roles.length,
+      order: maxOrder + 1,
     };
 
     // Optimistic update
