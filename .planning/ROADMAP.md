@@ -12,7 +12,7 @@ Transform a manual Google Sheets weekly planning workflow into a dedicated web a
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation & Data Layer** - Project scaffolding, IndexedDB persistence, week snapshot model
+- [x] **Phase 1: Foundation & Data Layer** - Project scaffolding, IndexedDB persistence, week snapshot model
 - [ ] **Phase 2: Layout & Calendar Grid** - Sidebar/calendar layout, 7-day view with time slots and evening section
 - [ ] **Phase 3: Role Management** - Create, edit, delete roles with auto-assigned colors
 - [ ] **Phase 4: Goal Management** - Create and manage goals within roles
@@ -37,9 +37,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: TBD
 
 Plans:
-- [ ] 01-01: Project scaffolding and dependencies
-- [ ] 01-02: Data layer with Dexie.js and Zustand stores
-- [ ] 01-03: Theme infrastructure with next-themes
+- [x] 01-01: Project scaffolding and dependencies
+- [x] 01-02: Data layer with Dexie.js and Zustand stores
+- [x] 01-03: Theme infrastructure with next-themes
 
 ### Phase 2: Layout & Calendar Grid
 **Goal**: Calendar structure renders correctly with all time slots visible
@@ -187,7 +187,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Data Layer | 0/3 | Not started | - |
+| 1. Foundation & Data Layer | 3/3 | Complete | 2026-01-18 |
 | 2. Layout & Calendar Grid | 0/3 | Not started | - |
 | 3. Role Management | 0/2 | Not started | - |
 | 4. Goal Management | 0/2 | Not started | - |

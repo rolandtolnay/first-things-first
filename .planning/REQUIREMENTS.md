@@ -9,8 +9,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Data & Persistence
 
-- [ ] **DATA-01**: User's data persists in browser database (IndexedDB) — survives restarts, no account required
-- [ ] **DATA-02**: Week operates on snapshot model — each week is independent, roles copied forward on new week creation
+- [x] **DATA-01**: User's data persists in browser database (IndexedDB) — survives restarts, no account required
+- [x] **DATA-02**: Week operates on snapshot model — each week is independent, roles copied forward on new week creation
 
 ### Layout
 
@@ -66,7 +66,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Design
 
-- [ ] **DSGN-01**: App supports light mode and dark mode from launch
+- [x] **DSGN-01**: App supports light mode and dark mode from launch
 - [ ] **DSGN-02**: Blocks and goals are color-coded by role for quick scanning
 - [ ] **DSGN-03**: Visual design follows JARVIS-inspired aesthetic (teal/cyan accents, clean geometric style)
 - [ ] **DSGN-04**: Typography-forward, minimal clutter design approach
@@ -122,9 +122,9 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 1 | Pending |
-| DATA-02 | Phase 1 | Pending |
-| DSGN-01 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Complete |
+| DATA-02 | Phase 1 | Complete |
+| DSGN-01 | Phase 1 | Complete |
 | LAYO-01 | Phase 2 | Pending |
 | CALR-01 | Phase 2 | Pending |
 | CALR-02 | Phase 2 | Pending |
@@ -168,4 +168,4 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 ---
 *Requirements defined: 2026-01-18*
-*Last updated: 2026-01-18 after roadmap creation*
+*Last updated: 2026-01-18 after Phase 1 completion*
