@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-18)
 ## Current Position
 
 Phase: 5 of 9 (Drag-Drop Integration)
-Plan: 0 of 4 in current phase
-Status: Ready to plan
-Last activity: 2026-01-18 - Phase 4 verified and complete
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-01-18 - Completed 05-01-PLAN.md
 
-Progress: [=====.....] 44%
+Progress: [=====|....] 48%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
+- Total plans completed: 11
 - Average duration: 6 min
-- Total execution time: 1.08 hours
+- Total execution time: 1.20 hours
 
 **By Phase:**
 
@@ -31,9 +31,10 @@ Progress: [=====.....] 44%
 | 02-layout-calendar-grid | 3/3 | 9 min | 3 min |
 | 03-role-management | 2/2 | 12 min | 6 min |
 | 04-goal-management | 2/2 | 12 min | 6 min |
+| 05-drag-drop-integration | 1/4 | 7 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (4 min), 03-02 (8 min), 04-01 (4 min), 04-02 (8 min)
+- Last 5 plans: 03-02 (8 min), 04-01 (4 min), 04-02 (8 min), 05-01 (7 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -67,6 +68,9 @@ Recent decisions affecting current work:
 - GoalList uses useMemo for filtered goals (hydration safety)
 - RoleSection inlines role header instead of composing RoleItem (simpler)
 - Goals indented 5 units (ml-5) under role header for hierarchy
+- DndProvider inside ThemeProvider for theme context access
+- 8px activation distance on PointerSensor prevents accidental drags
+- DragOverlay always mounted, children conditionally rendered (preserves animations)
 
 ### Pending Todos
 
@@ -79,6 +83,6 @@ None. Safari persistence handled by DatabaseProvider calling `initializeDatabase
 ## Session Continuity
 
 Last session: 2026-01-18
-Stopped at: Phase 4 verified and complete
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
-Next: Plan Phase 5 - Drag-Drop Integration
+Next: Plan 05-02 - Draggable Goals
