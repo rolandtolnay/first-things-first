@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-18)
 
 **Core value:** Help users focus on what matters by making the connection between life roles, weekly goals, and scheduled time explicit and actionable.
-**Current focus:** Phase 5 - Drag-Drop Integration
+**Current focus:** Phase 5 Complete - Ready for Phase 6
 
 ## Current Position
 
-Phase: 5 of 9 (Drag-Drop Integration)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-01-18 - Completed 05-02-PLAN.md and 05-03-PLAN.md (parallel)
+Phase: 5 of 9 (Drag-Drop Integration) - COMPLETE
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-01-18 - Completed 05-04-PLAN.md (Block Movement)
 
-Progress: [======|...] 65%
+Progress: [=======|..] 70%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: 6 min
-- Total execution time: 1.37 hours
+- Total plans completed: 14
+- Average duration: 5.8 min
+- Total execution time: 1.40 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [======|...] 65%
 | 02-layout-calendar-grid | 3/3 | 9 min | 3 min |
 | 03-role-management | 2/2 | 12 min | 6 min |
 | 04-goal-management | 2/2 | 12 min | 6 min |
-| 05-drag-drop-integration | 3/4 | 17 min | 5.7 min |
+| 05-drag-drop-integration | 4/4 | 19 min | 4.8 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (8 min), 05-01 (7 min), 05-02 (4 min), 05-03 (6 min)
-- Trend: Stable
+- Last 5 plans: 05-01 (7 min), 05-02 (4 min), 05-03 (6 min), 05-04 (2 min)
+- Trend: Stable/improving
 
 *Updated after each plan completion*
 
@@ -78,6 +78,9 @@ Recent decisions affecting current work:
 - GoalDragData includes goalId, roleId, text for drop handling
 - Drag disabled during goal text editing (isEditing check)
 - Same goal can be dropped multiple times (no deduplication)
+- block-{id} draggable ID pattern for TimeBlocks
+- BlockDragData with blockId and sourceDay for block movement
+- Blocks can overlap (Phase 6 will handle collision prevention)
 
 ### Pending Todos
 
@@ -90,6 +93,6 @@ None. Safari persistence handled by DatabaseProvider calling `initializeDatabase
 ## Session Continuity
 
 Last session: 2026-01-18
-Stopped at: Completed 05-02-PLAN.md and 05-03-PLAN.md (parallel)
+Stopped at: Completed 05-04-PLAN.md (Phase 5 complete)
 Resume file: None
-Next: Plan 05-04 - Block Movement
+Next: Phase 6 - Scheduling Intelligence
