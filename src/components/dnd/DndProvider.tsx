@@ -305,7 +305,7 @@ export function DndProvider({ children }: DndProviderProps) {
         return;
       }
     },
-    [addDayPriority, addTimeBlock, addEveningBlock, updateTimeBlock]
+    [addDayPriority, addTimeBlock, addEveningBlock, updateTimeBlock, deleteTimeBlock, removeDayPriority, deleteEveningBlock]
   );
 
   // Handle drag cancel - clear active state
@@ -324,13 +324,14 @@ export function DndProvider({ children }: DndProviderProps) {
       {children}
       {/*
         CRITICAL: Always keep DragOverlay mounted, only conditionally render children.
-        Drop animation: Only for blocks (which move). Goals create copies, so no swoosh-back.
+        Drop animation: Goals create copies (no swoosh-back needed).
+        Everything else (blocks, priorities, evening) moves, so animate.
       */}
       <DragOverlay
         dropAnimation={
-          activeData?.type === "block"
-            ? { duration: 200, easing: "ease" }
-            : null
+          activeData?.type === "goal"
+            ? null // Goals create copies, no animation needed
+            : { duration: 200, easing: "ease" } // Everything else moves
         }
       >
         {activeData ? <DragOverlayContent data={activeData} /> : null}
