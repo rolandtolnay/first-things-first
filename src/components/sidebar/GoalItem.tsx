@@ -8,12 +8,15 @@
  * - Goal text (editable on double-click)
  * - Notes indicator icon (if goal has notes)
  * - Delete button (appears on hover)
+ * - Drag capability for dropping onto Day Priorities
  */
 
 import { useState, useRef, useEffect } from "react";
+import { useDraggable } from "@dnd-kit/core";
 import { useWeekStore } from "@/stores/weekStore";
 import { getRoleColorStyle } from "@/lib/role-colors";
 import type { Goal, RoleColor } from "@/types";
+import type { GoalDragData } from "@/types/dnd";
 
 interface GoalItemProps {
   goal: Goal;
@@ -27,6 +30,20 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
 
   const updateGoal = useWeekStore((state) => state.updateGoal);
   const deleteGoal = useWeekStore((state) => state.deleteGoal);
+
+  // Make goal draggable for dropping onto Day Priorities
+  const dragData: GoalDragData = {
+    type: "goal",
+    goalId: goal.id,
+    roleId: goal.roleId,
+    text: goal.text,
+  };
+
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `goal-${goal.id}`,
+    data: dragData,
+    disabled: isEditing, // Disable drag when editing text
+  });
 
   // Focus input when entering edit mode
   useEffect(() => {
@@ -77,7 +94,12 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
 
   return (
     <div
-      className="group flex items-center gap-2 py-1 px-2 rounded-md hover:bg-secondary/50 transition-colors"
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={`group flex items-center gap-2 py-1 px-2 rounded-md hover:bg-secondary/50 transition-colors cursor-grab active:cursor-grabbing ${
+        isDragging ? "opacity-50" : ""
+      }`}
       style={{ borderLeft: `3px solid ${getRoleColorStyle(roleColor)}` }}
     >
       {/* Goal text display or edit input */}
