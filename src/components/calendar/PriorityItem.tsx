@@ -7,22 +7,42 @@
  * - Role color left border (3px, consistent with GoalItem)
  * - Goal text (truncated with title tooltip)
  * - Delete button on hover to remove priority
+ * - Draggable for cross-section drag-drop
  *
  * Compact styling (text-xs, py-0.5) for efficient space usage.
  */
 
+import { useDraggable } from "@dnd-kit/core";
 import { useWeekStore } from "@/stores/weekStore";
 import { getRoleColorStyle } from "@/lib/role-colors";
-import type { DayPriority, Goal, RoleColor } from "@/types";
+import { cn } from "@/lib/utils";
+import type { DayPriority, DayOfWeek, Goal, RoleColor } from "@/types";
+import type { PriorityDragData } from "@/types/dnd";
 
 interface PriorityItemProps {
   priority: DayPriority;
   goal: Goal;
   roleColor: RoleColor;
+  dayIndex: DayOfWeek;
 }
 
-export function PriorityItem({ priority, goal, roleColor }: PriorityItemProps) {
+export function PriorityItem({ priority, goal, roleColor, dayIndex }: PriorityItemProps) {
   const removeDayPriority = useWeekStore((state) => state.removeDayPriority);
+
+  // Set up draggable
+  const dragData = {
+    type: "priority",
+    priorityId: priority.id,
+    goalId: goal.id,
+    roleId: goal.roleId,
+    text: goal.text,
+    sourceDayIndex: dayIndex,
+  } satisfies PriorityDragData;
+
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `priority-${priority.id}`,
+    data: dragData,
+  });
 
   const handleDelete = () => {
     removeDayPriority(priority.id);
@@ -30,7 +50,14 @@ export function PriorityItem({ priority, goal, roleColor }: PriorityItemProps) {
 
   return (
     <div
-      className="group flex items-center gap-1.5 py-0.5 px-1.5 rounded hover:bg-secondary/50 transition-colors"
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={cn(
+        "group flex items-center gap-1.5 py-0.5 px-1.5 rounded hover:bg-secondary/50 transition-colors",
+        "cursor-grab active:cursor-grabbing",
+        isDragging && "opacity-50"
+      )}
       style={{ borderLeft: `3px solid ${getRoleColorStyle(roleColor)}` }}
     >
       {/* Goal text - truncated with tooltip */}

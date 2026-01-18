@@ -90,6 +90,7 @@ export function DayPriorities({ dayIndex }: DayPrioritiesProps) {
                 priority={priority}
                 goal={goal}
                 roleColor={role.color}
+                dayIndex={dayIndex}
               />
             );
           })}
