@@ -1,6 +1,13 @@
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background">
+      {/* Theme toggle in top-right corner */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+
       <main className="flex flex-col items-center gap-8 p-8">
         {/* App title with JARVIS-style accent */}
         <h1 className="text-4xl font-bold tracking-tight text-foreground">
