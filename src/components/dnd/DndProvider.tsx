@@ -8,6 +8,10 @@
  * - Collision detection (closestCenter)
  * - DragOverlay for smooth drag previews
  *
+ * Handles drop events for:
+ * - timegrid zone: creates TimeBlock (1 hour = 2 slots)
+ * - evening zone: creates EveningBlock
+ *
  * This provider enables drag-drop functionality across the app.
  * Individual components use useDraggable and useDroppable hooks.
  */
@@ -24,7 +28,9 @@ import {
   useSensors,
   closestCenter,
 } from "@dnd-kit/core";
-import type { DragData } from "@/types/dnd";
+import type { DayOfWeek, TimeSlotIndex } from "@/types";
+import type { DragData, DropZoneData, GoalDragData } from "@/types/dnd";
+import { useWeekStore } from "@/stores/weekStore";
 import { DragOverlayContent } from "./DragOverlayContent";
 
 interface DndProviderProps {
@@ -34,6 +40,10 @@ interface DndProviderProps {
 export function DndProvider({ children }: DndProviderProps) {
   // Track currently dragged item data for DragOverlay
   const [activeData, setActiveData] = useState<DragData | null>(null);
+
+  // Get store actions for drop handling
+  const addTimeBlock = useWeekStore((state) => state.addTimeBlock);
+  const addEveningBlock = useWeekStore((state) => state.addEveningBlock);
 
   // Configure sensors with activation constraints
   const sensors = useSensors(
@@ -53,24 +63,63 @@ export function DndProvider({ children }: DndProviderProps) {
   }, []);
 
   // Handle drag end - process drop and clear active state
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
 
-    // Clear active state first (will be processed by drop handlers in later plans)
-    setActiveData(null);
+      // Clear active state
+      setActiveData(null);
 
-    // TODO: Implement drop handling in Plan 05-02 and 05-03
-    // The drop logic will be handled by the DndProvider or individual drop zones
-    // For now, this is a stub that logs drop events for debugging
-    if (over) {
-      console.log("[DndProvider] Drop event:", {
-        activeId: active.id,
-        overId: over.id,
-        activeData: active.data.current,
-        overData: over.data.current,
-      });
-    }
-  }, []);
+      // No valid drop target
+      if (!over) return;
+
+      const dragData = active.data.current as DragData;
+      const dropData = over.data.current as DropZoneData;
+
+      // Only handle goal drops for now
+      if (dragData.type !== "goal") return;
+
+      const goalData = dragData as GoalDragData;
+
+      // Handle timegrid drops (creates 1-hour TimeBlock)
+      if (dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
+        addTimeBlock({
+          type: "goal",
+          goalId: goalData.goalId,
+          roleId: goalData.roleId,
+          dayIndex: dropData.dayIndex as DayOfWeek,
+          startSlot: dropData.slotIndex as TimeSlotIndex,
+          duration: 2, // 1 hour = 2 x 30-min slots
+          title: goalData.text,
+          completed: false,
+        });
+        return;
+      }
+
+      // Handle evening drops (creates EveningBlock)
+      if (dropData.zone === "evening") {
+        // Check if evening slot is already occupied
+        const currentWeek = useWeekStore.getState().currentWeek;
+        const existingBlock = currentWeek?.eveningBlocks.find(
+          (b) => b.dayIndex === dropData.dayIndex
+        );
+        if (existingBlock) {
+          // Evening slot already has a block - silently skip
+          return;
+        }
+        addEveningBlock({
+          type: "goal",
+          goalId: goalData.goalId,
+          roleId: goalData.roleId,
+          dayIndex: dropData.dayIndex as DayOfWeek,
+          title: goalData.text,
+          completed: false,
+        });
+        return;
+      }
+    },
+    [addTimeBlock, addEveningBlock]
+  );
 
   // Handle drag cancel - clear active state
   const handleDragCancel = useCallback(() => {
