@@ -1,26 +1,13 @@
 {
-  "mode": "yolo",
-  "depth": "comprehensive",
-  "parallelization": {
-    "enabled": true,
-    "plan_level": true,
-    "task_level": false,
-    "skip_checkpoints": true,
-    "max_concurrent_agents": 3,
-    "min_plans_for_parallel": 2
+  "subsystems": ["roles", "goals", "calendar", "blocks", "dnd", "persistence", "ui", "weeks"],
+  "code_review": {
+    "adhoc": null,
+    "phase": null,
+    "milestone": null
   },
-  "gates": {
-    "confirm_project": false,
-    "confirm_phases": false,
-    "confirm_roadmap": false,
-    "confirm_breakdown": false,
-    "confirm_plan": false,
-    "execute_next_plan": false,
-    "issues_review": false,
-    "confirm_transition": false
+  "open_mockups": "auto",
+  "browser_verification": {
+    "enabled": true
   },
-  "safety": {
-    "always_confirm_destructive": true,
-    "always_confirm_external_services": true
-  }
+  "multi_plan": false
 }

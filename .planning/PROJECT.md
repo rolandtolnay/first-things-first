@@ -2,108 +2,118 @@
 
 ## What This Is
 
-A web-based weekly planning tool implementing Stephen Covey's Habit 3 ("Put First Things First") from *The 7 Habits of Highly Effective People*. Users organize their life into roles, set weekly goals for each role, and schedule those goals as time blocks on a calendar. Replaces a manual Google Sheets workflow with a dedicated, interactive tool.
+A personal life dashboard that starts with Covey-style role-based weekly planning. Users organize their life into roles, set weekly goals for each role, and schedule those goals as time blocks on a calendar. Currently replacing a manual Google Sheets workflow with a dedicated, interactive tool — with a longer-term vision of becoming a comprehensive personal control center for tasks, schedules, finances, deliveries, and email-driven action items.
 
 ## Core Value
 
-Help users focus on what matters by making the connection between life roles, weekly goals, and scheduled time explicit and actionable.
+Be the single place to answer "what do I do next?" by making the connection between life roles, weekly goals, and scheduled time explicit and actionable.
 
-## Requirements
+## Who It's For
 
-### Validated
+Primarily the developer — someone who actively plans weeks around Stephen Covey's life roles and currently does it in Google Sheets. Finds that generic calendars and task apps don't model role-based planning. Wants one app to open multiple times a day on both desktop and phone to organize priorities, schedules, and responsibilities. Secondarily, other intentional planners who follow similar Covey-style frameworks.
 
-(None yet — ship to validate)
+## Core Problem
 
-### Active
+No single tool connects life roles to weekly goals to scheduled time in an interactive, purposeful way. Generic calendars organize by time, task apps organize by lists — neither models the role → goal → time block workflow that Covey's methodology requires. Google Sheets is functional but lacks interactivity, visual feedback, and the polish of a purpose-built tool.
 
-**Data & Persistence**
-- [ ] Persist all data in browser database (IndexedDB) — survives restarts, no account required
-- [ ] Week snapshot model — each week is independent, roles copied forward on new week creation
+## How It's Different
 
-**Roles**
-- [ ] Create, edit, delete roles (user-defined, ~7 typical)
-- [ ] Auto-assigned colors from design system palette
-- [ ] Roles editable per-week independently (snapshot, not global)
+- Built around Covey's role-based planning model — not a generic calendar or task list
+- Designed as a personal control center, not a team productivity tool
+- Forces intentional weekly planning by design — no recurring templates, no AI auto-scheduling
+- Local-first MVP with a path to cloud sync, not a SaaS product requiring signup to try
 
-**Goals**
-- [ ] Assign multiple goals per role per week
-- [ ] Goals are text-based with optional notes
-- [ ] Drag goal from role column to Day Priorities section (top area)
-- [ ] Drag goal from role column to Day Schedule (creates 1hr default block)
-- [ ] Same goal can appear in multiple places as independent instances
+## Key User Flows
 
-**Calendar View**
-- [ ] Weekly view showing all 7 days simultaneously (desktop, 1440px+)
-- [ ] Day Priorities section at top of each day (free-form, not time-bound)
-- [ ] Time block schedule: fixed 8:00–20:00 range
-- [ ] Evening slot below schedule (single block/goal capacity)
-- [ ] 30-minute granularity for all blocks
+- Define life roles → set weekly goals per role → drag goals onto the calendar as time blocks
+- Throughout the week, check priorities and scheduled blocks → mark items complete
+- Create new week → optionally carry over uncompleted goals → start fresh planning cycle
 
-**Time Blocks**
-- [ ] Blocks resizable by dragging edges (30min increments, 30min–8hr range, or until end of day)
-- [ ] Create freestyle blocks directly on calendar (not tied to goals)
-- [ ] Blocks cannot overlap — validation on place/resize
-- [ ] Block data model tracks: type (manual vs goal), role reference (if goal)
+## Out of Scope
 
-**Completion**
-- [ ] Mark any block/goal as completed (background changes to dark green)
-- [ ] Independent completion per instance (Role column, Day Priority, Day Schedule are separate)
-- [ ] Completed items remain visible in place
+- Team collaboration — solo planning tool, 10x complexity for teams
+- AI auto-scheduling — removes intentionality central to Covey method
+- Gamification/streaks — extrinsic motivation undermines habit formation
+- Recurring goal templates — weekly planning should be intentional each week
 
-**Week Management**
-- [ ] Default view shows current week
-- [ ] Week navigation arrows to view previous/future weeks
-- [ ] Previous weeks display as user left them (read/write, not read-only)
-- [ ] "New Week" button with confirmation dialog
-- [ ] Dialog asks whether to carry over uncompleted goals
-- [ ] Roles always carry over; scheduled blocks clear
+## Deferred
 
-**Visual Design**
-- [ ] Light mode and dark mode from day one
-- [ ] Design inspired by JARVIS dark tech aesthetic (teal/cyan accents, clean geometric style)
-- [ ] Color coding by role for quick scanning
-- [ ] Typography-forward, minimal clutter
-
-### Out of Scope
-
-- Mobile/tablet experience — desktop only for v1, revisit in v1.1
-- Sharpen the Saw section — deferred to v1.1
-- User accounts and authentication — local-only for MVP
-- Calendar integrations (Google Calendar, etc.) — future consideration
-- Recurring goal templates — future consideration
-- Multi-week analytics/reporting — future (data model supports it)
-- Smart completion linking (complete once → marks all instances) — v1.1
-- Configurable time range — fixed 8:00–20:00 for v1
-- Drag-and-drop between days (only role → day for v1)
-
-## Context
-
-**Origin**: User currently plans weeks in Google Sheets. Functional but lacks interactivity, dedicated UX, and the polish of a purpose-built tool.
-
-**Methodology**: Based on Stephen Covey's time management matrix. Quadrant II (important but not urgent) activities drive long-term effectiveness. Roles represent areas of responsibility; goals are weekly commitments within those roles.
-
-**Design direction**: Inspired by the "Trigona JARVIS" design system — dark luxury aesthetic with teal/cyan accents, clean geometry, and HUD-style corner brackets. Will use a `frontend-design` skill during planning to finalize the actual design system with both light and dark mode support.
-
-**Data model note**: Blocks must track their lineage (manual vs goal, and which role) to enable future analytics on role-based goal completion rates.
+- Mobile/tablet experience — deferred from v1, desktop-only for MVP
+- Authentication (Google/Apple providers) and cloud persistence (Supabase) — deferred from v1, MVP uses IndexedDB
+- Calendar integrations (Google/Apple Calendar sync and overlay) — deferred from v1
+- Smart completion linking (complete once → marks all instances) — deferred from v1
+- Configurable time range — deferred from v1, fixed 8:00–20:00
+- Sharpen the Saw section — deferred from v1
+- Multi-week analytics/reporting — deferred from v1, data model supports it
+- In-app notifications for goal deadlines — deferred from v1
+- Cross-device sync — requires auth + backend first
+- Package delivery tracking module — future dashboard module
+- Financial subscription calendar (LLM-parsed bank statements) — future dashboard module
+- Email insights and action items module — future dashboard module
 
 ## Constraints
 
-- **Tech stack**: Next.js (React framework)
+- **Tech stack**: Next.js 15 (React 19), TypeScript, Tailwind CSS v4
 - **Deployment**: Vercel via vercel-cli
-- **Platform**: Desktop only (1440px+ viewport), no mobile for v1
-- **Persistence**: Browser-local only (IndexedDB), no backend/database
+- **Platform**: Desktop only (1440px+ viewport) for v1
+- **Persistence**: Browser-local only (IndexedDB via Dexie.js) for v1
 - **Time range**: Fixed 8:00–20:00 + evening slot (not configurable in v1)
+
+## Technical Context
+
+**Stack:** Next.js 15, React 19, TypeScript, Tailwind CSS v4, shadcn/ui components, Radix UI primitives, lucide-react icons.
+
+**State management:** Zustand for global state (week data, UI state). Dexie.js with dexie-react-hooks for IndexedDB persistence. Optimistic updates in Zustand, async sync to IndexedDB.
+
+**Drag-drop:** dnd-kit (core + sortable + utilities). Single DndContext at app root with data-driven drop handling. PointerSensor with 8px activation distance. Goals drag from sidebar to priorities/calendar/evening; blocks drag between all sections.
+
+**Calendar:** Custom CSS Grid — not a calendar library. 30-minute slot granularity, 32px slot height. Absolute positioning for time blocks within day columns.
+
+**Theming:** next-themes with attribute="class" for Tailwind dark mode. Light and dark mode from day one. JARVIS-inspired aesthetic (teal/cyan accents, clean geometry) planned for visual polish phase.
+
+**Architecture:** Feature-based component structure under `src/components/`. Zustand stores in `src/lib/store/`. Database layer in `src/lib/db/`. Types in `src/types/`.
+
+**Utilities:** date-fns for dates, nanoid for ID generation, cn() helper (clsx + tailwind-merge).
+
+**Design direction:** Inspired by "Trigona JARVIS" design system — dark luxury aesthetic with teal/cyan accents, clean geometry, and HUD-style corner brackets. Will use `frontend-design` skill during Phase 9.
+
+**Data model note:** Blocks track lineage (manual vs goal-based, originating role) to enable future analytics on role-based goal completion rates. Week snapshot model — each week is independent with its own roles and goals.
+
+## Validated
+
+- ✓ IndexedDB persistence with Dexie.js — Phase 1
+- ✓ Week snapshot model (independent role/goal snapshots per week) — Phase 1
+- ✓ Light/dark mode with next-themes — Phase 1
+- ✓ Sidebar/calendar layout (25%/75% split) — Phase 2
+- ✓ 7-day calendar grid with 30-min time slots (8:00–20:00) — Phase 2
+- ✓ Day Priorities section and Evening slot — Phase 2
+- ✓ Role CRUD with auto-assigned colors (8-color palette) — Phase 3
+- ✓ Per-week independent role editing (snapshot model) — Phase 3
+- ✓ Role color coding for visual scanning — Phase 3
+- ✓ Goal CRUD within roles — Phase 4
+- ✓ Goals with text and optional notes — Phase 4
+- ✓ Drag goal from sidebar to Day Priorities — Phase 5
+- ✓ Drag goal from sidebar to calendar (1hr default block) — Phase 5
+- ✓ Same goal in multiple places as independent instances — Phase 5
+- ✓ Drag blocks between days — Phase 5
+- ✓ Block data model tracks type and role reference — Phase 5
+- ✓ Cross-section drag-drop (calendar ↔ priorities ↔ evening) — Phase 5.1
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Independent completion model | Simpler to build, no sync logic between instances | — Pending |
-| Week snapshot model (not global roles) | Matches Google Sheets mental model, allows historical accuracy | — Pending |
+| Week snapshot model (not global roles) | Matches Google Sheets mental model, allows historical accuracy | ✓ Good |
 | No overlapping blocks | Reflects reality — you can only do one thing at a time | — Pending |
-| Fixed time range (8:00–20:00 + evening) | Simplifies UI, evening slot handles late-day without extending grid | — Pending |
-| Light + dark mode from start | Easier than retrofitting, matches design system philosophy | — Pending |
-| Block stores role reference | Enables future analytics without schema migration | — Pending |
+| Fixed time range (8:00–20:00 + evening) | Simplifies UI, evening slot handles late-day without extending grid | ✓ Good |
+| Light + dark mode from start | Easier than retrofitting, matches design system philosophy | ✓ Good |
+| Block stores role reference | Enables future analytics without schema migration | ✓ Good |
+| Custom CSS Grid over calendar library | Calendar libraries built for events, not goal-to-block workflows | ✓ Good |
+| Single DndContext with data-driven drops | Avoids nested context complexity, all drag logic centralized | ✓ Good |
+| Zustand + Dexie (not Zustand persist) | Optimistic UI updates with durable IndexedDB persistence | ✓ Good |
+| IndexedDB for v1 (not Supabase) | Ship faster, no backend dependency; auth + cloud sync deferred | — Pending |
+| Personal dashboard vision | Role-based planning is first module; architecture should anticipate expansion | — Pending |
 
 ---
-*Last updated: 2026-01-18 after initialization*
+*Last updated: 2026-03-21 after template migration*
