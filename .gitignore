@@ -50,3 +50,5 @@ next-env.d.ts
 
 # Planning artifacts
 .planning/**/*.patch
+.planning/phases/**/*.html
+.planning/phases/**/screenshots/

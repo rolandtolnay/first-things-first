@@ -1,13 +1,23 @@
 {
-  "subsystems": ["roles", "goals", "calendar", "blocks", "dnd", "persistence", "ui", "weeks"],
+  "subsystems": [
+    "roles",
+    "goals",
+    "calendar",
+    "blocks",
+    "dnd",
+    "persistence",
+    "ui",
+    "weeks"
+  ],
   "code_review": {
-    "adhoc": null,
-    "phase": null,
-    "milestone": null
+    "adhoc": "ms-code-simplifier",
+    "phase": "ms-code-simplifier",
+    "milestone": "ms-code-reviewer"
   },
   "open_mockups": "auto",
   "browser_verification": {
-    "enabled": true
+    "enabled": true,
+    "web_project": true
   },
   "multi_plan": false
 }
