@@ -20,7 +20,7 @@
  * Individual components use useDraggable and useDroppable hooks.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -44,6 +44,9 @@ interface DndProviderProps {
 export function DndProvider({ children }: DndProviderProps) {
   // Track currently dragged item data for DragOverlay
   const [activeData, setActiveData] = useState<DragData | null>(null);
+  // Ref preserves drag type across the re-render caused by setActiveData(null)
+  // so dropAnimation stays correct when dnd-kit reads it
+  const activeTypeRef = useRef<DragData["type"] | null>(null);
 
   // Get store actions for drop handling
   const addDayPriority = useWeekStore((state) => state.addDayPriority);
@@ -68,6 +71,7 @@ export function DndProvider({ children }: DndProviderProps) {
   // Handle drag start - capture active item data
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const data = event.active.data.current as DragData;
+    activeTypeRef.current = data.type;
     setActiveData(data);
   }, []);
 
@@ -333,7 +337,7 @@ export function DndProvider({ children }: DndProviderProps) {
       */}
       <DragOverlay
         dropAnimation={
-          activeData?.type === "goal"
+          activeTypeRef.current === "goal"
             ? null // Goals create copies, no animation needed
             : { duration: 200, easing: "ease" } // Everything else moves
         }
