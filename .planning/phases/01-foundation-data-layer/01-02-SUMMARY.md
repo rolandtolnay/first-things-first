@@ -1,7 +1,7 @@
 ---
 phase: 01-foundation-data-layer
 plan: 02
-subsystem: database
+subsystem: persistence
 tags: [dexie, zustand, indexeddb, typescript, state-management]
 
 # Dependency graph

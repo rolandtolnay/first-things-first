@@ -1,7 +1,7 @@
 ---
 phase: 03
 plan: 01
-subsystem: sidebar
+subsystem: roles
 tags: [roles, components, tailwind, color-mapping]
 
 dependency-graph:

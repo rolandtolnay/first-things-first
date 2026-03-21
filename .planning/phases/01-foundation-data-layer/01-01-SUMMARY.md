@@ -1,7 +1,7 @@
 ---
 phase: 01-foundation-data-layer
 plan: 01
-subsystem: infra
+subsystem: persistence
 tags: [next.js, react, typescript, tailwind, dexie, zustand, dnd-kit, next-themes]
 
 # Dependency graph
