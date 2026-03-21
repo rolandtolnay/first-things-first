@@ -11,10 +11,12 @@
  * - Drag capability for dropping onto Day Priorities
  */
 
-import { useState, useRef, useEffect } from "react";
+import { useCallback } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { useWeekStore } from "@/stores/weekStore";
 import { getRoleColorStyle } from "@/lib/role-colors";
+import { useEditableText } from "@/hooks/useEditableText";
+import { CloseIcon } from "@/components/ui/CloseIcon";
 import type { Goal, RoleColor } from "@/types";
 import type { GoalDragData } from "@/types/dnd";
 
@@ -24,12 +26,16 @@ interface GoalItemProps {
 }
 
 export function GoalItem({ goal, roleColor }: GoalItemProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(goal.text);
-  const inputRef = useRef<HTMLInputElement>(null);
-
   const updateGoal = useWeekStore((state) => state.updateGoal);
   const deleteGoal = useWeekStore((state) => state.deleteGoal);
+
+  const handleSaveGoal = useCallback(
+    (value: string) => updateGoal(goal.id, { text: value }),
+    [updateGoal, goal.id]
+  );
+
+  const { isEditing, editValue, setEditValue, inputRef, startEdit, save, handleKeyDown } =
+    useEditableText(goal.text, handleSaveGoal);
 
   // Make goal draggable for dropping onto Day Priorities
   const dragData: GoalDragData = {
@@ -42,49 +48,8 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `goal-${goal.id}`,
     data: dragData,
-    disabled: isEditing, // Disable drag when editing text
+    disabled: isEditing,
   });
-
-  // Focus input when entering edit mode
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditing]);
-
-  // Reset edit value when goal changes
-  useEffect(() => {
-    setEditValue(goal.text);
-  }, [goal.text]);
-
-  const handleStartEdit = () => {
-    setIsEditing(true);
-    setEditValue(goal.text);
-  };
-
-  const handleSave = () => {
-    const trimmed = editValue.trim();
-    if (trimmed && trimmed !== goal.text) {
-      updateGoal(goal.id, { text: trimmed });
-    }
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setEditValue(goal.text);
-    setIsEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleSave();
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      handleCancel();
-    }
-  };
 
   const handleDelete = () => {
     if (window.confirm(`Delete goal "${goal.text}"?`)) {
@@ -109,7 +74,7 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
           type="text"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
-          onBlur={handleSave}
+          onBlur={save}
           onKeyDown={handleKeyDown}
           className="flex-1 min-w-0 text-sm bg-transparent border border-border rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-ring"
           aria-label="Edit goal text"
@@ -117,7 +82,7 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
       ) : (
         <span
           className="flex-1 min-w-0 text-sm text-foreground truncate cursor-pointer"
-          onDoubleClick={handleStartEdit}
+          onDoubleClick={startEdit}
           title={goal.text}
         >
           {goal.text}
@@ -158,20 +123,7 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
           className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity p-0.5 rounded flex-shrink-0"
           aria-label={`Delete goal ${goal.text}`}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <CloseIcon />
         </button>
       )}
     </div>

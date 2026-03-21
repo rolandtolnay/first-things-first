@@ -15,6 +15,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { useWeekStore } from "@/stores/weekStore";
 import { getRoleColorStyle } from "@/lib/role-colors";
+import { CloseIcon } from "@/components/ui/CloseIcon";
 import { cn } from "@/lib/utils";
 import type { DayPriority, DayOfWeek, Goal, RoleColor } from "@/types";
 import type { PriorityDragData } from "@/types/dnd";
@@ -75,20 +76,7 @@ export function PriorityItem({ priority, goal, roleColor, dayIndex }: PriorityIt
         className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity p-0.5 rounded flex-shrink-0"
         aria-label={`Remove priority ${goal.text}`}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="10"
-          height="10"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
+        <CloseIcon size={10} />
       </button>
     </div>
   );

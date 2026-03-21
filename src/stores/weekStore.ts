@@ -129,6 +129,35 @@ function createEmptyWeek(weekId: WeekId, carryOverRoles?: Role[]): Week {
 }
 
 // ============================================================================
+// Helper: Update Week Pattern
+// ============================================================================
+
+type StoreGet = () => WeekStore;
+type StoreSet = (partial: Partial<WeekStore>) => void;
+
+/**
+ * Common pattern: get current week, throw if null, apply updater, persist.
+ */
+async function withWeek(
+  get: StoreGet,
+  set: StoreSet,
+  updater: (week: Week) => Partial<Week>
+): Promise<void> {
+  const week = get().currentWeek;
+  if (!week) throw new Error("No week loaded");
+
+  set({
+    currentWeek: {
+      ...week,
+      ...updater(week),
+      updatedAt: new Date().toISOString(),
+    },
+  });
+
+  await get().saveCurrentWeek();
+}
+
+// ============================================================================
 // Week Store Implementation
 // ============================================================================
 
@@ -210,67 +239,28 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   updateRole: async (roleId: string, updates: Partial<Omit<Role, "id">>) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    set({
-      currentWeek: {
-        ...week,
-        roles: week.roles.map((r) =>
-          r.id === roleId ? { ...r, ...updates } : r
-        ),
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await withWeek(get, set, (week) => ({
+      roles: week.roles.map((r) => (r.id === roleId ? { ...r, ...updates } : r)),
+    }));
   },
 
   deleteRole: async (roleId: string) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    // Delete role and all associated goals
-    const goalIds = week.goals.filter((g) => g.roleId === roleId).map((g) => g.id);
-
-    set({
-      currentWeek: {
-        ...week,
+    await withWeek(get, set, (week) => {
+      const goalIds = week.goals.filter((g) => g.roleId === roleId).map((g) => g.id);
+      return {
         roles: week.roles.filter((r) => r.id !== roleId),
         goals: week.goals.filter((g) => g.roleId !== roleId),
-        // Remove day priorities for deleted goals
         dayPriorities: week.dayPriorities.filter((p) => !goalIds.includes(p.goalId)),
-        // Remove time blocks for deleted goals (keep freestyle blocks)
-        timeBlocks: week.timeBlocks.filter(
-          (b) => b.type === "freestyle" || !goalIds.includes(b.goalId!)
-        ),
-        // Remove evening blocks for deleted goals
-        eveningBlocks: week.eveningBlocks.filter(
-          (b) => b.type === "freestyle" || !goalIds.includes(b.goalId!)
-        ),
-        updatedAt: new Date().toISOString(),
-      },
+        timeBlocks: week.timeBlocks.filter((b) => b.type === "freestyle" || !goalIds.includes(b.goalId!)),
+        eveningBlocks: week.eveningBlocks.filter((b) => b.type === "freestyle" || !goalIds.includes(b.goalId!)),
+      };
     });
-
-    await get().saveCurrentWeek();
   },
 
   reorderRoles: async (roleIds: string[]) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    set({
-      currentWeek: {
-        ...week,
-        roles: week.roles.map((r) => ({
-          ...r,
-          order: roleIds.indexOf(r.id),
-        })),
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await withWeek(get, set, (week) => ({
+      roles: week.roles.map((r) => ({ ...r, order: roleIds.indexOf(r.id) })),
+    }));
   },
 
   // -------------------------------------------------------------------------
@@ -302,62 +292,24 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   updateGoal: async (goalId: string, updates: Partial<Omit<Goal, "id" | "roleId">>) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    set({
-      currentWeek: {
-        ...week,
-        goals: week.goals.map((g) =>
-          g.id === goalId ? { ...g, ...updates } : g
-        ),
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await withWeek(get, set, (week) => ({
+      goals: week.goals.map((g) => (g.id === goalId ? { ...g, ...updates } : g)),
+    }));
   },
 
   deleteGoal: async (goalId: string) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    set({
-      currentWeek: {
-        ...week,
-        goals: week.goals.filter((g) => g.id !== goalId),
-        // Remove day priorities for this goal
-        dayPriorities: week.dayPriorities.filter((p) => p.goalId !== goalId),
-        // Remove time blocks for this goal (keep freestyle)
-        timeBlocks: week.timeBlocks.filter(
-          (b) => b.type === "freestyle" || b.goalId !== goalId
-        ),
-        // Remove evening blocks for this goal
-        eveningBlocks: week.eveningBlocks.filter(
-          (b) => b.type === "freestyle" || b.goalId !== goalId
-        ),
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await withWeek(get, set, (week) => ({
+      goals: week.goals.filter((g) => g.id !== goalId),
+      dayPriorities: week.dayPriorities.filter((p) => p.goalId !== goalId),
+      timeBlocks: week.timeBlocks.filter((b) => b.type === "freestyle" || b.goalId !== goalId),
+      eveningBlocks: week.eveningBlocks.filter((b) => b.type === "freestyle" || b.goalId !== goalId),
+    }));
   },
 
   toggleGoalCompleted: async (goalId: string) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    set({
-      currentWeek: {
-        ...week,
-        goals: week.goals.map((g) =>
-          g.id === goalId ? { ...g, completed: !g.completed } : g
-        ),
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await withWeek(get, set, (week) => ({
+      goals: week.goals.map((g) => (g.id === goalId ? { ...g, completed: !g.completed } : g)),
+    }));
   },
 
   // -------------------------------------------------------------------------
@@ -395,54 +347,25 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   removeDayPriority: async (priorityId: string) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    set({
-      currentWeek: {
-        ...week,
-        dayPriorities: week.dayPriorities.filter((p) => p.id !== priorityId),
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await withWeek(get, set, (week) => ({
+      dayPriorities: week.dayPriorities.filter((p) => p.id !== priorityId),
+    }));
   },
 
   toggleDayPriorityCompleted: async (priorityId: string) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    set({
-      currentWeek: {
-        ...week,
-        dayPriorities: week.dayPriorities.map((p) =>
-          p.id === priorityId ? { ...p, completed: !p.completed } : p
-        ),
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await withWeek(get, set, (week) => ({
+      dayPriorities: week.dayPriorities.map((p) => (p.id === priorityId ? { ...p, completed: !p.completed } : p)),
+    }));
   },
 
   reorderDayPriorities: async (dayIndex: number, priorityIds: string[]) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    set({
-      currentWeek: {
-        ...week,
-        dayPriorities: week.dayPriorities.map((p) => {
-          if (p.dayIndex !== dayIndex) return p;
-          const newOrder = priorityIds.indexOf(p.id);
-          return newOrder >= 0 ? { ...p, order: newOrder } : p;
-        }),
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await withWeek(get, set, (week) => ({
+      dayPriorities: week.dayPriorities.map((p) => {
+        if (p.dayIndex !== dayIndex) return p;
+        const newOrder = priorityIds.indexOf(p.id);
+        return newOrder >= 0 ? { ...p, order: newOrder } : p;
+      }),
+    }));
   },
 
   // -------------------------------------------------------------------------
@@ -471,52 +394,21 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   updateTimeBlock: async (blockId: string, updates: Partial<Omit<TimeBlock, "id">>) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    set({
-      currentWeek: {
-        ...week,
-        timeBlocks: week.timeBlocks.map((b) =>
-          b.id === blockId ? { ...b, ...updates } : b
-        ),
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await withWeek(get, set, (week) => ({
+      timeBlocks: week.timeBlocks.map((b) => (b.id === blockId ? { ...b, ...updates } : b)),
+    }));
   },
 
   deleteTimeBlock: async (blockId: string) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    set({
-      currentWeek: {
-        ...week,
-        timeBlocks: week.timeBlocks.filter((b) => b.id !== blockId),
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await withWeek(get, set, (week) => ({
+      timeBlocks: week.timeBlocks.filter((b) => b.id !== blockId),
+    }));
   },
 
   toggleTimeBlockCompleted: async (blockId: string) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    set({
-      currentWeek: {
-        ...week,
-        timeBlocks: week.timeBlocks.map((b) =>
-          b.id === blockId ? { ...b, completed: !b.completed } : b
-        ),
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await withWeek(get, set, (week) => ({
+      timeBlocks: week.timeBlocks.map((b) => (b.id === blockId ? { ...b, completed: !b.completed } : b)),
+    }));
   },
 
   // -------------------------------------------------------------------------
@@ -551,90 +443,27 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   updateEveningBlock: async (blockId: string, updates: Partial<Omit<EveningBlock, "id">>) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    set({
-      currentWeek: {
-        ...week,
-        eveningBlocks: week.eveningBlocks.map((b) =>
-          b.id === blockId ? { ...b, ...updates } : b
-        ),
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await withWeek(get, set, (week) => ({
+      eveningBlocks: week.eveningBlocks.map((b) => (b.id === blockId ? { ...b, ...updates } : b)),
+    }));
   },
 
   deleteEveningBlock: async (blockId: string) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    set({
-      currentWeek: {
-        ...week,
-        eveningBlocks: week.eveningBlocks.filter((b) => b.id !== blockId),
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await withWeek(get, set, (week) => ({
+      eveningBlocks: week.eveningBlocks.filter((b) => b.id !== blockId),
+    }));
   },
 
   toggleEveningBlockCompleted: async (blockId: string) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
-
-    set({
-      currentWeek: {
-        ...week,
-        eveningBlocks: week.eveningBlocks.map((b) =>
-          b.id === blockId ? { ...b, completed: !b.completed } : b
-        ),
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await withWeek(get, set, (week) => ({
+      eveningBlocks: week.eveningBlocks.map((b) => (b.id === blockId ? { ...b, completed: !b.completed } : b)),
+    }));
   },
 }));
 
 // ============================================================================
 // Selector Hooks (for performance optimization)
 // ============================================================================
-
-/**
- * Get roles sorted by order.
- */
-export const selectSortedRoles = (state: WeekStore): Role[] => {
-  return state.currentWeek?.roles.slice().sort((a, b) => a.order - b.order) ?? [];
-};
-
-/**
- * Get goals for a specific role.
- */
-export const selectGoalsByRole = (state: WeekStore, roleId: string): Goal[] => {
-  return state.currentWeek?.goals.filter((g) => g.roleId === roleId) ?? [];
-};
-
-/**
- * Get day priorities for a specific day, sorted by order.
- */
-export const selectDayPriorities = (state: WeekStore, dayIndex: number): DayPriority[] => {
-  return (
-    state.currentWeek?.dayPriorities
-      .filter((p) => p.dayIndex === dayIndex)
-      .sort((a, b) => a.order - b.order) ?? []
-  );
-};
-
-/**
- * Get time blocks for a specific day.
- */
-export const selectTimeBlocksByDay = (state: WeekStore, dayIndex: number): TimeBlock[] => {
-  return state.currentWeek?.timeBlocks.filter((b) => b.dayIndex === dayIndex) ?? [];
-};
 
 /**
  * Get evening block for a specific day (max 1 per day).

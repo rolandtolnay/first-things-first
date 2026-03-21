@@ -5,14 +5,16 @@
  *
  * Combines a role header with its goals list.
  * Displays:
- * - Role header (color dot, name, edit/delete) - inline RoleItem-like UI
+ * - Role header (color dot, name, edit/delete)
  * - GoalList underneath with slight indentation
  */
 
-import { useState, useRef, useEffect } from "react";
+import { useCallback } from "react";
 import { useWeekStore } from "@/stores/weekStore";
 import { getRoleColorStyle } from "@/lib/role-colors";
+import { useEditableText } from "@/hooks/useEditableText";
 import { GoalList } from "./GoalList";
+import { CloseIcon } from "@/components/ui/CloseIcon";
 import type { Role } from "@/types";
 
 interface RoleSectionProps {
@@ -20,53 +22,16 @@ interface RoleSectionProps {
 }
 
 export function RoleSection({ role }: RoleSectionProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(role.name);
-  const inputRef = useRef<HTMLInputElement>(null);
-
   const updateRole = useWeekStore((state) => state.updateRole);
   const deleteRole = useWeekStore((state) => state.deleteRole);
 
-  // Focus input when entering edit mode
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditing]);
+  const handleSaveRole = useCallback(
+    (value: string) => updateRole(role.id, { name: value }),
+    [updateRole, role.id]
+  );
 
-  // Reset edit value when role changes
-  useEffect(() => {
-    setEditValue(role.name);
-  }, [role.name]);
-
-  const handleStartEdit = () => {
-    setIsEditing(true);
-    setEditValue(role.name);
-  };
-
-  const handleSave = () => {
-    const trimmed = editValue.trim();
-    if (trimmed && trimmed !== role.name) {
-      updateRole(role.id, { name: trimmed });
-    }
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setEditValue(role.name);
-    setIsEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleSave();
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      handleCancel();
-    }
-  };
+  const { isEditing, editValue, setEditValue, inputRef, startEdit, save, handleKeyDown } =
+    useEditableText(role.name, handleSaveRole);
 
   const handleDelete = () => {
     if (window.confirm(`Delete role "${role.name}"? This will also delete all goals for this role.`)) {
@@ -92,7 +57,7 @@ export function RoleSection({ role }: RoleSectionProps) {
             type="text"
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
-            onBlur={handleSave}
+            onBlur={save}
             onKeyDown={handleKeyDown}
             className="flex-1 min-w-0 text-sm bg-transparent border border-border rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-ring"
             aria-label="Edit role name"
@@ -100,7 +65,7 @@ export function RoleSection({ role }: RoleSectionProps) {
         ) : (
           <span
             className="flex-1 min-w-0 text-sm font-medium text-foreground truncate cursor-pointer"
-            onDoubleClick={handleStartEdit}
+            onDoubleClick={startEdit}
             title={role.name}
           >
             {role.name}
@@ -115,20 +80,7 @@ export function RoleSection({ role }: RoleSectionProps) {
             className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity p-0.5 rounded"
             aria-label={`Delete role ${role.name}`}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <CloseIcon size={14} />
           </button>
         )}
       </div>

@@ -14,6 +14,7 @@ import type { DayOfWeek, EveningBlock } from "@/types";
 import type { DropZoneData, EveningDragData } from "@/types/dnd";
 import { useWeekStore, selectEveningBlock } from "@/stores/weekStore";
 import { getRoleColorStyle } from "@/lib/role-colors";
+import { CloseIcon } from "@/components/ui/CloseIcon";
 import { cn } from "@/lib/utils";
 
 interface EveningSlotProps {
@@ -38,10 +39,13 @@ export function EveningSlot({ dayIndex }: EveningSlotProps) {
   });
 
   // Get role color for styling (if block has a role)
-  const roleColor = eveningBlock?.roleId
-    ? getRoleColorStyle(
-        useWeekStore.getState().currentWeek?.roles.find((r) => r.id === eveningBlock.roleId)?.color ?? "teal"
-      )
+  const roleColorValue = useWeekStore((state) =>
+    eveningBlock?.roleId
+      ? state.currentWeek?.roles.find((r) => r.id === eveningBlock.roleId)?.color
+      : undefined
+  );
+  const roleColor = roleColorValue
+    ? getRoleColorStyle(roleColorValue)
     : undefined;
 
   const handleDelete = () => {
@@ -142,20 +146,7 @@ function DraggableEveningBlock({
         )}
         aria-label="Delete evening block"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
+        <CloseIcon />
       </button>
     </div>
   );
