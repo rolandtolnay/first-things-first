@@ -10,10 +10,10 @@
  */
 
 import { useDroppable, useDraggable } from "@dnd-kit/core";
-import type { DayOfWeek, EveningBlock } from "@/types";
+import type { DayOfWeek, EveningBlock, RoleColor } from "@/types";
 import type { DropZoneData, EveningDragData } from "@/types/dnd";
 import { useWeekStore, selectEveningBlock } from "@/stores/weekStore";
-import { getRoleColorStyle } from "@/lib/role-colors";
+import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import { CloseIcon } from "@/components/ui/CloseIcon";
 import { CompletionCheckbox } from "@/components/ui/CompletionCheckbox";
 import { cn } from "@/lib/utils";
@@ -40,14 +40,11 @@ export function EveningSlot({ dayIndex }: EveningSlotProps) {
   });
 
   // Get role color for styling (if block has a role)
-  const roleColorValue = useWeekStore((state) =>
+  const roleColor = useWeekStore((state) =>
     eveningBlock?.roleId
       ? state.currentWeek?.roles.find((r) => r.id === eveningBlock.roleId)?.color
       : undefined
   );
-  const roleColor = roleColorValue
-    ? getRoleColorStyle(roleColorValue)
-    : undefined;
 
   const handleDelete = () => {
     if (eveningBlock) {
@@ -87,7 +84,7 @@ export function EveningSlot({ dayIndex }: EveningSlotProps) {
  */
 interface DraggableEveningBlockProps {
   eveningBlock: EveningBlock;
-  roleColor: string | undefined;
+  roleColor: RoleColor | undefined;
   dayIndex: DayOfWeek;
   onDelete: () => void;
 }
@@ -131,8 +128,8 @@ function DraggableEveningBlock({
           ? {
               backgroundColor: eveningBlock.completed
                 ? "hsl(var(--success) / 0.15)"
-                : `${roleColor.slice(0, -1)} / 0.2)`,
-              borderLeft: `3px solid ${roleColor}`,
+                : getRoleColorStyleWithOpacity(roleColor, 0.2),
+              borderLeft: `3px solid ${getRoleColorStyle(roleColor)}`,
             }
           : eveningBlock.completed
             ? { backgroundColor: "hsl(var(--success) / 0.15)" }

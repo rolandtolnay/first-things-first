@@ -18,6 +18,7 @@ import { getRoleColorStyle } from "@/lib/role-colors";
 import { useEditableText } from "@/hooks/useEditableText";
 import { CloseIcon } from "@/components/ui/CloseIcon";
 import { CompletionCheckbox } from "@/components/ui/CompletionCheckbox";
+import { cn } from "@/lib/utils";
 import type { Goal, RoleColor } from "@/types";
 import type { GoalDragData } from "@/types/dnd";
 
@@ -64,9 +65,11 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`group flex items-center gap-2 py-1 px-2 rounded-md hover:bg-secondary/50 transition-colors cursor-grab active:cursor-grabbing ${
-        isDragging ? "opacity-50" : ""
-      }`}
+      className={cn(
+        "group flex items-center gap-2 py-1 px-2 rounded-md hover:bg-secondary/50 transition-colors",
+        "cursor-grab active:cursor-grabbing",
+        isDragging && "opacity-50"
+      )}
       style={{
         borderLeft: `3px solid ${getRoleColorStyle(roleColor)}`,
         ...(goal.completed && {
@@ -96,9 +99,10 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
         />
       ) : (
         <span
-          className={`flex-1 min-w-0 text-sm text-foreground truncate cursor-pointer ${
-            goal.completed ? "opacity-60" : ""
-          }`}
+          className={cn(
+            "flex-1 min-w-0 text-sm text-foreground truncate cursor-pointer",
+            goal.completed && "opacity-60"
+          )}
           onDoubleClick={startEdit}
           title={goal.text}
         >
@@ -109,9 +113,7 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
       {/* Notes indicator */}
       {goal.notes && !isEditing && (
         <span
-          className={`text-muted-foreground flex-shrink-0 ${
-            goal.completed ? "opacity-60" : ""
-          }`}
+          className={cn("text-muted-foreground flex-shrink-0", goal.completed && "opacity-60")}
           title="Has notes"
           aria-label="Goal has notes"
         >

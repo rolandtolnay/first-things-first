@@ -65,3 +65,15 @@ export function getRoleColorStyle(color: RoleColor): string {
   const index = COLOR_TO_INDEX[color];
   return `hsl(var(--role-${index}))`;
 }
+
+/**
+ * Get a CSS variable string with opacity for inline background styles.
+ *
+ * @param color - The RoleColor value
+ * @param opacity - Opacity value between 0 and 1 (e.g., 0.2)
+ * @returns CSS color value string with opacity (e.g., "hsl(var(--role-1) / 0.2)")
+ */
+export function getRoleColorStyleWithOpacity(color: RoleColor, opacity: number): string {
+  const index = COLOR_TO_INDEX[color];
+  return `hsl(var(--role-${index}) / ${opacity})`;
+}

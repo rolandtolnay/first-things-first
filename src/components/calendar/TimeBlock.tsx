@@ -17,7 +17,7 @@ import { useState, useRef, useEffect } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import type { TimeBlock as TimeBlockType, DayOfWeek } from "@/types";
 import type { BlockDragData } from "@/types/dnd";
-import { getRoleColorStyle } from "@/lib/role-colors";
+import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockResize } from "@/hooks/useBlockResize";
 import { CloseIcon } from "@/components/ui/CloseIcon";
@@ -77,12 +77,11 @@ export function TimeBlock({
   const top = block.startSlot * 32;
 
   // Get role color for styling (or use neutral for freestyle without role)
-  const roleColorRaw = useWeekStore((state) =>
+  const roleColor = useWeekStore((state) =>
     block.roleId
       ? state.currentWeek?.roles.find((r) => r.id === block.roleId)?.color
       : undefined
   );
-  const roleColor = roleColorRaw ? getRoleColorStyle(roleColorRaw) : undefined;
 
   const handleInlineKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Stop all keys from reaching dnd-kit's KeyboardSensor on the parent draggable
@@ -137,8 +136,8 @@ export function TimeBlock({
         ...(roleColor && {
           backgroundColor: block.completed
             ? `hsl(var(--success) / 0.15)`
-            : `${roleColor.slice(0, -1)} / 0.2)`,
-          borderLeft: `3px solid ${roleColor}`,
+            : getRoleColorStyleWithOpacity(roleColor, 0.2),
+          borderLeft: `3px solid ${getRoleColorStyle(roleColor)}`,
         }),
         ...(!roleColor && block.completed && {
           backgroundColor: "hsl(var(--success) / 0.15)",
