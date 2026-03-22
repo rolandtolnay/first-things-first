@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { cn, formatWeekId, getWeekNumber } from "@/lib/utils";
 import type { WeekId } from "@/types";
 
@@ -70,30 +71,41 @@ export function WeekSelector({
       <button
         type="button"
         onClick={toggle}
-        className="w-full flex items-center justify-between text-sm px-3 py-2 rounded-md border border-border hover:bg-muted transition-colors text-left"
+        className="w-full flex items-center justify-between text-left transition-colors cursor-pointer"
+        style={{
+          fontSize: '14px',
+          padding: '8px 12px',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-subtle)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'var(--bg-muted)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }}
       >
         <span>
           W{getWeekNumber(value)} &mdash; {formatWeekId(value)}
         </span>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <ChevronDown
+          size={16}
           className={cn("shrink-0 ml-2 transition-transform", isOpen && "rotate-180")}
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+          style={{ color: 'var(--text-muted)' }}
+        />
       </button>
 
       {/* Dropdown panel */}
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-1 z-10 max-h-56 overflow-y-auto bg-card border border-border rounded-lg shadow-lg">
+        <div
+          className="absolute left-0 right-0 mt-1 z-10 max-h-56 overflow-y-auto"
+          style={{
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-md)',
+          }}
+        >
           {options.map((weekId) => {
             const isSelected = weekId === value;
             const isPlanned = existingWeekIds.includes(weekId);
@@ -103,19 +115,36 @@ export function WeekSelector({
                 key={weekId}
                 type="button"
                 onClick={() => handleSelect(weekId)}
-                className={cn(
-                  "w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted transition-colors",
-                  isSelected && "bg-muted"
-                )}
+                className="w-full flex items-center gap-2 text-left transition-colors cursor-pointer"
+                style={{
+                  fontSize: '14px',
+                  padding: '8px 12px',
+                  backgroundColor: isSelected ? 'var(--bg-muted)' : undefined,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--bg-muted)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = isSelected ? 'var(--bg-muted)' : 'transparent';
+                }}
               >
                 <span className="font-medium shrink-0">
                   W{getWeekNumber(weekId)}
                 </span>
-                <span className="text-muted-foreground">
+                <span style={{ color: 'var(--text-muted)' }}>
                   {formatWeekId(weekId)}
                 </span>
                 {isPlanned && (
-                  <span className="ml-auto text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
+                  <span
+                    className="ml-auto shrink-0"
+                    style={{
+                      fontSize: '12px',
+                      color: 'var(--text-muted)',
+                      backgroundColor: 'var(--bg-muted)',
+                      padding: '2px 6px',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
+                  >
                     Planned
                   </span>
                 )}

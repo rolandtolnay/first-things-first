@@ -8,6 +8,7 @@
  * Includes a banner when the current calendar week hasn't been planned.
  */
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
 import { useWeekStore } from "@/stores/weekStore";
@@ -63,57 +64,78 @@ export function WeekNavigation({ onNewWeek }: WeekNavigationProps) {
   return (
     <div className="shrink-0">
       {/* Navigation controls */}
-      <div className="p-4 border-b border-border flex items-center gap-3">
+      <div
+        className="flex items-center gap-3"
+        style={{
+          padding: '14px 20px',
+          borderBottom: '1px solid var(--border-subtle)',
+        }}
+      >
         {/* Arrow buttons */}
         <button
           type="button"
           onClick={handlePrev}
           disabled={!canGoPrev}
-          className="p-1.5 rounded-md hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-2 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          style={{
+            borderRadius: 'var(--radius-md)',
+            color: 'var(--text-secondary)',
+          }}
+          onMouseEnter={(e) => {
+            if (!e.currentTarget.disabled)
+              e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
           aria-label="Previous week"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
+          <ChevronLeft size={16} />
         </button>
 
         <button
           type="button"
           onClick={handleNext}
           disabled={!canGoNext}
-          className="p-1.5 rounded-md hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-2 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          style={{
+            borderRadius: 'var(--radius-md)',
+            color: 'var(--text-secondary)',
+          }}
+          onMouseEnter={(e) => {
+            if (!e.currentTarget.disabled)
+              e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
           aria-label="Next week"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="m9 18 6-6-6-6" />
-          </svg>
+          <ChevronRight size={16} />
         </button>
 
         {/* Date range label */}
-        <h2 className="text-lg font-semibold flex items-center gap-2">
+        <h2
+          className="flex items-center gap-2"
+          style={{
+            fontSize: '15px',
+            fontWeight: 600,
+            lineHeight: '1.4',
+            color: 'var(--text-primary)',
+          }}
+        >
           {selectedWeekId ? formatWeekId(selectedWeekId) : "Loading..."}
           {isCurrentCalendarWeek && (
-            <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 500,
+                color: 'var(--primary)',
+                backgroundColor: 'var(--primary-soft)',
+                borderRadius: 'var(--radius-full)',
+                padding: '2px 10px',
+              }}
+            >
               This week
             </span>
           )}
@@ -127,7 +149,20 @@ export function WeekNavigation({ onNewWeek }: WeekNavigationProps) {
           <button
             type="button"
             onClick={handleToday}
-            className="text-sm px-3 py-1.5 rounded-md border border-border hover:bg-muted transition-colors"
+            className="transition-colors cursor-pointer"
+            style={{
+              fontSize: '14px',
+              padding: '6px 12px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-secondary)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
             Today
           </button>
@@ -137,7 +172,21 @@ export function WeekNavigation({ onNewWeek }: WeekNavigationProps) {
         <button
           type="button"
           onClick={onNewWeek}
-          className="text-sm px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
+          className="transition-colors font-medium cursor-pointer"
+          style={{
+            fontSize: '14px',
+            padding: '6px 12px',
+            borderRadius: 'var(--radius-md)',
+            backgroundColor: 'var(--primary)',
+            color: 'var(--text-on-primary)',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--primary-hover)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--primary)';
+          }}
         >
           + New
         </button>
@@ -145,14 +194,42 @@ export function WeekNavigation({ onNewWeek }: WeekNavigationProps) {
 
       {/* "Plan this week?" banner */}
       {showBanner && (
-        <div className="px-4 py-3 bg-amber-500/15 border-b border-amber-500/30 flex items-center justify-center gap-3">
-          <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+        <div
+          className="flex items-center justify-center gap-3"
+          style={{
+            padding: '12px 20px',
+            backgroundColor: 'var(--warning-soft)',
+            borderLeft: '3px solid var(--warning)',
+            borderRadius: 'var(--radius-md)',
+            margin: '12px 20px 0',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '14px',
+              fontWeight: 600,
+              color: 'var(--warning)',
+            }}
+          >
             Plan this week?
           </span>
           <button
             type="button"
             onClick={onNewWeek}
-            className="text-sm px-3 py-1 rounded-md bg-amber-500 text-white hover:bg-amber-600 transition-colors font-medium"
+            className="transition-colors font-medium cursor-pointer"
+            style={{
+              fontSize: '13px',
+              padding: '4px 12px',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--primary)',
+              color: 'var(--text-on-primary)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--primary-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--primary)';
+            }}
           >
             Start
           </button>
