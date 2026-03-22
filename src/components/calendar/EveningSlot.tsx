@@ -131,7 +131,7 @@ function DraggableEveningBlock({
           ? {
               backgroundColor: eveningBlock.completed
                 ? "hsl(var(--success) / 0.15)"
-                : `${roleColor.replace(")", " / 0.2)")}`,
+                : `${roleColor.slice(0, -1)} / 0.2)`,
               borderLeft: `3px solid ${roleColor}`,
             }
           : eveningBlock.completed
