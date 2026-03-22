@@ -63,20 +63,34 @@ export function DayPriorities({ dayIndex }: DayPrioritiesProps) {
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[80px] p-2 border-b border-border transition-colors ${
-        isOver ? "bg-primary/10 ring-1 ring-primary/50" : "bg-muted/10"
-      }`}
+      className="min-h-[80px] p-2 transition-colors"
+      style={{
+        borderBottom: '1px solid var(--border-subtle)',
+        backgroundColor: isOver ? 'var(--primary-soft)' : 'var(--bg-muted)',
+        borderTopLeftRadius: 'var(--radius-lg)',
+        borderTopRightRadius: 'var(--radius-lg)',
+        ...(isOver && {
+          outline: '1px dashed var(--primary)',
+          outlineOffset: '-1px',
+        }),
+      }}
       data-day={dayIndex}
       data-section="priorities"
     >
       {priorities.length === 0 ? (
         <div className="h-full flex items-center justify-center min-h-[64px]">
-          <span className="text-xs text-muted-foreground italic">
+          <span
+            className="italic"
+            style={{
+              fontSize: '12px',
+              color: 'var(--text-muted)',
+            }}
+          >
             Drop goals here
           </span>
         </div>
       ) : (
-        <div className="space-y-1">
+        <div className="space-y-2">
           {priorities.map((priority) => {
             const goal = goalsMap.get(priority.goalId);
             if (!goal) return null;

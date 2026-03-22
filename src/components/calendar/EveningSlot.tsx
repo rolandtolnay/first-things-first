@@ -10,11 +10,11 @@
  */
 
 import { useDroppable, useDraggable } from "@dnd-kit/core";
+import { X } from "lucide-react";
 import type { DayOfWeek, EveningBlock, RoleColor } from "@/types";
 import type { DropZoneData, EveningDragData } from "@/types/dnd";
 import { useWeekStore, selectEveningBlock } from "@/stores/weekStore";
 import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
-import { CloseIcon } from "@/components/ui/CloseIcon";
 import { CompletionCheckbox } from "@/components/ui/CompletionCheckbox";
 import { cn } from "@/lib/utils";
 
@@ -55,16 +55,31 @@ export function EveningSlot({ dayIndex }: EveningSlotProps) {
   return (
     <div
       ref={setNodeRef}
-      className={cn(
-        "min-h-[48px] p-2 border-t border-border bg-muted/10",
-        isOver && "bg-primary/10 ring-1 ring-primary/50"
-      )}
+      className="min-h-[48px] p-2"
+      style={{
+        borderTop: '1px solid var(--border-subtle)',
+        backgroundColor: isOver ? 'var(--primary-soft)' : 'var(--bg-muted)',
+        borderBottomLeftRadius: 'var(--radius-lg)',
+        borderBottomRightRadius: 'var(--radius-lg)',
+        ...(isOver && {
+          outline: '1px dashed var(--primary)',
+          outlineOffset: '-1px',
+        }),
+      }}
       data-day={dayIndex}
       data-section="evening"
     >
       {!eveningBlock ? (
         <div className="h-full flex items-center justify-center">
-          <span className="text-xs text-muted-foreground italic">Evening</span>
+          <span
+            className="italic"
+            style={{
+              fontSize: '12px',
+              color: 'var(--text-muted)',
+            }}
+          >
+            Evening
+          </span>
         </div>
       ) : (
         <DraggableEveningBlock
@@ -112,28 +127,30 @@ function DraggableEveningBlock({
     data: dragData,
   });
 
+  // Compute background based on completion state
+  const computeBackground = () => {
+    if (eveningBlock.completed) return 'var(--completed-bg)';
+    if (roleColor) return getRoleColorStyleWithOpacity(roleColor, 0.12);
+    if (eveningBlock.roleId) return 'var(--bg-muted)';
+    return 'var(--bg-muted)';
+  };
+
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
       className={cn(
-        "group relative rounded-sm p-2",
+        "group relative p-2",
         "cursor-grab active:cursor-grabbing",
-        eveningBlock.roleId ? "" : "bg-muted",
-        isDragging && "opacity-50"
+        isDragging && "opacity-90"
       )}
       style={{
-        ...(roleColor
-          ? {
-              backgroundColor: eveningBlock.completed
-                ? "hsl(var(--success) / 0.15)"
-                : getRoleColorStyleWithOpacity(roleColor, 0.2),
-              borderLeft: `3px solid ${getRoleColorStyle(roleColor)}`,
-            }
-          : eveningBlock.completed
-            ? { backgroundColor: "hsl(var(--success) / 0.15)" }
-            : undefined),
+        borderRadius: 'var(--radius-md)',
+        boxShadow: 'var(--shadow-sm)',
+        backgroundColor: computeBackground(),
+        borderLeft: roleColor ? `3px solid ${getRoleColorStyle(roleColor)}` : undefined,
+        opacity: eveningBlock.completed && !isDragging ? 'var(--completed-opacity)' : undefined,
       }}
     >
       {/* Title with completion checkbox */}
@@ -143,10 +160,12 @@ function DraggableEveningBlock({
           onToggle={() => toggleEveningBlockCompleted(eveningBlock.id)}
           size={12}
         />
-        <span className={cn(
-          "text-xs font-medium truncate",
-          eveningBlock.completed && !isDragging && "opacity-60"
-        )}>
+        <span
+          className="font-medium truncate"
+          style={{
+            fontSize: '12px',
+          }}
+        >
           {eveningBlock.title}
         </span>
       </div>
@@ -156,13 +175,25 @@ function DraggableEveningBlock({
         type="button"
         onClick={onDelete}
         className={cn(
-          "absolute top-1 right-1 p-0.5 rounded-sm",
+          "absolute top-1 right-1 p-0.5",
           "opacity-0 group-hover:opacity-100 transition-opacity",
-          "hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+          "cursor-pointer"
         )}
+        style={{
+          borderRadius: 'var(--radius-sm)',
+          color: 'var(--text-muted)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = 'var(--destructive)';
+          e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = 'var(--text-muted)';
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }}
         aria-label="Delete evening block"
       >
-        <CloseIcon />
+        <X size={12} />
       </button>
     </div>
   );

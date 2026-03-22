@@ -15,12 +15,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useDraggable } from "@dnd-kit/core";
+import { X } from "lucide-react";
 import type { TimeBlock as TimeBlockType, DayOfWeek } from "@/types";
 import type { BlockDragData } from "@/types/dnd";
 import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockResize } from "@/hooks/useBlockResize";
-import { CloseIcon } from "@/components/ui/CloseIcon";
 import { CompletionCheckbox } from "@/components/ui/CompletionCheckbox";
 import { cn, slotToTime } from "@/lib/utils";
 
@@ -83,6 +83,9 @@ export function TimeBlock({
       : undefined
   );
 
+  // Line clamping based on block height
+  const lineClamp = displayDuration >= 2 ? 2 : 1;
+
   const handleInlineKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Stop all keys from reaching dnd-kit's KeyboardSensor on the parent draggable
     e.stopPropagation();
@@ -116,6 +119,13 @@ export function TimeBlock({
     }
   };
 
+  // Compute background based on completion state
+  const computeBackground = () => {
+    if (block.completed) return 'var(--completed-bg)';
+    if (roleColor) return getRoleColorStyleWithOpacity(roleColor, 0.12);
+    return 'var(--bg-muted)';
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -123,29 +133,35 @@ export function TimeBlock({
       {...attributes}
       data-block
       className={cn(
-        "absolute left-0 right-0 z-10 rounded-sm overflow-hidden",
-        "group flex flex-col justify-start p-1",
+        "absolute left-0 right-0 z-10 overflow-hidden",
+        "group flex flex-col justify-start",
         "cursor-grab active:cursor-grabbing",
-        block.roleId ? "" : "bg-muted",
-        isDragging && "opacity-50",
+        isDragging && "opacity-90",
         isResizing && "z-20"
       )}
       style={{
         top: `${top}px`,
         height: `${height}px`,
-        ...(roleColor && {
-          backgroundColor: block.completed
-            ? `hsl(var(--success) / 0.15)`
-            : getRoleColorStyleWithOpacity(roleColor, 0.2),
-          borderLeft: `3px solid ${getRoleColorStyle(roleColor)}`,
-        }),
-        ...(!roleColor && block.completed && {
-          backgroundColor: "hsl(var(--success) / 0.15)",
-        }),
+        borderRadius: 'var(--radius-md)',
+        boxShadow: isDragging ? 'var(--shadow-drag)' : 'var(--shadow-sm)',
+        backgroundColor: computeBackground(),
+        borderLeft: roleColor ? `3px solid ${getRoleColorStyle(roleColor)}` : undefined,
+        padding: '4px 8px',
+        opacity: block.completed && !isDragging ? 'var(--completed-opacity)' : undefined,
         ...(isResizing && {
           touchAction: "none",
           userSelect: "none",
         }),
+      }}
+      onMouseEnter={(e) => {
+        if (!isDragging) {
+          e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isDragging) {
+          e.currentTarget.style.boxShadow = isDragging ? 'var(--shadow-drag)' : 'var(--shadow-sm)';
+        }
       }}
     >
       {/* Title or inline edit input */}
@@ -157,20 +173,33 @@ export function TimeBlock({
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleInlineKeyDown}
           onBlur={handleInlineBlur}
-          className="text-xs font-medium bg-transparent border-none outline-none w-full pr-5"
+          className="font-medium bg-transparent outline-none w-full pr-5"
+          style={{
+            fontSize: '12px',
+            border: `1px solid var(--border-emphasis)`,
+            borderRadius: 'var(--radius-sm)',
+            padding: '1px 4px',
+          }}
           placeholder="Block title..."
         />
       ) : (
-        <div className="flex items-center gap-1 pr-5">
+        <div className="flex items-start gap-1 pr-5">
           <CompletionCheckbox
             completed={block.completed}
             onToggle={() => toggleTimeBlockCompleted(block.id)}
             size={12}
           />
-          <span className={cn(
-            "text-xs font-medium truncate",
-            block.completed && !isDragging && "opacity-60"
-          )}>
+          <span
+            className="font-medium overflow-hidden"
+            style={{
+              fontSize: '12px',
+              lineHeight: '1.4',
+              display: '-webkit-box',
+              WebkitLineClamp: lineClamp,
+              WebkitBoxOrient: 'vertical',
+              opacity: block.completed && !isDragging ? 1 : undefined,
+            }}
+          >
             {block.title}
           </span>
         </div>
@@ -178,7 +207,13 @@ export function TimeBlock({
 
       {/* Time label during resize */}
       {isResizing && previewDuration !== null && (
-        <span className="text-[10px] text-muted-foreground mt-auto">
+        <span
+          className="mt-auto"
+          style={{
+            fontSize: '10px',
+            color: 'var(--text-muted)',
+          }}
+        >
           {slotToTime(block.startSlot)} &ndash;{" "}
           {slotToTime(block.startSlot + previewDuration)}
         </span>
@@ -189,13 +224,25 @@ export function TimeBlock({
         type="button"
         onClick={() => deleteTimeBlock(block.id)}
         className={cn(
-          "absolute top-1 right-1 p-0.5 rounded-sm",
+          "absolute top-1 right-1 p-0.5",
           "opacity-0 group-hover:opacity-100 transition-opacity",
-          "hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+          "cursor-pointer"
         )}
+        style={{
+          borderRadius: 'var(--radius-sm)',
+          color: 'var(--text-muted)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = 'var(--destructive)';
+          e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = 'var(--text-muted)';
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }}
         aria-label="Delete time block"
       >
-        <CloseIcon />
+        <X size={12} />
       </button>
 
       {/* Resize handle at bottom edge - hover-revealed */}
@@ -204,6 +251,9 @@ export function TimeBlock({
           "absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize",
           "opacity-0 group-hover:opacity-100 transition-opacity"
         )}
+        style={{
+          borderBottom: '2px solid var(--border-emphasis)',
+        }}
         {...handleProps}
       />
     </div>

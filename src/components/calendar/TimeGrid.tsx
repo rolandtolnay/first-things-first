@@ -53,7 +53,15 @@ export function TimeGrid({ dayIndex }: TimeGridProps) {
           return (
             <div
               key={slotIndex}
-              className="h-8 flex items-start justify-end pr-2 text-xs text-muted-foreground"
+              className="h-8 flex items-start justify-end pr-2"
+              style={{
+                fontSize: '12px',
+                fontWeight: 500,
+                lineHeight: '1.4',
+                letterSpacing: '0.01em',
+                color: 'var(--text-muted)',
+                fontVariantNumeric: 'tabular-nums',
+              }}
             >
               {isHourStart && `${hour}:00`}
             </div>
@@ -91,10 +99,14 @@ export function TimeGrid({ dayIndex }: TimeGridProps) {
         {/* Draw preview during click-drag-draw */}
         {isDrawing && previewBlock && (
           <div
-            className="absolute left-0 right-0 z-20 rounded-sm border-2 border-dashed border-primary/50 bg-primary/10 pointer-events-none"
+            className="absolute left-0 right-0 z-20 pointer-events-none"
             style={{
               top: `${previewBlock.startSlot * 32}px`,
               height: `${previewBlock.duration * 32}px`,
+              borderRadius: 'var(--radius-md)',
+              border: '2px dashed var(--primary)',
+              backgroundColor: 'rgba(20, 184, 166, 0.1)',
+              opacity: 0.5,
             }}
           />
         )}

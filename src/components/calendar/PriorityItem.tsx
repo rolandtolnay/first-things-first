@@ -4,18 +4,17 @@
  * PriorityItem Component
  *
  * Displays a priority item in the Day Priorities section:
- * - Role color left border (3px, consistent with GoalItem)
+ * - Role color left border (3px) + tinted background
  * - Goal text (truncated with title tooltip)
- * - Delete button on hover to remove priority
+ * - Completion checkbox
+ * - Delete button on hover
  * - Draggable for cross-section drag-drop
- *
- * Compact styling (text-xs, py-0.5) for efficient space usage.
  */
 
 import { useDraggable } from "@dnd-kit/core";
+import { X } from "lucide-react";
 import { useWeekStore } from "@/stores/weekStore";
-import { getRoleColorStyle } from "@/lib/role-colors";
-import { CloseIcon } from "@/components/ui/CloseIcon";
+import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import { CompletionCheckbox } from "@/components/ui/CompletionCheckbox";
 import { cn } from "@/lib/utils";
 import type { DayPriority, DayOfWeek, Goal, RoleColor } from "@/types";
@@ -51,21 +50,35 @@ export function PriorityItem({ priority, goal, roleColor, dayIndex }: PriorityIt
     removeDayPriority(priority.id);
   };
 
+  // Compute background based on completion state
+  const backgroundColor = priority.completed
+    ? 'var(--completed-bg)'
+    : getRoleColorStyleWithOpacity(roleColor, 0.08);
+
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
       className={cn(
-        "group flex items-center gap-1.5 py-0.5 px-1.5 rounded hover:bg-secondary/50 transition-colors",
+        "group flex items-center gap-1.5 transition-colors",
         "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-50"
       )}
       style={{
         borderLeft: `3px solid ${getRoleColorStyle(roleColor)}`,
-        ...(priority.completed && {
-          backgroundColor: "hsl(var(--success) / 0.15)",
-        }),
+        backgroundColor,
+        borderRadius: 'var(--radius-md)',
+        padding: '8px',
+        opacity: priority.completed && !isDragging ? 'var(--completed-opacity)' : undefined,
+      }}
+      onMouseEnter={(e) => {
+        if (!priority.completed) {
+          e.currentTarget.style.backgroundColor = getRoleColorStyleWithOpacity(roleColor, 0.12);
+        }
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = backgroundColor;
       }}
     >
       {/* Completion checkbox */}
@@ -77,10 +90,11 @@ export function PriorityItem({ priority, goal, roleColor, dayIndex }: PriorityIt
 
       {/* Goal text - truncated with tooltip */}
       <span
-        className={cn(
-          "flex-1 min-w-0 text-xs text-foreground truncate",
-          priority.completed && "opacity-60"
-        )}
+        className="flex-1 min-w-0 truncate"
+        style={{
+          fontSize: '12px',
+          color: 'var(--text-secondary)',
+        }}
         title={goal.text}
       >
         {goal.text}
@@ -90,10 +104,17 @@ export function PriorityItem({ priority, goal, roleColor, dayIndex }: PriorityIt
       <button
         type="button"
         onClick={handleDelete}
-        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity p-0.5 rounded flex-shrink-0"
+        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded flex-shrink-0 cursor-pointer"
+        style={{ color: 'var(--text-muted)' }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = 'var(--destructive)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = 'var(--text-muted)';
+        }}
         aria-label={`Remove priority ${goal.text}`}
       >
-        <CloseIcon size={10} />
+        <X size={10} />
       </button>
     </div>
   );
