@@ -24,6 +24,7 @@
 | CompletionCheckbox stopPropagation on both onClick and onPointerDown | dnd-kit activates on onPointerDown; stopping only onClick leaves drag-start unblocked | Phase 07-01 |
 | Native `<dialog>` with showModal() over library modals | Free focus trap, ::backdrop, Esc dismiss, top-layer rendering — no z-index management or portal needed | Phase 08-01 |
 | Standard HTML checkboxes in CarryoverDialog, not CompletionCheckbox | Circular SVG checkmark style reads as "mark done", not "select"; confusing in a goal-selection context | Phase 08-01 |
+| Amber color tokens for overwrite warning in CarryoverDialog (`bg-amber-500/10`, `border-amber-500/30`) | Differentiates from destructive (red) error states; signals caution without alarm | adhoc-01 |
 | Completed background replaces role-color background (not layered) | Layering green over role color produces muddy mixed hues; role-color left border preserved for scanning | Phase 07-01 |
 | Completed text opacity-60 suppressed during isDragging | Drag already applies opacity-50; stacking both produces double-dimming to near-invisible | Phase 07-01 |
 | Checkbox hidden during isEditing / isInlineEditing | Editing and completion are mutually exclusive states; simultaneous targets create visual clutter | Phase 07-01 |
@@ -42,6 +43,7 @@
   - `CompletionCheckbox` component: inline SVG circle/checkmark button with `stopPropagation` on both `onPointerDown` and `onClick`, safe to embed in any dnd-kit draggable context.
 - **Pointer event hooks**: `useBlockResize` — pointer capture on bottom-edge handle, local state during drag, single store commit on `pointerup`. `useBlockDraw` — container-level pointer events on TimeGrid for click-drag-draw creation gesture.
 - **dnd-kit coexistence**: The resize handle calls `e.stopPropagation()` on `onPointerDown` to prevent dnd-kit's PointerSensor from activating. Click-drag-draw operates on the TimeGrid container (not on block elements) so it never intersects dnd-kit. The two systems share DOM elements but never share state.
+- **Custom dropdown pattern (WeekSelector)**: State owns `isOpen` boolean; toggle on button click; close on outside click via `useEffect` with `mousedown` listener on `document`; close on `keydown` Escape. Options rendered as `<ul>` overlay. Badge markup (`Planned`) co-located in option row. See `src/components/calendar/WeekSelector.tsx`.
 - **Native dialog controlled pattern**: Parent owns `isDialogOpen` boolean. Dialog syncs to imperative API via `useEffect` (`if (open && !dialog.open) dialog.showModal()` / `dialog.close()`). `cancel` event listener (Esc key) calls `preventDefault()` then `onClose()` so React state stays in sync. React 19 eliminates `forwardRef` — pass ref as regular prop.
 - **Interaction state machine**: Each pointer interaction (idle / resizing / drawing / editing) uses local state, not global. Container rect cached on `pointerdown` — not re-queried on `pointermove` to avoid layout reflows. Absolute position calculation, never cumulative deltas.
 - **Data attributes for interaction guards**: `data-block` marks existing TimeBlocks so click-drag-draw ignores pointer starts on occupied slots. `data-slots-column` marks the TimeGrid container so resize hook can locate its parent via `closest('[data-slots-column]')`.
@@ -95,4 +97,5 @@
 - `src/components/calendar/TimeGrid.tsx` -- TimeGrid container with data-slots-column, draw preview, useBlockDraw integration
 - `src/components/calendar/TimeBlock.tsx` -- Resize handle, inline title editing, data-block attribute
 - `src/components/calendar/WeekNavigation.tsx` -- Navigation header (arrows, Today, +New, banner); week index via useLiveQuery
-- `src/components/calendar/CarryoverDialog.tsx` -- Native dialog with goal checkboxes grouped by role
+- `src/components/calendar/WeekSelector.tsx` -- Custom week dropdown with Planned badges, outside-click/Escape close (see weeks for data/default logic)
+- `src/components/calendar/CarryoverDialog.tsx` -- Native dialog with goal checkboxes grouped by role; amber overwrite warning when planned week selected

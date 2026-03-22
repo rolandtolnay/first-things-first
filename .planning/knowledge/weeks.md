@@ -11,6 +11,9 @@
 | loadWeek never auto-creates; only createNewWeek creates | Every week must be intentionally created; auto-creation on navigate would pollute week history | Phase 08-01 |
 | Role carry-over with fresh UUIDs (always) | Prevents cross-week references | Phase 01-02 |
 | Goal carry-over opt-in via dialog | Covey-aligned intentionality — user re-commits to each goal | Phase 08-01 |
+| Custom dropdown for target week selection, not native `<input type="week">` | Native week inputs render inconsistently across browsers | adhoc-01 |
+| Carryover target week range: 11 weeks (current + 10 future) | Reasonable planning horizon without overwhelming the user | adhoc-01 |
+| Smart default scans forward from getNextWeekId(viewedWeekId), wraps if all remaining planned, falls back to first if all planned | Surfaces the most actionable default without requiring user action | adhoc-01 |
 | Week starts Monday (ISO 8601) | Standard convention | Phase 01-02 |
 | DayOfWeek 0=Sunday through 6=Saturday | Matches JS Date.getDay() convention | Phase 02-02 |
 | createdAt + updatedAt timestamps | Enables sort-by-recent and sync prep | Phase 01-02 |
@@ -29,6 +32,9 @@
 - **Stale-request guard**: After `await getWeek(weekId)`, `navigateToWeek` checks `get().selectedWeekId === weekId` before calling `set()`. Prevents rapid-click race condition where a slow earlier response overwrites a faster later one.
 - **Load flow**: `WeekView` initializes on mount. If first-ever use (no weeks), auto-creates current week. Otherwise calls `navigateToWeek(latestWeekId)`. Subsequent navigation via arrow buttons calls `navigateToWeek` directly.
 - **Empty week creation**: `createEmptyWeek(weekId, carryOverRoles?)` -- if roles provided, copies them with new UUIDs; all arrays start empty; timestamps set to now.
+- **`getWeekNumber(weekId)`**: Extracts the numeric week number from a WeekId string (e.g. `"2026-W03"` → `3`). Pure utility, no date arithmetic.
+- **`getWeekIdRange(startWeekId, count)`**: Generates an array of `count` consecutive WeekIds starting from `startWeekId`, using `getNextWeekId` iteration. Encapsulates loop logic so components receive a plain array.
+- **CarryoverDialog target week**: Accepts `viewedWeekId` prop from WeekView (passes `selectedWeekId`). Uses `useLiveQuery` to fetch existing week primary keys from Dexie; computes smart default from the 11-week range on first render; shows `WeekSelector` dropdown for user override.
 - **Dexie storage**: Single `weeks` table with `id` primary key, `startDate` and `createdAt` indexed for queries.
 
 ## Pitfalls
@@ -42,8 +48,9 @@
 
 - `src/types/index.ts` -- Week, WeekId, DayOfWeek type definitions
 - `src/stores/weekStore.ts` -- `loadWeek`, `createWeek`, `saveCurrentWeek`; `createEmptyWeek` helper
-- `src/lib/utils.ts` -- `getWeekId`, `parseWeekId`, `formatWeekId`, `getCurrentWeekId`, `getNextWeekId`, `getPreviousWeekId`, `getWeekDates`
+- `src/lib/utils.ts` -- `getWeekId`, `parseWeekId`, `formatWeekId`, `getCurrentWeekId`, `getNextWeekId`, `getPreviousWeekId`, `getWeekDates`, `getWeekNumber`, `getWeekIdRange`
 - `src/lib/db.ts` -- `getWeek`, `saveWeek`, `getAllWeeks`, `weekExists` Dexie operations
 - `src/components/calendar/WeekView.tsx` -- Initialization logic (first-ever vs. navigate-to-latest), wires navigation and carryover dialog
 - `src/components/calendar/WeekNavigation.tsx` -- Navigation header with arrows, Today, +New buttons, and "Plan this week?" banner; uses useLiveQuery for reactive week index
-- `src/components/calendar/CarryoverDialog.tsx` -- Native dialog with goal checkboxes grouped by role; drives createNewWeek on confirm
+- `src/components/calendar/WeekSelector.tsx` -- Custom dropdown: "Wxx -- date range" label format, Planned badge on existing weeks, outside-click and Escape close
+- `src/components/calendar/CarryoverDialog.tsx` -- Native dialog with goal checkboxes grouped by role; drives createNewWeek on confirm; WeekSelector for target week with smart default and amber overwrite warning

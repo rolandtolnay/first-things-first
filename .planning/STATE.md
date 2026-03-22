@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-01-18)
 Phase: 8 (Week Navigation) - COMPLETE
 Plan: 1 of 1 complete in current phase
 Status: Phase complete, verified, knowledge consolidated
-Last Command: ms:verify-work 8 | 2026-03-22 15:06
+Last Command: ms:adhoc week-selector-in-carryover-dialog | 2026-03-22 15:12
 Last activity: 2026-03-22 - Completed Phase 8 (Week Navigation)
 
 Progress: [==========] 96%
@@ -89,6 +89,10 @@ Recent decisions affecting current work:
 - Freestyle items silently skip priority drops (priorities need goalId)
 - Same-day drops for priorities/evening are no-op (silently skipped)
 - Drop animation: null for goals (copies), animate for everything else (moves)
+
+### Recent Adhoc Work
+
+- [2026-03-22]: Week selector in carryover dialog (.planning/adhoc/2026-03-22-week-selector-in-carryover-dialog/adhoc-01-SUMMARY.md)
 
 ### Pending Todos
 
