@@ -32,7 +32,7 @@ export function WeekSelector({
     setIsOpen((prev) => !prev);
   }
 
-  // Close on outside click
+  // Close on outside click or Escape
   useEffect(() => {
     if (!isOpen) return;
 
@@ -45,22 +45,18 @@ export function WeekSelector({
       }
     }
 
-    document.addEventListener("mousedown", handleMouseDown);
-    return () => document.removeEventListener("mousedown", handleMouseDown);
-  }, [isOpen]);
-
-  // Close on Escape
-  useEffect(() => {
-    if (!isOpen) return;
-
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
         setIsOpen(false);
       }
     }
 
+    document.addEventListener("mousedown", handleMouseDown);
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isOpen]);
 
   function handleSelect(weekId: WeekId) {
