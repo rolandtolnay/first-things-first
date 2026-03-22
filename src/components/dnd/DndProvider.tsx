@@ -164,6 +164,8 @@ export function DndProvider({ children }: DndProviderProps) {
           const dayBlocks = (useWeekStore.getState().currentWeek?.timeBlocks ?? []).filter(
             (b) => b.dayIndex === dropData.dayIndex
           );
+          // Reject if drop slot is already occupied
+          if (hasOverlap(dropData.slotIndex, dropData.slotIndex + 1, dayBlocks)) return;
           const clampedDuration = getClampedDuration(2, dropData.slotIndex, dayBlocks);
           if (clampedDuration < 1) return; // No space available
           addTimeBlock({
@@ -244,6 +246,8 @@ export function DndProvider({ children }: DndProviderProps) {
           const dayBlocks = (currentWeek?.timeBlocks ?? []).filter(
             (b) => b.dayIndex === dropData.dayIndex
           );
+          // Reject if drop slot is already occupied
+          if (hasOverlap(dropData.slotIndex, dropData.slotIndex + 1, dayBlocks)) return;
           const clampedDuration = getClampedDuration(2, dropData.slotIndex, dayBlocks);
           if (clampedDuration < 1) return; // No space available
           addTimeBlock({
@@ -307,6 +311,8 @@ export function DndProvider({ children }: DndProviderProps) {
         const dayBlocks = (currentWeek?.timeBlocks ?? []).filter(
           (b) => b.dayIndex === dropData.dayIndex
         );
+        // Reject if drop slot is already occupied
+        if (hasOverlap(dropData.slotIndex, dropData.slotIndex + 1, dayBlocks)) return;
         const clampedDuration = getClampedDuration(2, dropData.slotIndex, dayBlocks);
         if (clampedDuration < 1) return; // No space available
         addTimeBlock({
