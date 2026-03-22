@@ -15,6 +15,7 @@ import type { DropZoneData, EveningDragData } from "@/types/dnd";
 import { useWeekStore, selectEveningBlock } from "@/stores/weekStore";
 import { getRoleColorStyle } from "@/lib/role-colors";
 import { CloseIcon } from "@/components/ui/CloseIcon";
+import { CompletionCheckbox } from "@/components/ui/CompletionCheckbox";
 import { cn } from "@/lib/utils";
 
 interface EveningSlotProps {
@@ -97,6 +98,8 @@ function DraggableEveningBlock({
   dayIndex,
   onDelete,
 }: DraggableEveningBlockProps) {
+  const toggleEveningBlockCompleted = useWeekStore((state) => state.toggleEveningBlockCompleted);
+
   // Set up draggable
   const dragData = {
     type: "evening",
@@ -123,17 +126,33 @@ function DraggableEveningBlock({
         eveningBlock.roleId ? "" : "bg-muted",
         isDragging && "opacity-50"
       )}
-      style={
-        roleColor
+      style={{
+        ...(roleColor
           ? {
-              backgroundColor: `${roleColor.replace(")", " / 0.2)")}`,
+              backgroundColor: eveningBlock.completed
+                ? "hsl(var(--success) / 0.15)"
+                : `${roleColor.replace(")", " / 0.2)")}`,
               borderLeft: `3px solid ${roleColor}`,
             }
-          : undefined
-      }
+          : eveningBlock.completed
+            ? { backgroundColor: "hsl(var(--success) / 0.15)" }
+            : undefined),
+      }}
     >
-      {/* Block title */}
-      <span className="text-xs font-medium truncate pr-5">{eveningBlock.title}</span>
+      {/* Title with completion checkbox */}
+      <div className="flex items-center gap-1 pr-5">
+        <CompletionCheckbox
+          completed={eveningBlock.completed}
+          onToggle={() => toggleEveningBlockCompleted(eveningBlock.id)}
+          size={12}
+        />
+        <span className={cn(
+          "text-xs font-medium truncate",
+          eveningBlock.completed && !isDragging && "opacity-60"
+        )}>
+          {eveningBlock.title}
+        </span>
+      </div>
 
       {/* Delete button - visible on hover */}
       <button
