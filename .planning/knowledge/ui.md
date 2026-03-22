@@ -21,6 +21,11 @@
 | 30-min snap increments for resize | Matches grid granularity and Covey's half-hour planning unit | Phase 06-01 |
 | Inline title editing on drawn block (not popover) | Fastest creation path; maintains spatial context; freestyle blocks need only a name | Phase 06-01 |
 | vitest over no test runner | First test runner added to project; configured with @/ path alias matching tsconfig | Phase 06-01 |
+| CompletionCheckbox stopPropagation on both onClick and onPointerDown | dnd-kit activates on onPointerDown; stopping only onClick leaves drag-start unblocked | Phase 07-01 |
+| Completed background replaces role-color background (not layered) | Layering green over role color produces muddy mixed hues; role-color left border preserved for scanning | Phase 07-01 |
+| Completed text opacity-60 suppressed during isDragging | Drag already applies opacity-50; stacking both produces double-dimming to near-invisible | Phase 07-01 |
+| Checkbox hidden during isEditing / isInlineEditing | Editing and completion are mutually exclusive states; simultaneous targets create visual clutter | Phase 07-01 |
+| Independent completion per instance, no cross-instance sync | Same goal may be scheduled multiple times; marking one instance complete shouldn't affect others | Phase 07-01 |
 
 ## Architecture
 
@@ -32,6 +37,7 @@
   - `useEditableText` hook: manages isEditing/editValue/inputRef state for double-click-to-edit with Enter/Escape/blur handling.
   - `CloseIcon` component: reusable SVG X icon with configurable size.
   - `AddItemInput` (ui): two-state button/input pattern used by AddRoleButton and AddGoalButton.
+  - `CompletionCheckbox` component: inline SVG circle/checkmark button with `stopPropagation` on both `onPointerDown` and `onClick`, safe to embed in any dnd-kit draggable context.
 - **Pointer event hooks**: `useBlockResize` — pointer capture on bottom-edge handle, local state during drag, single store commit on `pointerup`. `useBlockDraw` — container-level pointer events on TimeGrid for click-drag-draw creation gesture.
 - **dnd-kit coexistence**: The resize handle calls `e.stopPropagation()` on `onPointerDown` to prevent dnd-kit's PointerSensor from activating. Click-drag-draw operates on the TimeGrid container (not on block elements) so it never intersects dnd-kit. The two systems share DOM elements but never share state.
 - **Interaction state machine**: Each pointer interaction (idle / resizing / drawing / editing) uses local state, not global. Container rect cached on `pointerdown` — not re-queried on `pointermove` to avoid layout reflows. Absolute position calculation, never cumulative deltas.
@@ -77,6 +83,7 @@
 - `src/components/ThemeToggle.tsx` -- Theme switch with sun/moon icons
 - `src/hooks/useEditableText.ts` -- Shared double-click-to-edit hook
 - `src/components/ui/CloseIcon.tsx` -- Reusable X icon component
+- `src/components/ui/CompletionCheckbox.tsx` -- dnd-kit-safe checkbox with SVG circle/checkmark and green completion state
 - `src/lib/utils.ts` -- `cn()` class merging utility, `slotToTime()`, `generateId()`
 - `src/hooks/useBlockResize.ts` -- Pointer-event hook for bottom-edge block resize with overlap clamping
 - `src/hooks/useBlockDraw.ts` -- Pointer-event hook for click-drag-draw freestyle block creation

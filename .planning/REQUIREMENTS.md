@@ -51,9 +51,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Completion
 
-- [ ] **COMP-01**: User can mark any block/goal as completed (background changes to dark green)
-- [ ] **COMP-02**: Completion is tracked independently per instance (role column, day priority, and schedule are separate)
-- [ ] **COMP-03**: Completed items remain visible in their original location
+- [x] **COMP-01**: User can mark any block/goal as completed (background changes to dark green)
+- [x] **COMP-02**: Completion is tracked independently per instance (role column, day priority, and schedule are separate)
+- [x] **COMP-03**: Completed items remain visible in their original location
 
 ### Weeks
 
@@ -163,9 +163,9 @@ Which phases cover which requirements. Updated by create-roadmap.
 | BLCK-01 | Phase 6 | Complete |
 | BLCK-02 | Phase 6 | Complete |
 | BLCK-03 | Phase 6 | Complete |
-| COMP-01 | Phase 7 | Pending |
-| COMP-02 | Phase 7 | Pending |
-| COMP-03 | Phase 7 | Pending |
+| COMP-01 | Phase 7 | Complete |
+| COMP-02 | Phase 7 | Complete |
+| COMP-03 | Phase 7 | Complete |
 | WEEK-01 | Phase 8 | Pending |
 | WEEK-02 | Phase 8 | Pending |
 | WEEK-03 | Phase 8 | Pending |
