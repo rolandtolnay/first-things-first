@@ -6,11 +6,13 @@
  * Renders 24 TimeSlot components (30-minute intervals) with time labels
  * at hour boundaries on the left side. Uses CSS Grid for alignment.
  * TimeBlocks overlay the slot column with absolute positioning.
+ * Supports click-drag-draw for freestyle block creation.
  */
 
 import { useMemo } from "react";
 import type { TimeSlotIndex, DayOfWeek } from "@/types";
 import { useWeekStore } from "@/stores/weekStore";
+import { useBlockDraw } from "@/hooks/useBlockDraw";
 import { TimeSlot } from "./TimeSlot";
 import { TimeBlock } from "./TimeBlock";
 
@@ -30,6 +32,15 @@ export function TimeGrid({ dayIndex }: TimeGridProps) {
     if (!timeBlocks) return [];
     return timeBlocks.filter((b) => b.dayIndex === dayIndex);
   }, [timeBlocks, dayIndex]);
+
+  // Click-drag-draw hook for freestyle block creation
+  const {
+    containerProps,
+    isDrawing,
+    previewBlock,
+    newBlockId,
+    clearNewBlockId,
+  } = useBlockDraw(dayIndex, blocks);
 
   return (
     <div className="grid grid-cols-[3rem_1fr]">
@@ -51,7 +62,16 @@ export function TimeGrid({ dayIndex }: TimeGridProps) {
       </div>
 
       {/* Slots column with blocks overlay */}
-      <div className="relative" data-slots-column>
+      <div
+        className="relative"
+        data-slots-column
+        {...containerProps}
+        style={
+          isDrawing
+            ? { touchAction: "none", userSelect: "none" }
+            : undefined
+        }
+      >
         {/* Grid of slots */}
         {slots.map((slotIndex) => (
           <TimeSlot key={slotIndex} slotIndex={slotIndex} dayIndex={dayIndex} />
@@ -63,8 +83,21 @@ export function TimeGrid({ dayIndex }: TimeGridProps) {
             key={block.id}
             block={block}
             dayBlocks={blocks}
+            editingBlockId={newBlockId}
+            onClearEditing={clearNewBlockId}
           />
         ))}
+
+        {/* Draw preview during click-drag-draw */}
+        {isDrawing && previewBlock && (
+          <div
+            className="absolute left-0 right-0 z-20 rounded-sm border-2 border-dashed border-primary/50 bg-primary/10 pointer-events-none"
+            style={{
+              top: `${previewBlock.startSlot * 32}px`,
+              height: `${previewBlock.duration * 32}px`,
+            }}
+          />
+        )}
       </div>
     </div>
   );
