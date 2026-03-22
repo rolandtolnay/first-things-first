@@ -19,5 +19,13 @@
     "enabled": true,
     "web_project": true
   },
-  "multi_plan": false
+  "multi_plan": false,
+  "skills": {
+    "discuss": [],
+    "design": [],
+    "research": [],
+    "plan": [
+      "next-best-practices"
+    ]
+  }
 }
