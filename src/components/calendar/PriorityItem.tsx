@@ -16,6 +16,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { useWeekStore } from "@/stores/weekStore";
 import { getRoleColorStyle } from "@/lib/role-colors";
 import { CloseIcon } from "@/components/ui/CloseIcon";
+import { CompletionCheckbox } from "@/components/ui/CompletionCheckbox";
 import { cn } from "@/lib/utils";
 import type { DayPriority, DayOfWeek, Goal, RoleColor } from "@/types";
 import type { PriorityDragData } from "@/types/dnd";
@@ -29,6 +30,7 @@ interface PriorityItemProps {
 
 export function PriorityItem({ priority, goal, roleColor, dayIndex }: PriorityItemProps) {
   const removeDayPriority = useWeekStore((state) => state.removeDayPriority);
+  const toggleDayPriorityCompleted = useWeekStore((state) => state.toggleDayPriorityCompleted);
 
   // Set up draggable
   const dragData = {
@@ -59,11 +61,26 @@ export function PriorityItem({ priority, goal, roleColor, dayIndex }: PriorityIt
         "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-50"
       )}
-      style={{ borderLeft: `3px solid ${getRoleColorStyle(roleColor)}` }}
+      style={{
+        borderLeft: `3px solid ${getRoleColorStyle(roleColor)}`,
+        ...(priority.completed && {
+          backgroundColor: "hsl(var(--success) / 0.15)",
+        }),
+      }}
     >
+      {/* Completion checkbox */}
+      <CompletionCheckbox
+        completed={priority.completed}
+        onToggle={() => toggleDayPriorityCompleted(priority.id)}
+        size={12}
+      />
+
       {/* Goal text - truncated with tooltip */}
       <span
-        className="flex-1 min-w-0 text-xs text-foreground truncate"
+        className={cn(
+          "flex-1 min-w-0 text-xs text-foreground truncate",
+          priority.completed && "opacity-60"
+        )}
         title={goal.text}
       >
         {goal.text}
