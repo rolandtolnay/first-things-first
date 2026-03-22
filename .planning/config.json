@@ -22,10 +22,12 @@
   "multi_plan": false,
   "skills": {
     "discuss": [],
-    "design": [],
+    "design": ["web-design-guidelines"],
     "research": [],
     "plan": [
-      "next-best-practices"
+      "next-best-practices",
+      "vercel-composition-patterns",
+      "vercel-react-best-practices"
     ]
   }
 }
