@@ -70,6 +70,11 @@ export function useBlockDraw(
       // Check if starting slot overlaps existing blocks
       if (hasOverlap(startSlot, startSlot + 1, dayBlocks)) return;
 
+      // Blur any focused element (e.g. inline title input) before preventing default,
+      // so handleInlineBlur fires and cleans up unconfirmed empty blocks
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       // Prevent default to avoid text selection
       e.preventDefault();
       // Capture pointer for reliable tracking

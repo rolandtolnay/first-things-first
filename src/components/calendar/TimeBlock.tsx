@@ -83,13 +83,18 @@ export function TimeBlock({
   const roleColor = roleColorRaw ? getRoleColorStyle(roleColorRaw) : undefined;
 
   const handleInlineKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Stop all keys from reaching dnd-kit's KeyboardSensor on the parent draggable
+    e.stopPropagation();
     if (e.key === "Enter") {
       e.preventDefault();
       const trimmed = editValue.trim();
       if (trimmed) {
         updateTimeBlock(block.id, { title: trimmed });
-        onClearEditing?.();
+      } else {
+        // Empty title on Enter -- cancel creation
+        deleteTimeBlock(block.id);
       }
+      onClearEditing?.();
     } else if (e.key === "Escape") {
       e.preventDefault();
       // Cancel creation -- delete the empty block
