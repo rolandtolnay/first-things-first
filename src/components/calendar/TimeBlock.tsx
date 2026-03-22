@@ -21,6 +21,7 @@ import { getRoleColorStyle } from "@/lib/role-colors";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockResize } from "@/hooks/useBlockResize";
 import { CloseIcon } from "@/components/ui/CloseIcon";
+import { CompletionCheckbox } from "@/components/ui/CompletionCheckbox";
 import { cn, slotToTime } from "@/lib/utils";
 
 interface TimeBlockProps {
@@ -38,6 +39,7 @@ export function TimeBlock({
 }: TimeBlockProps) {
   const deleteTimeBlock = useWeekStore((state) => state.deleteTimeBlock);
   const updateTimeBlock = useWeekStore((state) => state.updateTimeBlock);
+  const toggleTimeBlockCompleted = useWeekStore((state) => state.toggleTimeBlockCompleted);
 
   // Inline editing state for newly drawn freestyle blocks
   const isInlineEditing =
@@ -126,15 +128,20 @@ export function TimeBlock({
         "group flex flex-col justify-start p-1",
         "cursor-grab active:cursor-grabbing",
         block.roleId ? "" : "bg-muted",
-        isDragging && "opacity-50",
+        isDragging ? "opacity-50" : block.completed && !isResizing ? "" : "",
         isResizing && "z-20"
       )}
       style={{
         top: `${top}px`,
         height: `${height}px`,
         ...(roleColor && {
-          backgroundColor: `${roleColor.replace(")", " / 0.2)")}`,
+          backgroundColor: block.completed
+            ? `hsl(var(--success) / 0.15)`
+            : `${roleColor.replace(")", " / 0.2)")}`,
           borderLeft: `3px solid ${roleColor}`,
+        }),
+        ...(!roleColor && block.completed && {
+          backgroundColor: "hsl(var(--success) / 0.15)",
         }),
         ...(isResizing && {
           touchAction: "none",
@@ -155,9 +162,19 @@ export function TimeBlock({
           placeholder="Block title..."
         />
       ) : (
-        <span className="text-xs font-medium truncate pr-5">
-          {block.title}
-        </span>
+        <div className="flex items-center gap-1 pr-5">
+          <CompletionCheckbox
+            completed={block.completed}
+            onToggle={() => toggleTimeBlockCompleted(block.id)}
+            size={12}
+          />
+          <span className={cn(
+            "text-xs font-medium truncate",
+            block.completed && !isDragging && "opacity-60"
+          )}>
+            {block.title}
+          </span>
+        </div>
       )}
 
       {/* Time label during resize */}
