@@ -154,6 +154,32 @@ export function getCurrentWeekId(): WeekId {
 }
 
 /**
+ * Extract the numeric week number from a WeekId.
+ * Input: "2026-W13" -> 13
+ */
+export function getWeekNumber(weekId: WeekId): number {
+  const match = weekId.match(/^(\d{4})-W(\d{2})$/);
+  if (!match) {
+    throw new Error(`Invalid week ID format: ${weekId}`);
+  }
+  return parseInt(match[2], 10);
+}
+
+/**
+ * Generate an array of consecutive week IDs starting from startWeekId.
+ * Uses getNextWeekId internally for year-boundary correctness.
+ */
+export function getWeekIdRange(startWeekId: WeekId, count: number): WeekId[] {
+  const result: WeekId[] = [startWeekId];
+  let current = startWeekId;
+  for (let i = 1; i < count; i++) {
+    current = getNextWeekId(current);
+    result.push(current);
+  }
+  return result;
+}
+
+/**
  * Get the next week ID from a given week ID.
  */
 export function getNextWeekId(weekId: WeekId): WeekId {
