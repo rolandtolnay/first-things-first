@@ -69,13 +69,13 @@ No single tool connects life roles to weekly goals to scheduled time in an inter
 
 **Calendar:** Custom CSS Grid — not a calendar library. 30-minute slot granularity, 32px slot height. Absolute positioning for time blocks within day columns.
 
-**Theming:** next-themes with attribute="class" for Tailwind dark mode. Light and dark mode from day one. JARVIS-inspired aesthetic (teal/cyan accents, clean geometry) planned for visual polish phase.
+**Theming:** next-themes with attribute="class" for Tailwind dark mode. Light and dark mode from day one. Visual direction to be finalized during Phase 9 using user-provided design references.
 
 **Architecture:** Feature-based component structure under `src/components/`. Zustand stores in `src/lib/store/`. Database layer in `src/lib/db/`. Types in `src/types/`.
 
 **Utilities:** date-fns for dates, nanoid for ID generation, cn() helper (clsx + tailwind-merge).
 
-**Design direction:** Inspired by "Trigona JARVIS" design system — dark luxury aesthetic with teal/cyan accents, clean geometry, and HUD-style corner brackets. Will use `frontend-design` skill during Phase 9.
+**Design direction:** Light, clean interface. User will provide visual design references as inspiration during Phase 9. Will use `frontend-design` skill for implementation.
 
 **Data model note:** Blocks track lineage (manual vs goal-based, originating role) to enable future analytics on role-based goal completion rates. Week snapshot model — each week is independent with its own roles and goals.
 

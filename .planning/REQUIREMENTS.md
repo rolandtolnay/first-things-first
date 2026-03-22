@@ -68,28 +68,40 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **DSGN-01**: App supports light mode and dark mode from launch
 - [x] **DSGN-02**: Blocks and goals are color-coded by role for quick scanning
-- [ ] **DSGN-03**: Visual design follows JARVIS-inspired aesthetic (teal/cyan accents, clean geometric style)
+- [ ] **DSGN-03**: Visual design follows provided design inspiration (light, clean interface)
 - [ ] **DSGN-04**: Typography-forward, minimal clutter design approach
-- [ ] **DSGN-05**: Design system informed by `design-system-example` reference, using `frontend-design` skill during implementation
+- [ ] **DSGN-05**: Design system finalized using `frontend-design` skill with user-provided visual references during implementation
 
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
 
-### Notifications
+### Auth & Cloud
 
-- **NOTF-01**: User receives in-app notifications for goal deadlines
-- **NOTF-02**: User can configure notification preferences
+- **AUTH-01**: Authentication via existing providers (Google, Apple)
+- **AUTH-02**: Cloud persistence with Supabase backend
+- **AUTH-03**: Cross-device sync (data accessible from any device)
 
 ### Mobile
 
 - **MOBL-01**: Responsive layout for tablet/mobile viewports
 - **MOBL-02**: Touch-optimized interactions
 
-### Integrations
+### Calendar Integrations
 
-- **INTG-01**: Read-only calendar overlay showing external events
-- **INTG-02**: Optional cloud sync for cross-device access
+- **INTG-01**: Read-only calendar overlay showing external events (Google/Apple Calendar)
+- **INTG-02**: Bidirectional calendar sync with external providers
+
+### Dashboard Modules
+
+- **DASH-01**: Package delivery tracking — calendar view of expected deliveries and their states
+- **DASH-02**: Financial subscription calendar — LLM-parsed bank statements surfacing subscriptions on a timeline
+- **DASH-03**: Email insights — actionable items extracted from email for review and scheduling
+
+### Notifications
+
+- **NOTF-01**: User receives in-app notifications for goal deadlines
+- **NOTF-02**: User can configure notification preferences
 
 ### Advanced Completion
 
@@ -100,21 +112,24 @@ Deferred to future release. Tracked but not in current roadmap.
 - **ATIME-01**: Configurable time range (not fixed 8:00-20:00)
 - **ATIME-02**: Drag-and-drop between days for existing scheduled blocks
 
+### Covey Extensions
+
+- **COVX-01**: Sharpen the Saw section (self-renewal tracking)
+
+### Analytics
+
+- **ANLYT-01**: Multi-week analytics and reporting on role-based goal completion rates
+
 ## Out of Scope
 
 Explicitly excluded. Documented to prevent scope creep.
 
 | Feature | Reason |
 |---------|--------|
-| User accounts/authentication | Local-only for MVP, privacy differentiator |
-| Calendar integrations (Google Calendar sync) | Complex sync logic, bidirectional conflicts |
-| Recurring goal templates | Weekly planning should be intentional each week |
-| Multi-week analytics/reporting | Future consideration, data model supports it |
-| Sharpen the Saw section | Deferred to v1.1 |
-| Mobile/tablet experience | Desktop-only for v1 |
 | Team collaboration | Solo planning tool, 10x complexity for teams |
 | AI auto-scheduling | Removes intentionality central to Covey method |
 | Gamification/streaks | Extrinsic motivation undermines habit formation |
+| Recurring goal templates | Weekly planning should be intentional each week |
 
 ## Traceability
 
@@ -168,4 +183,4 @@ Which phases cover which requirements. Updated by create-roadmap.
 
 ---
 *Requirements defined: 2026-01-18*
-*Last updated: 2026-01-18 after Phase 5 completion*
+*Last updated: 2026-03-21 after template migration and scope realignment*
