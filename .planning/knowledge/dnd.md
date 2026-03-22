@@ -23,9 +23,9 @@
 - **3 drop zone types** (`DropZoneData`): `priorities`, `timegrid`, `evening`. Each carries `dayIndex`; timegrid also carries `slotIndex`.
 - **Drop handling matrix** in `handleDragEnd`:
   - Goal -> priorities: creates DayPriority (copy)
-  - Goal -> timegrid: creates 1hr TimeBlock (copy)
+  - Goal -> timegrid: creates TimeBlock clamped to available space, min 1 slot (copy; rejects if no space)
   - Goal -> evening: creates EveningBlock (copy, if unoccupied)
-  - Block -> timegrid: updates dayIndex/startSlot (move)
+  - Block -> timegrid: updates dayIndex/startSlot (move; silent snap-back if overlap detected)
   - Block -> priorities: creates DayPriority + deletes block (move, goal-based only)
   - Block -> evening: creates EveningBlock + deletes block (move, if unoccupied)
   - Priority -> timegrid: creates TimeBlock + removes priority (move)
@@ -42,6 +42,7 @@
 
 - **Freestyle items to priorities**: Blocks/evening without `goalId` cannot become priorities. Drop handlers check and silently skip.
 - **Same-day priority/evening drops**: Moving to the same day is a no-op; handlers check `sourceDayIndex === dropData.dayIndex`.
+- **Overlap self-exclusion on moves**: Block -> timegrid moves must pass `excludeId` to overlap checks, or the dragged block always overlaps itself (see blocks).
 - **useCallback dependency array**: All store actions used in `handleDragEnd` must be in the dependency array to avoid stale closures.
 - **DragOverlay re-render timing**: `setActiveData(null)` triggers re-render before dnd-kit reads `dropAnimation`. The `activeTypeRef` pattern solves this by persisting the type in a ref.
 - **Collision detection choice matters**: Changed from `closestCenter` to `rectIntersection` during Phase 05.1 for better cross-section detection.

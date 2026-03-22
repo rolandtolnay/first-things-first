@@ -44,9 +44,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Time Blocks
 
-- [ ] **BLCK-01**: Blocks are resizable by dragging edges (30min increments, 30min–8hr range, or until end of day)
-- [ ] **BLCK-02**: User can create freestyle blocks directly on calendar (not tied to goals)
-- [ ] **BLCK-03**: Blocks cannot overlap — validation prevents placement/resize into occupied time
+- [x] **BLCK-01**: Blocks are resizable by dragging edges (30min increments, 30min–8hr range, or until end of day)
+- [x] **BLCK-02**: User can create freestyle blocks directly on calendar (not tied to goals)
+- [x] **BLCK-03**: Blocks cannot overlap — validation prevents placement/resize into occupied time
 - [x] **BLCK-04**: Block data model tracks: type (manual vs goal-based) and role reference (if goal-based)
 
 ### Completion
@@ -160,9 +160,9 @@ Which phases cover which requirements. Updated by create-roadmap.
 | GOAL-05 | Phase 5 | Complete |
 | GOAL-06 | Phase 5 | Complete |
 | BLCK-04 | Phase 5 | Complete |
-| BLCK-01 | Phase 6 | Pending |
-| BLCK-02 | Phase 6 | Pending |
-| BLCK-03 | Phase 6 | Pending |
+| BLCK-01 | Phase 6 | Complete |
+| BLCK-02 | Phase 6 | Complete |
+| BLCK-03 | Phase 6 | Complete |
 | COMP-01 | Phase 7 | Pending |
 | COMP-02 | Phase 7 | Pending |
 | COMP-03 | Phase 7 | Pending |
