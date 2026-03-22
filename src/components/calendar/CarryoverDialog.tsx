@@ -132,7 +132,7 @@ export function CarryoverDialog({
   return (
     <dialog
       ref={dialogRef}
-      className="backdrop:bg-black/50 bg-card text-card-foreground rounded-xl p-0 max-w-md w-full shadow-xl border border-border"
+      className="m-auto backdrop:bg-black/50 bg-card text-card-foreground rounded-xl p-0 max-w-md w-full shadow-xl border border-border"
     >
       <div className="p-6">
         <h3 className="text-lg font-semibold mb-1">Start a New Week</h3>
