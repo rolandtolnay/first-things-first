@@ -128,7 +128,7 @@ export function TimeBlock({
         "group flex flex-col justify-start p-1",
         "cursor-grab active:cursor-grabbing",
         block.roleId ? "" : "bg-muted",
-        isDragging ? "opacity-50" : block.completed && !isResizing ? "" : "",
+        isDragging && "opacity-50",
         isResizing && "z-20"
       )}
       style={{
