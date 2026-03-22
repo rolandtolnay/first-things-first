@@ -8,8 +8,8 @@
  * Closes on outside click and Escape key.
  */
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { formatWeekId, getWeekNumber } from "@/lib/utils";
+import { useEffect, useRef, useState } from "react";
+import { cn, formatWeekId, getWeekNumber } from "@/lib/utils";
 import type { WeekId } from "@/types";
 
 interface WeekSelectorProps {
@@ -28,7 +28,9 @@ export function WeekSelector({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
+  function toggle() {
+    setIsOpen((prev) => !prev);
+  }
 
   // Close on outside click
   useEffect(() => {
@@ -87,7 +89,7 @@ export function WeekSelector({
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={`shrink-0 ml-2 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={cn("shrink-0 ml-2 transition-transform", isOpen && "rotate-180")}
         >
           <path d="m6 9 6 6 6-6" />
         </svg>
@@ -105,9 +107,10 @@ export function WeekSelector({
                 key={weekId}
                 type="button"
                 onClick={() => handleSelect(weekId)}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted transition-colors ${
-                  isSelected ? "bg-muted" : ""
-                }`}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted transition-colors",
+                  isSelected && "bg-muted"
+                )}
               >
                 <span className="font-medium shrink-0">
                   W{getWeekNumber(weekId)}

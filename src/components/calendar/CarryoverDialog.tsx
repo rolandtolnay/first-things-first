@@ -48,10 +48,8 @@ export function CarryoverDialog({
     useLiveQuery(() => db.weeks.orderBy("id").primaryKeys(), [], []) as WeekId[];
 
   // Week selector state
-  const [targetWeekId, setTargetWeekId] = useState<WeekId>(
-    () => getCurrentWeekId()
-  );
-  const [dropdownWeekIds, setDropdownWeekIds] = useState<WeekId[]>(() => []);
+  const [targetWeekId, setTargetWeekId] = useState<WeekId>(getCurrentWeekId());
+  const [dropdownWeekIds, setDropdownWeekIds] = useState<WeekId[]>([]);
 
   // Group uncompleted goals by role
   const roleGroups: RoleGoalGroup[] = sourceWeek
@@ -84,26 +82,18 @@ export function CarryoverDialog({
       const range = getWeekIdRange(getCurrentWeekId(), 11);
       setDropdownWeekIds(range);
 
-      // Find first unplanned week, scanning from after the viewed week
+      // Find first unplanned week, starting from the week after the viewed week
+      // and wrapping around to the beginning of the range if needed.
       const scanStart = getNextWeekId(viewedWeekId);
       const scanIndex = range.indexOf(scanStart);
       const startIdx = scanIndex >= 0 ? scanIndex : 0;
 
       let defaultWeek: WeekId | null = null;
-      // Scan from startIdx to end
-      for (let i = startIdx; i < range.length; i++) {
-        if (!existingWeekIds.includes(range[i])) {
-          defaultWeek = range[i];
+      for (let i = 0; i < range.length; i++) {
+        const candidate = range[(startIdx + i) % range.length];
+        if (!existingWeekIds.includes(candidate)) {
+          defaultWeek = candidate;
           break;
-        }
-      }
-      // If nothing found, wrap around and scan from beginning
-      if (!defaultWeek) {
-        for (let i = 0; i < startIdx; i++) {
-          if (!existingWeekIds.includes(range[i])) {
-            defaultWeek = range[i];
-            break;
-          }
         }
       }
       // If all planned, default to first in range

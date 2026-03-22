@@ -92,7 +92,7 @@ export function WeekView() {
         open={isCarryoverOpen}
         onClose={closeCarryover}
         sourceWeek={currentWeek}
-        viewedWeekId={selectedWeekId!}
+        viewedWeekId={selectedWeekId}
       />
 
       {/* Day columns */}
