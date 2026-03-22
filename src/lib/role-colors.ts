@@ -1,9 +1,9 @@
 /**
  * Role Color Utilities
  *
- * Maps RoleColor type values to Tailwind CSS classes.
- * The CSS variables in globals.css use --role-1 through --role-8 naming,
- * and the @theme inline block defines --color-role-N for Tailwind utilities.
+ * Maps RoleColor type values to CSS custom properties.
+ * Colors are defined as hex values in globals.css with RGB component
+ * variants (--role-N-rgb) for opacity modifiers.
  */
 
 import type { RoleColor } from "@/types";
@@ -13,11 +13,11 @@ import type { RoleColor } from "@/types";
  * Based on the color palette in globals.css:
  * - role-1: teal
  * - role-2: violet
- * - role-3: orange
- * - role-4: cyan (maps from "sky")
+ * - role-3: amber
+ * - role-4: sky
  * - role-5: rose
- * - role-6: green (maps from "emerald")
- * - role-7: amber
+ * - role-6: emerald
+ * - role-7: orange
  * - role-8: slate (maps from "fuchsia" - fallback)
  */
 const COLOR_TO_INDEX: Record<RoleColor, number> = {
@@ -56,24 +56,25 @@ export function getRoleColorIndex(color: RoleColor): number {
 
 /**
  * Get a CSS variable string for inline styles.
- * Useful for cases where Tailwind classes can't be used dynamically.
+ * Returns the hex color value from the CSS variable.
  *
  * @param color - The RoleColor value
- * @returns CSS color value string (e.g., "hsl(var(--role-1))")
+ * @returns CSS color value string (e.g., "var(--role-1)")
  */
 export function getRoleColorStyle(color: RoleColor): string {
   const index = COLOR_TO_INDEX[color];
-  return `hsl(var(--role-${index}))`;
+  return `var(--role-${index})`;
 }
 
 /**
  * Get a CSS variable string with opacity for inline background styles.
+ * Uses the RGB component CSS variables for rgba() construction.
  *
  * @param color - The RoleColor value
  * @param opacity - Opacity value between 0 and 1 (e.g., 0.2)
- * @returns CSS color value string with opacity (e.g., "hsl(var(--role-1) / 0.2)")
+ * @returns CSS color value string with opacity (e.g., "rgba(var(--role-1-rgb), 0.2)")
  */
 export function getRoleColorStyleWithOpacity(color: RoleColor, opacity: number): string {
   const index = COLOR_TO_INDEX[color];
-  return `hsl(var(--role-${index}) / ${opacity})`;
+  return `rgba(var(--role-${index}-rgb), ${opacity})`;
 }
