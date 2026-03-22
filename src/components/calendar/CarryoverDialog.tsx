@@ -6,9 +6,10 @@
  * Uses the native <dialog> element with showModal() for focus trapping,
  * backdrop, and Esc dismissal. Shows uncompleted goals grouped by role
  * with checkboxes for selection. All uncompleted goals are pre-selected.
+ * Includes a completion summary of the source week.
  */
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
 import { useWeekStore } from "@/stores/weekStore";
@@ -67,6 +68,14 @@ export function CarryoverDialog({
   const allUncompletedIds = roleGroups.flatMap((g) =>
     g.goals.map((goal) => goal.id)
   );
+
+  // Completion summary for the source week
+  const completionSummary = useMemo(() => {
+    if (!sourceWeek || sourceWeek.goals.length === 0) return null;
+    const total = sourceWeek.goals.length;
+    const completed = sourceWeek.goals.filter((g) => g.completed).length;
+    return { total, completed, percent: Math.round((completed / total) * 100) };
+  }, [sourceWeek]);
 
   // Selected goal IDs (all pre-selected by default)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
@@ -168,19 +177,114 @@ export function CarryoverDialog({
   return (
     <dialog
       ref={dialogRef}
-      className="m-auto backdrop:bg-black/50 bg-card text-card-foreground rounded-xl p-0 max-w-md w-full shadow-xl border border-border"
+      className="m-auto p-0 max-w-[480px] w-full"
+      style={{
+        backgroundColor: 'var(--bg-card)',
+        color: 'var(--text-primary)',
+        borderRadius: 'var(--radius-xl)',
+        boxShadow: 'var(--shadow-dialog)',
+        border: 'none',
+      }}
     >
-      <div className="p-6">
-        <h3 className="text-lg font-semibold mb-1">Start a New Week</h3>
-        <p className="text-sm text-muted-foreground mb-4">
+      <div style={{ padding: '24px' }}>
+        {/* Header */}
+        <h3
+          style={{
+            fontSize: '15px',
+            fontWeight: 600,
+            lineHeight: '1.4',
+            color: 'var(--text-primary)',
+            marginBottom: '4px',
+          }}
+        >
+          Start a New Week
+        </h3>
+        <p
+          style={{
+            fontSize: '14px',
+            lineHeight: '1.5',
+            color: 'var(--text-secondary)',
+            marginBottom: '16px',
+          }}
+        >
           {hasUncompletedGoals
             ? "Select goals to carry over from last week."
             : "Ready to plan a fresh week."}
         </p>
 
+        {/* Completion summary */}
+        {completionSummary && (
+          <div
+            style={{
+              backgroundColor: 'var(--primary-soft)',
+              borderRadius: 'var(--radius-md)',
+              padding: '12px 16px',
+              marginBottom: '16px',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                letterSpacing: '0.02em',
+                textTransform: 'uppercase',
+                color: 'var(--text-muted)',
+                marginBottom: '4px',
+              }}
+            >
+              Last Week
+            </div>
+            <div
+              style={{
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: '1.5',
+              }}
+            >
+              You completed{' '}
+              <span style={{ color: 'var(--primary)', fontWeight: 700 }}>
+                {completionSummary.completed}
+              </span>{' '}
+              of{' '}
+              <span style={{ color: 'var(--text-secondary)' }}>
+                {completionSummary.total}
+              </span>{' '}
+              goals
+            </div>
+            {/* Progress bar */}
+            <div
+              style={{
+                height: '4px',
+                borderRadius: 'var(--radius-full)',
+                backgroundColor: 'var(--border-subtle)',
+                marginTop: '8px',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: `${completionSummary.percent}%`,
+                  backgroundColor: 'var(--primary-muted)',
+                  borderRadius: 'var(--radius-full)',
+                  transition: 'width 300ms ease',
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Target week selector */}
-        <div className="mb-4">
-          <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+        <div style={{ marginBottom: '16px' }}>
+          <label
+            className="block"
+            style={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: 'var(--text-muted)',
+              marginBottom: '6px',
+            }}
+          >
             Target week
           </label>
           <WeekSelector
@@ -193,15 +297,31 @@ export function CarryoverDialog({
 
         {/* Overwrite warning for already-planned weeks */}
         {existingWeekIds.includes(targetWeekId) && (
-          <div className="mb-4 p-3 rounded-md bg-amber-500/10 border border-amber-500/30 text-sm">
-            <span className="font-medium">This week already has a plan.</span>{" "}
+          <div
+            style={{
+              marginBottom: '16px',
+              padding: '12px',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--warning-soft)',
+              borderLeft: '3px solid var(--warning)',
+              fontSize: '14px',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <span style={{ fontWeight: 600 }}>This week already has a plan.</span>{" "}
             Continuing will replace its contents.
           </div>
         )}
 
         {/* Uncompleted goals grouped by role */}
         {hasUncompletedGoals && (
-          <div className="space-y-4 max-h-80 overflow-y-auto mb-6">
+          <div
+            className="space-y-4 overflow-y-auto"
+            style={{
+              maxHeight: '280px',
+              marginBottom: '24px',
+            }}
+          >
             {roleGroups.map(({ role, goals }) => (
               <div key={role.id}>
                 {/* Role header with color dot */}
@@ -210,7 +330,14 @@ export function CarryoverDialog({
                     className="w-2.5 h-2.5 rounded-full shrink-0"
                     style={{ backgroundColor: getRoleColorStyle(role.color) }}
                   />
-                  <span className="text-sm font-medium">{role.name}</span>
+                  <span
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {role.name}
+                  </span>
                 </div>
 
                 {/* Goal checkboxes */}
@@ -224,9 +351,16 @@ export function CarryoverDialog({
                         type="checkbox"
                         checked={selectedIds.has(goal.id)}
                         onChange={() => toggleGoal(goal.id)}
-                        className="mt-0.5 rounded accent-primary"
+                        className="mt-0.5 rounded"
+                        style={{ accentColor: 'var(--primary)' }}
                       />
-                      <span className="text-sm leading-snug group-hover:text-foreground text-foreground/80">
+                      <span
+                        className="leading-snug"
+                        style={{
+                          fontSize: '14px',
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
                         {goal.text}
                       </span>
                     </label>
@@ -242,7 +376,20 @@ export function CarryoverDialog({
           <button
             type="button"
             onClick={onClose}
-            className="text-sm px-4 py-2 rounded-md border border-border hover:bg-muted transition-colors"
+            className="transition-colors cursor-pointer"
+            style={{
+              fontSize: '14px',
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-md)',
+              minHeight: '36px',
+              color: 'var(--text-secondary)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
             Cancel
           </button>
@@ -251,7 +398,20 @@ export function CarryoverDialog({
             <button
               type="button"
               onClick={handleStartFresh}
-              className="text-sm px-4 py-2 rounded-md border border-border hover:bg-muted transition-colors"
+              className="transition-colors cursor-pointer"
+              style={{
+                fontSize: '14px',
+                padding: '8px 16px',
+                borderRadius: 'var(--radius-md)',
+                minHeight: '36px',
+                color: 'var(--text-secondary)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
             >
               Start Fresh
             </button>
@@ -260,7 +420,22 @@ export function CarryoverDialog({
           <button
             type="button"
             onClick={hasUncompletedGoals ? handleCarryOver : handleStartFresh}
-            className="text-sm px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
+            className="transition-colors font-medium cursor-pointer"
+            style={{
+              fontSize: '14px',
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-md)',
+              minHeight: '36px',
+              backgroundColor: 'var(--primary)',
+              color: 'var(--text-on-primary)',
+              boxShadow: 'var(--shadow-sm)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--primary-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--primary)';
+            }}
           >
             {hasUncompletedGoals ? "Carry Over Selected" : "Start Week"}
           </button>
