@@ -111,8 +111,13 @@ export function parseWeekId(weekId: WeekId): Date {
  */
 export function formatWeekId(weekId: WeekId): string {
   const monday = parseWeekId(weekId);
-  const sunday = new Date(monday);
-  sunday.setUTCDate(monday.getUTCDate() + 6);
+
+  // The calendar grid shows Sunday (day before Monday) through Saturday
+  // Sunday = Monday - 1 day, Saturday = Monday + 5 days
+  const gridSunday = new Date(monday);
+  gridSunday.setUTCDate(monday.getUTCDate() - 1);
+  const gridSaturday = new Date(monday);
+  gridSaturday.setUTCDate(monday.getUTCDate() + 5);
 
   const monthNames = [
     "Jan",
@@ -129,19 +134,19 @@ export function formatWeekId(weekId: WeekId): string {
     "Dec",
   ];
 
-  const monMonth = monthNames[monday.getUTCMonth()];
-  const sunMonth = monthNames[sunday.getUTCMonth()];
-  const monDay = monday.getUTCDate();
-  const sunDay = sunday.getUTCDate();
-  const year = monday.getUTCFullYear();
+  const sunMonth = monthNames[gridSunday.getUTCMonth()];
+  const satMonth = monthNames[gridSaturday.getUTCMonth()];
+  const sunDay = gridSunday.getUTCDate();
+  const satDay = gridSaturday.getUTCDate();
+  const year = gridSaturday.getUTCFullYear();
 
   // Same month
-  if (monday.getUTCMonth() === sunday.getUTCMonth()) {
-    return `${monMonth} ${monDay}-${sunDay}, ${year}`;
+  if (gridSunday.getUTCMonth() === gridSaturday.getUTCMonth()) {
+    return `${sunMonth} ${sunDay}-${satDay}, ${year}`;
   }
 
   // Different months (e.g., "Dec 30 - Jan 5, 2026")
-  return `${monMonth} ${monDay} - ${sunMonth} ${sunDay}, ${year}`;
+  return `${sunMonth} ${sunDay} - ${satMonth} ${satDay}, ${year}`;
 }
 
 /**

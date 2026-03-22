@@ -56,11 +56,13 @@ export function CarryoverDialog({
     () => new Set(allUncompletedIds)
   );
 
-  // Reset selection when source week changes
+  // Reset selection to all uncompleted goals whenever the dialog opens
   useEffect(() => {
-    setSelectedIds(new Set(allUncompletedIds));
+    if (open) {
+      setSelectedIds(new Set(allUncompletedIds));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sourceWeek?.id]);
+  }, [open, sourceWeek?.id]);
 
   // Dialog open/close sync
   useEffect(() => {
