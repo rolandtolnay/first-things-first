@@ -38,7 +38,7 @@ export function CompletionCheckbox({
         strokeLinejoin="round"
         style={{
           transition: 'transform 200ms ease',
-          transform: completed ? 'scale(1)' : 'scale(1)',
+          transform: completed ? 'scale(1)' : 'scale(0.9)',
         }}
       >
         {completed ? (
