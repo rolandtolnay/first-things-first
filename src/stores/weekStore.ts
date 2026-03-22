@@ -58,12 +58,18 @@ function getNextRoleColor(existingRoles: Role[]): RoleColor {
 interface WeekStore {
   // Current week state
   currentWeek: Week | null;
+  selectedWeekId: WeekId | null;
   isLoading: boolean;
   error: string | null;
 
   // Week operations
   loadWeek: (weekId: WeekId) => Promise<void>;
+  navigateToWeek: (weekId: WeekId) => Promise<void>;
   createWeek: (weekId: WeekId, carryOverRoles?: Role[]) => Promise<Week>;
+  createNewWeek: (
+    weekId: WeekId,
+    options: { carryOverGoals?: Goal[]; sourceWeek?: Week }
+  ) => Promise<Week>;
   saveCurrentWeek: () => Promise<void>;
 
   // Role operations
@@ -164,6 +170,7 @@ async function withWeek(
 export const useWeekStore = create<WeekStore>((set, get) => ({
   // Initial state
   currentWeek: null,
+  selectedWeekId: null,
   isLoading: false,
   error: null,
 
@@ -175,14 +182,12 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      let week = await db.weeks.get(weekId);
+      const week = await db.weeks.get(weekId);
 
-      if (!week) {
-        // Create new week if doesn't exist
-        week = await get().createWeek(weekId);
-      }
+      // Stale-request guard: another navigation may have started
+      if (get().selectedWeekId !== weekId) return;
 
-      set({ currentWeek: week, isLoading: false });
+      set({ currentWeek: week ?? null, isLoading: false });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to load week";
       set({ error: message, isLoading: false });
@@ -190,8 +195,52 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     }
   },
 
+  navigateToWeek: async (weekId: WeekId) => {
+    set({ selectedWeekId: weekId });
+    await get().loadWeek(weekId);
+  },
+
   createWeek: async (weekId: WeekId, carryOverRoles?: Role[]) => {
     const week = createEmptyWeek(weekId, carryOverRoles);
+    await saveWeek(week);
+    return week;
+  },
+
+  createNewWeek: async (
+    weekId: WeekId,
+    options: { carryOverGoals?: Goal[]; sourceWeek?: Week }
+  ) => {
+    const { carryOverGoals, sourceWeek } = options;
+
+    // Create empty week with roles carried over from source
+    const week = createEmptyWeek(weekId, sourceWeek?.roles);
+
+    // Map carried-over goals to the new week's roles
+    if (carryOverGoals && carryOverGoals.length > 0 && sourceWeek) {
+      const mappedGoals: Goal[] = [];
+
+      for (const goal of carryOverGoals) {
+        // Find the source role name for this goal
+        const sourceRole = sourceWeek.roles.find((r) => r.id === goal.roleId);
+        if (!sourceRole) continue;
+
+        // Find the new role with the same name
+        const newRole = week.roles.find((r) => r.name === sourceRole.name);
+        if (!newRole) continue;
+
+        const newGoal: Goal = {
+          id: generateId(),
+          roleId: newRole.id,
+          text: goal.text,
+          notes: goal.notes,
+          completed: false,
+        };
+        mappedGoals.push(newGoal);
+      }
+
+      week.goals = mappedGoals;
+    }
+
     await saveWeek(week);
     return week;
   },
