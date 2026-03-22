@@ -17,6 +17,7 @@ import { useWeekStore } from "@/stores/weekStore";
 import { getRoleColorStyle } from "@/lib/role-colors";
 import { useEditableText } from "@/hooks/useEditableText";
 import { CloseIcon } from "@/components/ui/CloseIcon";
+import { CompletionCheckbox } from "@/components/ui/CompletionCheckbox";
 import type { Goal, RoleColor } from "@/types";
 import type { GoalDragData } from "@/types/dnd";
 
@@ -28,6 +29,7 @@ interface GoalItemProps {
 export function GoalItem({ goal, roleColor }: GoalItemProps) {
   const updateGoal = useWeekStore((state) => state.updateGoal);
   const deleteGoal = useWeekStore((state) => state.deleteGoal);
+  const toggleGoalCompleted = useWeekStore((state) => state.toggleGoalCompleted);
 
   const handleSaveGoal = useCallback(
     (value: string) => updateGoal(goal.id, { text: value }),
@@ -65,8 +67,21 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
       className={`group flex items-center gap-2 py-1 px-2 rounded-md hover:bg-secondary/50 transition-colors cursor-grab active:cursor-grabbing ${
         isDragging ? "opacity-50" : ""
       }`}
-      style={{ borderLeft: `3px solid ${getRoleColorStyle(roleColor)}` }}
+      style={{
+        borderLeft: `3px solid ${getRoleColorStyle(roleColor)}`,
+        ...(goal.completed && {
+          backgroundColor: "hsl(var(--success) / 0.15)",
+        }),
+      }}
     >
+      {/* Completion checkbox */}
+      {!isEditing && (
+        <CompletionCheckbox
+          completed={goal.completed}
+          onToggle={() => toggleGoalCompleted(goal.id)}
+        />
+      )}
+
       {/* Goal text display or edit input */}
       {isEditing ? (
         <input
@@ -81,7 +96,9 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
         />
       ) : (
         <span
-          className="flex-1 min-w-0 text-sm text-foreground truncate cursor-pointer"
+          className={`flex-1 min-w-0 text-sm text-foreground truncate cursor-pointer ${
+            goal.completed ? "opacity-60" : ""
+          }`}
           onDoubleClick={startEdit}
           title={goal.text}
         >
@@ -92,7 +109,9 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
       {/* Notes indicator */}
       {goal.notes && !isEditing && (
         <span
-          className="text-muted-foreground flex-shrink-0"
+          className={`text-muted-foreground flex-shrink-0 ${
+            goal.completed ? "opacity-60" : ""
+          }`}
           title="Has notes"
           aria-label="Goal has notes"
         >
