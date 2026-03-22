@@ -41,9 +41,10 @@ Review all screenshots in a directory, identify visually redundant ones, convert
    - **KEEP** -- files with distinct visual states, with a brief note on what each shows
    - **DELETE** -- redundant files, with a brief note on why (which kept file it duplicates)
 
-   Ask the user to confirm before proceeding.
+   Use AskUserQuestion to ask the user to confirm deletion. Include the DELETE table filenames in the question so the user can see what will be removed.
 
 6. **Delete approved files**
+   - Only proceed if the user confirmed via AskUserQuestion
    - Use `rm` to delete the confirmed files
    - Report the final count (deleted vs remaining)
 
