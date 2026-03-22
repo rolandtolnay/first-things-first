@@ -10,8 +10,8 @@
     "weeks"
   ],
   "code_review": {
-    "adhoc": "ms-code-simplifier",
-    "phase": "ms-code-simplifier",
+    "adhoc": "ms-next-code-quality",
+    "phase": "ms-next-code-quality",
     "milestone": "ms-code-reviewer"
   },
   "open_mockups": "auto",
