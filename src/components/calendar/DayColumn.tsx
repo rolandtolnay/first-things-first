@@ -13,7 +13,7 @@
 
 import { useMemo } from "react";
 import type { DayOfWeek } from "@/types";
-import { cn, isSameDay, DAY_NAMES_SHORT } from "@/lib/utils";
+import { isSameDay, DAY_NAMES_SHORT } from "@/lib/utils";
 import { useWeekStore } from "@/stores/weekStore";
 import { DayPriorities } from "./DayPriorities";
 import { TimeGrid } from "./TimeGrid";
@@ -64,9 +64,7 @@ export function DayColumn({ dayIndex, date }: DayColumnProps) {
 
   return (
     <div
-      className={cn(
-        "flex flex-col min-w-[140px]",
-      )}
+      className="flex flex-col min-w-[140px]"
       style={{
         borderRight: '1px solid rgba(226, 232, 240, 0.5)',
         backgroundColor: isToday ? 'var(--bg-today)' : undefined,

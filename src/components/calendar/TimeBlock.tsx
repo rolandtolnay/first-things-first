@@ -120,11 +120,11 @@ export function TimeBlock({
   };
 
   // Compute background based on completion state
-  const computeBackground = () => {
-    if (block.completed) return 'var(--completed-bg)';
-    if (roleColor) return getRoleColorStyleWithOpacity(roleColor, 0.12);
-    return 'var(--bg-muted)';
-  };
+  const background = block.completed
+    ? 'var(--completed-bg)'
+    : roleColor
+      ? getRoleColorStyleWithOpacity(roleColor, 0.12)
+      : 'var(--bg-muted)';
 
   return (
     <div
@@ -144,7 +144,7 @@ export function TimeBlock({
         height: `${height}px`,
         borderRadius: 'var(--radius-md)',
         boxShadow: isDragging ? 'var(--shadow-drag)' : 'var(--shadow-sm)',
-        backgroundColor: computeBackground(),
+        backgroundColor: background,
         borderLeft: roleColor ? `3px solid ${getRoleColorStyle(roleColor)}` : undefined,
         padding: '4px 8px',
         opacity: block.completed && !isDragging ? 'var(--completed-opacity)' : undefined,

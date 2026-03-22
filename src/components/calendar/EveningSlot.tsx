@@ -128,12 +128,11 @@ function DraggableEveningBlock({
   });
 
   // Compute background based on completion state
-  const computeBackground = () => {
-    if (eveningBlock.completed) return 'var(--completed-bg)';
-    if (roleColor) return getRoleColorStyleWithOpacity(roleColor, 0.12);
-    if (eveningBlock.roleId) return 'var(--bg-muted)';
-    return 'var(--bg-muted)';
-  };
+  const background = eveningBlock.completed
+    ? 'var(--completed-bg)'
+    : roleColor
+      ? getRoleColorStyleWithOpacity(roleColor, 0.12)
+      : 'var(--bg-muted)';
 
   return (
     <div
@@ -148,7 +147,7 @@ function DraggableEveningBlock({
       style={{
         borderRadius: 'var(--radius-md)',
         boxShadow: 'var(--shadow-sm)',
-        backgroundColor: computeBackground(),
+        backgroundColor: background,
         borderLeft: roleColor ? `3px solid ${getRoleColorStyle(roleColor)}` : undefined,
         opacity: eveningBlock.completed && !isDragging ? 'var(--completed-opacity)' : undefined,
       }}
