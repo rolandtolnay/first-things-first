@@ -51,7 +51,7 @@ export function TimeGrid({ dayIndex }: TimeGridProps) {
       </div>
 
       {/* Slots column with blocks overlay */}
-      <div className="relative">
+      <div className="relative" data-slots-column>
         {/* Grid of slots */}
         {slots.map((slotIndex) => (
           <TimeSlot key={slotIndex} slotIndex={slotIndex} dayIndex={dayIndex} />
@@ -59,7 +59,11 @@ export function TimeGrid({ dayIndex }: TimeGridProps) {
 
         {/* Blocks overlaid with absolute positioning */}
         {blocks.map((block) => (
-          <TimeBlock key={block.id} block={block} />
+          <TimeBlock
+            key={block.id}
+            block={block}
+            dayBlocks={blocks}
+          />
         ))}
       </div>
     </div>
