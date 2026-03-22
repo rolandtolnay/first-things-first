@@ -35,6 +35,7 @@ import {
 import type { DayOfWeek, TimeSlotIndex } from "@/types";
 import type { DragData, DropZoneData, GoalDragData, BlockDragData, PriorityDragData, EveningDragData } from "@/types/dnd";
 import { useWeekStore } from "@/stores/weekStore";
+import { hasOverlap, getClampedDuration } from "@/lib/overlap";
 import { DragOverlayContent } from "./DragOverlayContent";
 
 interface DndProviderProps {
@@ -129,8 +130,22 @@ export function DndProvider({ children }: DndProviderProps) {
           return;
         }
 
-        // Block → Timegrid: Move block to new day/slot
+        // Block → Timegrid: Move block to new day/slot (with overlap check)
         if (dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
+          const dayBlocks = (currentWeek?.timeBlocks ?? []).filter(
+            (b) => b.dayIndex === dropData.dayIndex
+          );
+          // Check overlap (exclude self so block doesn't collide with itself)
+          if (
+            hasOverlap(
+              dropData.slotIndex,
+              dropData.slotIndex + block.duration,
+              dayBlocks,
+              blockData.blockId
+            )
+          ) {
+            return; // Silent snap-back (dnd-kit animates back)
+          }
           updateTimeBlock(blockData.blockId, {
             dayIndex: dropData.dayIndex as DayOfWeek,
             startSlot: dropData.slotIndex as TimeSlotIndex,
@@ -144,15 +159,20 @@ export function DndProvider({ children }: DndProviderProps) {
       if (dragData.type === "priority") {
         const priorityData = dragData as PriorityDragData;
 
-        // Priority → Timegrid: Create time block and remove priority
+        // Priority → Timegrid: Create time block and remove priority (with overlap clamping)
         if (dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
+          const dayBlocks = (useWeekStore.getState().currentWeek?.timeBlocks ?? []).filter(
+            (b) => b.dayIndex === dropData.dayIndex
+          );
+          const clampedDuration = getClampedDuration(2, dropData.slotIndex, dayBlocks);
+          if (clampedDuration < 1) return; // No space available
           addTimeBlock({
             type: "goal",
             goalId: priorityData.goalId,
             roleId: priorityData.roleId,
             dayIndex: dropData.dayIndex as DayOfWeek,
             startSlot: dropData.slotIndex as TimeSlotIndex,
-            duration: 2, // 1 hour = 2 x 30-min slots
+            duration: clampedDuration,
             title: priorityData.text,
             completed: false,
           });
@@ -219,15 +239,20 @@ export function DndProvider({ children }: DndProviderProps) {
           return;
         }
 
-        // Evening → Timegrid: Create time block
+        // Evening → Timegrid: Create time block (with overlap clamping)
         if (dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
+          const dayBlocks = (currentWeek?.timeBlocks ?? []).filter(
+            (b) => b.dayIndex === dropData.dayIndex
+          );
+          const clampedDuration = getClampedDuration(2, dropData.slotIndex, dayBlocks);
+          if (clampedDuration < 1) return; // No space available
           addTimeBlock({
             type: eveningData.goalId ? "goal" : "freestyle",
             goalId: eveningData.goalId,
             roleId: eveningData.roleId,
             dayIndex: dropData.dayIndex as DayOfWeek,
             startSlot: dropData.slotIndex as TimeSlotIndex,
-            duration: 2, // 1 hour = 2 x 30-min slots
+            duration: clampedDuration,
             title: eveningData.title,
             completed: false,
           });
@@ -276,15 +301,21 @@ export function DndProvider({ children }: DndProviderProps) {
         return;
       }
 
-      // Handle timegrid drops (creates 1-hour TimeBlock)
+      // Handle timegrid drops (creates TimeBlock with overlap clamping)
       if (dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
+        const currentWeek = useWeekStore.getState().currentWeek;
+        const dayBlocks = (currentWeek?.timeBlocks ?? []).filter(
+          (b) => b.dayIndex === dropData.dayIndex
+        );
+        const clampedDuration = getClampedDuration(2, dropData.slotIndex, dayBlocks);
+        if (clampedDuration < 1) return; // No space available
         addTimeBlock({
           type: "goal",
           goalId: goalData.goalId,
           roleId: goalData.roleId,
           dayIndex: dropData.dayIndex as DayOfWeek,
           startSlot: dropData.slotIndex as TimeSlotIndex,
-          duration: 2, // 1 hour = 2 x 30-min slots
+          duration: clampedDuration,
           title: goalData.text,
           completed: false,
         });
