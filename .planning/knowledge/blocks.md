@@ -45,6 +45,7 @@
 - **Freestyle blocks lack goalId**: Drop handlers that create priorities from blocks must check `block.goalId` existence first -- freestyle blocks cannot become priorities.
 - **Evening singleton enforcement**: `addEveningBlock` throws on duplicate; DndProvider checks `existingEvening` before calling. Missing the check would cause an unhandled error.
 - **Block height precision**: `duration * 32` must match TimeSlot's `h-8` (32px). Changing slot height without updating TimeBlock calculation will break layout.
+- **getMaxAvailableDuration only looks forward**: It finds blocks starting at or after the given slot, but misses blocks that started BEFORE and extend into it. All timegrid drop paths must pre-check `hasOverlap` on the drop slot before calling `getClampedDuration`, or drops can land inside existing blocks.
 
 ## Key Files
 

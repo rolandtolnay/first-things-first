@@ -46,6 +46,9 @@
 - **useCallback dependency array**: All store actions used in `handleDragEnd` must be in the dependency array to avoid stale closures.
 - **DragOverlay re-render timing**: `setActiveData(null)` triggers re-render before dnd-kit reads `dropAnimation`. The `activeTypeRef` pattern solves this by persisting the type in a ref.
 - **Collision detection choice matters**: Changed from `closestCenter` to `rectIntersection` during Phase 05.1 for better cross-section detection.
+- **KeyboardSensor intercepts Space/Enter in nested inputs**: dnd-kit's `KeyboardSensor` listens for Space and Enter to initiate keyboard drags. Inline inputs inside draggable elements must call `e.stopPropagation()` on `onKeyDown` to prevent dnd-kit from hijacking keystrokes.
+- **e.preventDefault() on pointerdown blocks blur**: Drawing hooks that call `e.preventDefault()` in `onPointerDown` prevent the browser from blurring focused inputs. Manually call `document.activeElement.blur()` before `preventDefault()` to ensure cleanup handlers fire.
+- **Clamping drops miss backward overlap**: `getClampedDuration` only looks forward for available space. Goal/priority/evening timegrid drops must pre-check `hasOverlap` at the drop slot before clamping, otherwise new blocks can land inside blocks that started earlier.
 
 ## Key Files
 
