@@ -29,7 +29,7 @@ export function GoalList({ roleId, roleColor }: GoalListProps) {
   }, [currentWeek?.goals, roleId]);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-2">
       {/* Goal items */}
       {goals.map((goal) => (
         <GoalItem key={goal.id} goal={goal} roleColor={roleColor} />

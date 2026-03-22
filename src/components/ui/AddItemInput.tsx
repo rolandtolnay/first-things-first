@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, ReactNode } from "react";
 
 interface AddItemInputProps {
   label: string;
   placeholder: string;
   onAdd: (value: string) => void;
+  icon?: ReactNode;
   wrapperClassName?: string;
   inputClassName?: string;
   buttonClassName?: string;
@@ -15,9 +16,10 @@ export function AddItemInput({
   label,
   placeholder,
   onAdd,
-  wrapperClassName = "",
-  inputClassName = "",
-  buttonClassName = "",
+  icon,
+  wrapperClassName,
+  inputClassName,
+  buttonClassName,
 }: AddItemInputProps) {
   const [isInputMode, setIsInputMode] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -64,7 +66,7 @@ export function AddItemInput({
 
   if (isInputMode) {
     return (
-      <div className={wrapperClassName}>
+      <div className={wrapperClassName} style={{ padding: '4px 0' }}>
         <input
           ref={inputRef}
           type="text"
@@ -73,7 +75,18 @@ export function AddItemInput({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={inputClassName}
+          className={inputClassName || "w-full bg-transparent focus:outline-none"}
+          style={
+            inputClassName
+              ? undefined
+              : {
+                  fontSize: '13px',
+                  border: `1px solid var(--border-emphasis)`,
+                  borderRadius: 'var(--radius-md)',
+                  padding: '6px 10px',
+                  backgroundColor: 'var(--bg-card)',
+                }
+          }
           aria-label={placeholder}
         />
       </div>
@@ -81,16 +94,39 @@ export function AddItemInput({
   }
 
   return (
-    <div className={wrapperClassName}>
+    <div className={wrapperClassName} style={{ padding: '4px 0' }}>
       <button
         type="button"
         onClick={() => {
           setIsInputMode(true);
           setInputValue("");
         }}
-        className={buttonClassName}
+        className={buttonClassName || "flex items-center gap-1 transition-colors cursor-pointer"}
+        style={
+          buttonClassName
+            ? undefined
+            : {
+                fontSize: '13px',
+                fontWeight: 500,
+                color: 'var(--text-muted)',
+                padding: '4px 8px',
+                borderRadius: 'var(--radius-md)',
+              }
+        }
+        onMouseEnter={(e) => {
+          if (!buttonClassName) {
+            e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+            e.currentTarget.style.color = 'var(--text-secondary)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!buttonClassName) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = 'var(--text-muted)';
+          }
+        }}
       >
-        <span className="mr-1">+</span>
+        {icon || <span className="mr-1">+</span>}
         {label}
       </button>
     </div>

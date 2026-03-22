@@ -6,15 +6,16 @@
  * Combines a role header with its goals list.
  * Displays:
  * - Role header (color dot, name, edit/delete)
- * - GoalList underneath with slight indentation
+ * - GoalList underneath
+ * - Entire section tinted with role color at 8% opacity
  */
 
 import { useCallback } from "react";
+import { Trash2 } from "lucide-react";
 import { useWeekStore } from "@/stores/weekStore";
-import { getRoleColorStyle } from "@/lib/role-colors";
+import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import { useEditableText } from "@/hooks/useEditableText";
 import { GoalList } from "./GoalList";
-import { CloseIcon } from "@/components/ui/CloseIcon";
 import type { Role } from "@/types";
 
 interface RoleSectionProps {
@@ -40,12 +41,20 @@ export function RoleSection({ role }: RoleSectionProps) {
   };
 
   return (
-    <div className="flex flex-col">
+    <div
+      className="flex flex-col"
+      style={{
+        backgroundColor: getRoleColorStyleWithOpacity(role.color, 0.08),
+        borderRadius: 'var(--radius-md)',
+        padding: '12px',
+        marginBottom: '12px',
+      }}
+    >
       {/* Role header */}
-      <div className="group flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-secondary/50 transition-colors">
-        {/* Color indicator */}
+      <div className="group flex items-center gap-2 transition-colors">
+        {/* Color indicator - 8px dot */}
         <div
-          className="w-3 h-3 rounded-full flex-shrink-0"
+          className="w-2 h-2 rounded-full flex-shrink-0"
           style={{ backgroundColor: getRoleColorStyle(role.color) }}
           aria-hidden="true"
         />
@@ -59,12 +68,25 @@ export function RoleSection({ role }: RoleSectionProps) {
             onChange={(e) => setEditValue(e.target.value)}
             onBlur={save}
             onKeyDown={handleKeyDown}
-            className="flex-1 min-w-0 text-sm bg-transparent border border-border rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-ring"
+            className="flex-1 min-w-0 bg-transparent focus:outline-none"
+            style={{
+              fontSize: '15px',
+              fontWeight: 600,
+              border: `1px solid var(--border-emphasis)`,
+              borderRadius: 'var(--radius-sm)',
+              padding: '2px 6px',
+            }}
             aria-label="Edit role name"
           />
         ) : (
           <span
-            className="flex-1 min-w-0 text-sm font-medium text-foreground truncate cursor-pointer"
+            className="flex-1 min-w-0 truncate cursor-pointer"
+            style={{
+              fontSize: '15px',
+              fontWeight: 600,
+              lineHeight: '1.4',
+              color: 'var(--text-primary)',
+            }}
             onDoubleClick={startEdit}
             title={role.name}
           >
@@ -77,16 +99,23 @@ export function RoleSection({ role }: RoleSectionProps) {
           <button
             type="button"
             onClick={handleDelete}
-            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity p-0.5 rounded"
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded cursor-pointer"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--destructive)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-muted)';
+            }}
             aria-label={`Delete role ${role.name}`}
           >
-            <CloseIcon size={14} />
+            <Trash2 size={14} />
           </button>
         )}
       </div>
 
-      {/* Goals list - slightly indented */}
-      <div className="ml-5">
+      {/* Goals list - inside colored section, no extra indent */}
+      <div className="mt-2">
         <GoalList roleId={role.id} roleColor={role.color} />
       </div>
     </div>

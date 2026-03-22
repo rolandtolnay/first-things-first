@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { useWeekStore } from "@/stores/weekStore";
 import { AddItemInput } from "@/components/ui/AddItemInput";
 
@@ -12,12 +13,10 @@ export function AddGoalButton({ roleId }: AddGoalButtonProps) {
 
   return (
     <AddItemInput
-      label="Add Goal"
+      label="Add goal"
       placeholder="Goal text..."
       onAdd={(text) => addGoal({ roleId, text })}
-      wrapperClassName="px-2 py-1"
-      inputClassName="w-full text-xs border border-border rounded px-2 py-1 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring"
-      buttonClassName="text-left text-xs text-muted-foreground hover:text-foreground transition-colors px-1 py-0.5 rounded hover:bg-secondary/50"
+      icon={<Plus size={14} style={{ color: 'var(--primary)' }} />}
     />
   );
 }

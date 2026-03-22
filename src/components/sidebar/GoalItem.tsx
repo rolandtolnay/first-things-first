@@ -4,19 +4,20 @@
  * GoalItem Component
  *
  * Displays a single goal with:
- * - Role color accent (left border)
+ * - Role color accent (left border + tinted background)
  * - Goal text (editable on double-click)
- * - Notes indicator icon (if goal has notes)
+ * - Notes indicator icon (if goal has notes) - right of text
+ * - Completion checkbox on the RIGHT side
  * - Delete button (appears on hover)
  * - Drag capability for dropping onto Day Priorities
  */
 
 import { useCallback } from "react";
 import { useDraggable } from "@dnd-kit/core";
+import { X, FileText } from "lucide-react";
 import { useWeekStore } from "@/stores/weekStore";
-import { getRoleColorStyle } from "@/lib/role-colors";
+import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import { useEditableText } from "@/hooks/useEditableText";
-import { CloseIcon } from "@/components/ui/CloseIcon";
 import { CompletionCheckbox } from "@/components/ui/CompletionCheckbox";
 import { cn } from "@/lib/utils";
 import type { Goal, RoleColor } from "@/types";
@@ -60,31 +61,37 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
     }
   };
 
+  // Compute background based on completion state
+  const backgroundColor = goal.completed
+    ? 'var(--completed-bg)'
+    : getRoleColorStyleWithOpacity(roleColor, 0.08);
+
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
       className={cn(
-        "group flex items-center gap-2 py-1 px-2 rounded-md hover:bg-secondary/50 transition-colors",
+        "group flex items-center gap-2 transition-colors",
         "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-50"
       )}
       style={{
         borderLeft: `3px solid ${getRoleColorStyle(roleColor)}`,
-        ...(goal.completed && {
-          backgroundColor: "hsl(var(--success) / 0.15)",
-        }),
+        backgroundColor,
+        borderRadius: 'var(--radius-md)',
+        padding: '10px 12px',
+        opacity: goal.completed && !isDragging ? 'var(--completed-opacity)' : undefined,
+      }}
+      onMouseEnter={(e) => {
+        if (!goal.completed) {
+          e.currentTarget.style.backgroundColor = getRoleColorStyleWithOpacity(roleColor, 0.12);
+        }
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = backgroundColor;
       }}
     >
-      {/* Completion checkbox */}
-      {!isEditing && (
-        <CompletionCheckbox
-          completed={goal.completed}
-          onToggle={() => toggleGoalCompleted(goal.id)}
-        />
-      )}
-
       {/* Goal text display or edit input */}
       {isEditing ? (
         <input
@@ -94,15 +101,23 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={save}
           onKeyDown={handleKeyDown}
-          className="flex-1 min-w-0 text-sm bg-transparent border border-border rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-ring"
+          className="flex-1 min-w-0 bg-transparent focus:outline-none"
+          style={{
+            fontSize: '14px',
+            border: `1px solid var(--border-emphasis)`,
+            borderRadius: 'var(--radius-sm)',
+            padding: '2px 6px',
+          }}
           aria-label="Edit goal text"
         />
       ) : (
         <span
-          className={cn(
-            "flex-1 min-w-0 text-sm text-foreground truncate cursor-pointer",
-            goal.completed && "opacity-60"
-          )}
+          className="flex-1 min-w-0 truncate cursor-pointer"
+          style={{
+            fontSize: '14px',
+            lineHeight: '1.5',
+            color: 'var(--text-primary)',
+          }}
           onDoubleClick={startEdit}
           title={goal.text}
         >
@@ -113,27 +128,21 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
       {/* Notes indicator */}
       {goal.notes && !isEditing && (
         <span
-          className={cn("text-muted-foreground flex-shrink-0", goal.completed && "opacity-60")}
+          className="flex-shrink-0"
+          style={{ color: 'var(--text-muted)' }}
           title="Has notes"
           aria-label="Goal has notes"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-          </svg>
+          <FileText size={12} />
         </span>
+      )}
+
+      {/* Completion checkbox - RIGHT side */}
+      {!isEditing && (
+        <CompletionCheckbox
+          completed={goal.completed}
+          onToggle={() => toggleGoalCompleted(goal.id)}
+        />
       )}
 
       {/* Delete button (visible on hover) */}
@@ -141,10 +150,17 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
         <button
           type="button"
           onClick={handleDelete}
-          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity p-0.5 rounded flex-shrink-0"
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded flex-shrink-0 cursor-pointer"
+          style={{ color: 'var(--text-muted)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--destructive)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--text-muted)';
+          }}
           aria-label={`Delete goal ${goal.text}`}
         >
-          <CloseIcon />
+          <X size={12} />
         </button>
       )}
     </div>

@@ -2,48 +2,7 @@
 
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-
-function SunIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2" />
-      <path d="M12 20v2" />
-      <path d="m4.93 4.93 1.41 1.41" />
-      <path d="m17.66 17.66 1.41 1.41" />
-      <path d="M2 12h2" />
-      <path d="M20 12h2" />
-      <path d="m6.34 17.66-1.41 1.41" />
-      <path d="m19.07 4.93-1.41 1.41" />
-    </svg>
-  );
-}
-
-function MoonIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-    </svg>
-  );
-}
+import { Sun, Moon } from 'lucide-react';
 
 function useMounted() {
   const [mounted, setMounted] = useState(false);
@@ -63,7 +22,12 @@ export function ThemeToggle() {
     // Return placeholder with same dimensions to avoid layout shift
     return (
       <button
-        className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background"
+        className="flex h-9 w-9 items-center justify-center cursor-pointer"
+        style={{
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-subtle)',
+          backgroundColor: 'var(--bg-card)',
+        }}
         aria-label="Toggle theme"
       />
     );
@@ -72,13 +36,24 @@ export function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-      className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background transition-colors hover:bg-muted"
+      className="flex h-9 w-9 items-center justify-center cursor-pointer transition-colors"
+      style={{
+        borderRadius: 'var(--radius-md)',
+        border: '1px solid var(--border-subtle)',
+        backgroundColor: 'var(--bg-card)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'var(--bg-card)';
+      }}
       aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
     >
       {resolvedTheme === 'dark' ? (
-        <SunIcon className="h-4 w-4 text-foreground" />
+        <Sun size={16} style={{ color: 'var(--text-secondary)' }} />
       ) : (
-        <MoonIcon className="h-4 w-4 text-foreground" />
+        <Moon size={16} style={{ color: 'var(--text-secondary)' }} />
       )}
     </button>
   );
