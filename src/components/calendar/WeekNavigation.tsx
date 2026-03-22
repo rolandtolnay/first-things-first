@@ -145,14 +145,14 @@ export function WeekNavigation({ onNewWeek }: WeekNavigationProps) {
 
       {/* "Plan this week?" banner */}
       {showBanner && (
-        <div className="px-4 py-2.5 bg-primary/10 border-b border-border flex items-center gap-3">
-          <span className="text-sm font-medium">
+        <div className="px-4 py-3 bg-amber-500/15 border-b border-amber-500/30 flex items-center justify-center gap-3">
+          <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
             Plan this week?
           </span>
           <button
             type="button"
             onClick={onNewWeek}
-            className="text-sm px-3 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
+            className="text-sm px-3 py-1 rounded-md bg-amber-500 text-white hover:bg-amber-600 transition-colors font-medium"
           >
             Start
           </button>
