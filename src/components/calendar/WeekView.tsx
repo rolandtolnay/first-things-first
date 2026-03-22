@@ -1,45 +1,90 @@
 "use client";
 
 /**
- * WeekView - 7-day week container with day columns
+ * WeekView - 7-day week container with navigation and day columns
  *
  * Main calendar visualization showing all 7 days in a horizontal grid.
- * Each day column contains priorities, time slots (8:00-20:00), and evening slot.
+ * Handles initial week selection: auto-creates on first-ever use,
+ * otherwise navigates to the latest existing week.
  */
 
-import { useEffect } from "react";
-import type { WeekId, DayOfWeek } from "@/types";
+import { useEffect, useState, useRef } from "react";
+import type { DayOfWeek } from "@/types";
 import { getCurrentWeekId, getWeekDates } from "@/lib/utils";
+import { db } from "@/lib/db";
 import { useWeekStore } from "@/stores/weekStore";
 import { DayColumn } from "./DayColumn";
+import { WeekNavigation } from "./WeekNavigation";
+import { CarryoverDialog } from "./CarryoverDialog";
 
-interface WeekViewProps {
-  weekId?: WeekId;
-}
+export function WeekView() {
+  const selectedWeekId = useWeekStore((s) => s.selectedWeekId);
+  const currentWeek = useWeekStore((s) => s.currentWeek);
+  const isLoading = useWeekStore((s) => s.isLoading);
+  const navigateToWeek = useWeekStore((s) => s.navigateToWeek);
+  const createNewWeek = useWeekStore((s) => s.createNewWeek);
 
-export function WeekView({ weekId }: WeekViewProps) {
-  // Use provided weekId or get current week
-  const currentWeekId = weekId ?? getCurrentWeekId();
-  const dates = getWeekDates(currentWeekId);
-  const loadWeek = useWeekStore((state) => state.loadWeek);
+  const [isCarryoverOpen, setIsCarryoverOpen] = useState(false);
+  const initializedRef = useRef(false);
 
-  // Load week data on mount or when weekId changes
+  // On mount, determine initial week
   useEffect(() => {
-    loadWeek(currentWeekId);
-  }, [currentWeekId, loadWeek]);
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
+    async function init() {
+      const count = await db.weeks.count();
+
+      if (count === 0) {
+        // First-ever use: auto-create the current week
+        const weekId = getCurrentWeekId();
+        await createNewWeek(weekId, {});
+        await navigateToWeek(weekId);
+      } else {
+        // Navigate to the latest existing week
+        const keys = await db.weeks
+          .orderBy("id")
+          .reverse()
+          .limit(1)
+          .primaryKeys();
+        if (keys.length > 0) {
+          await navigateToWeek(keys[0]);
+        }
+      }
+    }
+
+    init();
+  }, [createNewWeek, navigateToWeek]);
+
+  // Derive dates from selectedWeekId
+  const dates = selectedWeekId ? getWeekDates(selectedWeekId) : null;
+
+  // Guard: show nothing meaningful until initialized
+  if (!selectedWeekId || !dates) {
+    return <div className="h-full flex flex-col" />;
+  }
+
+  // If currentWeek is null and not loading, the selected week doesn't exist in DB
+  // (shouldn't happen with navigation only between existing weeks, but guard anyway)
+  if (!currentWeek && !isLoading) {
+    return (
+      <div className="h-full flex flex-col">
+        <WeekNavigation onNewWeek={() => setIsCarryoverOpen(true)} />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">
-      {/* Week header with date range */}
-      <div className="p-4 border-b border-border shrink-0">
-        <h2 className="text-lg font-semibold">
-          Week of{" "}
-          {dates[1].toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-          })}
-        </h2>
-      </div>
+      {/* Navigation header */}
+      <WeekNavigation onNewWeek={() => setIsCarryoverOpen(true)} />
+
+      {/* Carryover dialog */}
+      <CarryoverDialog
+        open={isCarryoverOpen}
+        onClose={() => setIsCarryoverOpen(false)}
+        sourceWeek={currentWeek}
+      />
 
       {/* Day columns */}
       <div className="flex-1 overflow-auto">
