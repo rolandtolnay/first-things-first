@@ -21,8 +21,7 @@ import { getRoleColorStyle } from "@/lib/role-colors";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockResize } from "@/hooks/useBlockResize";
 import { CloseIcon } from "@/components/ui/CloseIcon";
-import { cn } from "@/lib/utils";
-import { slotToTime } from "@/lib/utils";
+import { cn, slotToTime } from "@/lib/utils";
 
 interface TimeBlockProps {
   block: TimeBlockType;
@@ -76,18 +75,12 @@ export function TimeBlock({
   const top = block.startSlot * 32;
 
   // Get role color for styling (or use neutral for freestyle without role)
-  const roleColorValue = useWeekStore((state) =>
+  const roleColorRaw = useWeekStore((state) =>
     block.roleId
       ? state.currentWeek?.roles.find((r) => r.id === block.roleId)?.color
       : undefined
   );
-  const roleColor = roleColorValue
-    ? getRoleColorStyle(roleColorValue)
-    : undefined;
-
-  const handleDelete = () => {
-    deleteTimeBlock(block.id);
-  };
+  const roleColor = roleColorRaw ? getRoleColorStyle(roleColorRaw) : undefined;
 
   const handleInlineKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -173,7 +166,7 @@ export function TimeBlock({
       {/* Delete button - visible on hover */}
       <button
         type="button"
-        onClick={handleDelete}
+        onClick={() => deleteTimeBlock(block.id)}
         className={cn(
           "absolute top-1 right-1 p-0.5 rounded-sm",
           "opacity-0 group-hover:opacity-100 transition-opacity",

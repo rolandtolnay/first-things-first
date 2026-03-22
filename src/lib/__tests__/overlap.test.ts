@@ -121,12 +121,6 @@ describe("getClampedDuration", () => {
     expect(getClampedDuration(0, 0, [])).toBe(1);
   });
 
-  it("returns minimum 1 even when max available would be 0", () => {
-    // Edge case: if somehow max available computed as 0, still return 1
-    // This shouldn't happen in practice but enforces the minimum
-    expect(getClampedDuration(0, 0, [])).toBe(1);
-  });
-
   it("passes excludeId through to getMaxAvailableDuration", () => {
     const blocks = [makeBlock(6, 2, "self"), makeBlock(10, 2, "other")];
     // Without exclude: max from 4 = 2 (block at 6), requested 5 -> 2

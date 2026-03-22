@@ -30,7 +30,6 @@ export function useBlockResize(
   const [isResizing, setIsResizing] = useState(false);
   const [previewDuration, setPreviewDuration] = useState<number | null>(null);
   const containerRectRef = useRef<DOMRect | null>(null);
-  const pointerIdRef = useRef<number | null>(null);
 
   const updateTimeBlock = useWeekStore((state) => state.updateTimeBlock);
 
@@ -43,7 +42,6 @@ export function useBlockResize(
 
       // Capture pointer for reliable tracking even if pointer leaves element
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
-      pointerIdRef.current = e.pointerId;
 
       // Find the slots column container and cache its rect
       const container = (e.currentTarget as HTMLElement).closest(
@@ -95,7 +93,6 @@ export function useBlockResize(
       setIsResizing(false);
       setPreviewDuration(null);
       containerRectRef.current = null;
-      pointerIdRef.current = null;
     },
     [isResizing, previewDuration, block.duration, block.id, updateTimeBlock]
   );
