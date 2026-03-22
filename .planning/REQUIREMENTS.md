@@ -57,12 +57,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Weeks
 
-- [ ] **WEEK-01**: Default view shows current week
-- [ ] **WEEK-02**: User can navigate to previous/future weeks using navigation arrows
-- [ ] **WEEK-03**: Previous weeks display as user left them (read/write, not read-only)
-- [ ] **WEEK-04**: "New Week" button triggers confirmation dialog
-- [ ] **WEEK-05**: New week dialog asks whether to carry over uncompleted goals
-- [ ] **WEEK-06**: Roles always carry over to new week; scheduled blocks clear
+- [x] **WEEK-01**: Default view shows current week
+- [x] **WEEK-02**: User can navigate to previous/future weeks using navigation arrows
+- [x] **WEEK-03**: Previous weeks display as user left them (read/write, not read-only)
+- [x] **WEEK-04**: "New Week" button triggers confirmation dialog
+- [x] **WEEK-05**: New week dialog asks whether to carry over uncompleted goals
+- [x] **WEEK-06**: Roles always carry over to new week; scheduled blocks clear
 
 ### Design
 
@@ -166,12 +166,12 @@ Which phases cover which requirements. Updated by create-roadmap.
 | COMP-01 | Phase 7 | Complete |
 | COMP-02 | Phase 7 | Complete |
 | COMP-03 | Phase 7 | Complete |
-| WEEK-01 | Phase 8 | Pending |
-| WEEK-02 | Phase 8 | Pending |
-| WEEK-03 | Phase 8 | Pending |
-| WEEK-04 | Phase 8 | Pending |
-| WEEK-05 | Phase 8 | Pending |
-| WEEK-06 | Phase 8 | Pending |
+| WEEK-01 | Phase 8 | Complete |
+| WEEK-02 | Phase 8 | Complete |
+| WEEK-03 | Phase 8 | Complete |
+| WEEK-04 | Phase 8 | Complete |
+| WEEK-05 | Phase 8 | Complete |
+| WEEK-06 | Phase 8 | Complete |
 | DSGN-03 | Phase 9 | Pending |
 | DSGN-04 | Phase 9 | Pending |
 | DSGN-05 | Phase 9 | Pending |

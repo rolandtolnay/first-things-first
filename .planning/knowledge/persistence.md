@@ -24,8 +24,10 @@
 - **DatabaseProvider**: React component wrapping children, calls `initializeDatabase` in useEffect. Renders children immediately (non-blocking) -- stores handle loading states.
 - **Optimistic update pattern**: `withWeek(get, set, updater)` reads currentWeek, applies updater to Zustand state, then calls `saveCurrentWeek()` which puts to Dexie.
 - **`saveCurrentWeek()`**: Reads `get().currentWeek`, stamps `updatedAt`, sets back to Zustand, writes to Dexie via `saveWeek`.
-- **`loadWeek(weekId)`**: Fetches from Dexie. If absent, calls `createWeek` to create empty week. Sets `currentWeek` in store.
-- **Week creation with carry-over**: `createWeek(weekId, carryOverRoles?)` copies role names/colors with fresh UUIDs.
+- **`loadWeek(weekId)`**: Fetches from Dexie. Returns null if week doesn't exist — no auto-creation (refactored in Phase 08).
+- **`createNewWeek(weekId, options)`**: Explicit creation path; called only from the carryover dialog flow. Carries over roles always and optionally goals.
+- **Week creation with carry-over**: `createEmptyWeek(weekId, carryOverRoles?)` copies role names/colors with fresh UUIDs.
+- **Reactive week index**: `useLiveQuery(() => db.weeks.orderBy('id').primaryKeys())` returns only week ID strings without loading full objects. YYYY-Www lexicographic order equals chronological order — use `db.weeks.where('id').above/below(weekId).limit(1).primaryKeys()` for adjacent week lookup.
 - **ID generation**: `crypto.randomUUID()` wrapped in `generateId()`.
 - **Week ID utilities**: `getWeekId(date)`, `parseWeekId(weekId)`, `getCurrentWeekId()`, `getNextWeekId()`, `getPreviousWeekId()`, `formatWeekId()`.
 

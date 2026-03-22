@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5.1: Cross-Section Drag-Drop** - Enable drag-drop between all dashboard sections (INSERTED)
 - [x] **Phase 6: Time Block Interactions** - Resize, create freestyle blocks, overlap prevention
 - [x] **Phase 7: Completion Tracking** - Mark items complete with independent status per instance
-- [ ] **Phase 8: Week Navigation** - Navigate weeks, create new weeks with carryover options
+- [x] **Phase 8: Week Navigation** - Navigate weeks, create new weeks with carryover options
 - [ ] **Phase 9: Visual Polish** - JARVIS aesthetic, typography refinement, design system integration
 
 ## Phase Details
@@ -175,8 +175,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 08-01: Week navigation and current week display
-- [ ] 08-02: New week creation with carryover dialog
+- [x] 08-01: Week navigation and creation (combined)
 
 ### Phase 9: Visual Polish
 **Goal**: App achieves distinctive JARVIS-inspired aesthetic with professional finish
@@ -210,5 +209,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 5.1 Cross-Section Drag-Drop | 2/2 | Complete | 2026-01-18 |
 | 6. Time Block Interactions | 1/1 | Complete | 2026-03-22 |
 | 7. Completion Tracking | 1/1 | Complete | 2026-03-22 |
-| 8. Week Navigation | 0/2 | Not started | - |
+| 8. Week Navigation | 1/1 | Complete | 2026-03-22 |
 | 9. Visual Polish | 0/3 | Not started | - |

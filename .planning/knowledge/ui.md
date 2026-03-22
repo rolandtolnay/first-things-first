@@ -22,6 +22,8 @@
 | Inline title editing on drawn block (not popover) | Fastest creation path; maintains spatial context; freestyle blocks need only a name | Phase 06-01 |
 | vitest over no test runner | First test runner added to project; configured with @/ path alias matching tsconfig | Phase 06-01 |
 | CompletionCheckbox stopPropagation on both onClick and onPointerDown | dnd-kit activates on onPointerDown; stopping only onClick leaves drag-start unblocked | Phase 07-01 |
+| Native `<dialog>` with showModal() over library modals | Free focus trap, ::backdrop, Esc dismiss, top-layer rendering — no z-index management or portal needed | Phase 08-01 |
+| Standard HTML checkboxes in CarryoverDialog, not CompletionCheckbox | Circular SVG checkmark style reads as "mark done", not "select"; confusing in a goal-selection context | Phase 08-01 |
 | Completed background replaces role-color background (not layered) | Layering green over role color produces muddy mixed hues; role-color left border preserved for scanning | Phase 07-01 |
 | Completed text opacity-60 suppressed during isDragging | Drag already applies opacity-50; stacking both produces double-dimming to near-invisible | Phase 07-01 |
 | Checkbox hidden during isEditing / isInlineEditing | Editing and completion are mutually exclusive states; simultaneous targets create visual clutter | Phase 07-01 |
@@ -40,6 +42,7 @@
   - `CompletionCheckbox` component: inline SVG circle/checkmark button with `stopPropagation` on both `onPointerDown` and `onClick`, safe to embed in any dnd-kit draggable context.
 - **Pointer event hooks**: `useBlockResize` — pointer capture on bottom-edge handle, local state during drag, single store commit on `pointerup`. `useBlockDraw` — container-level pointer events on TimeGrid for click-drag-draw creation gesture.
 - **dnd-kit coexistence**: The resize handle calls `e.stopPropagation()` on `onPointerDown` to prevent dnd-kit's PointerSensor from activating. Click-drag-draw operates on the TimeGrid container (not on block elements) so it never intersects dnd-kit. The two systems share DOM elements but never share state.
+- **Native dialog controlled pattern**: Parent owns `isDialogOpen` boolean. Dialog syncs to imperative API via `useEffect` (`if (open && !dialog.open) dialog.showModal()` / `dialog.close()`). `cancel` event listener (Esc key) calls `preventDefault()` then `onClose()` so React state stays in sync. React 19 eliminates `forwardRef` — pass ref as regular prop.
 - **Interaction state machine**: Each pointer interaction (idle / resizing / drawing / editing) uses local state, not global. Container rect cached on `pointerdown` — not re-queried on `pointermove` to avoid layout reflows. Absolute position calculation, never cumulative deltas.
 - **Data attributes for interaction guards**: `data-block` marks existing TimeBlocks so click-drag-draw ignores pointer starts on occupied slots. `data-slots-column` marks the TimeGrid container so resize hook can locate its parent via `closest('[data-slots-column]')`.
 - **TDD for utilities**: Pure utility functions (`src/lib/`) tested with vitest. Path aliases resolved in `vitest.config.ts` to match tsconfig `@/` mapping.
@@ -62,6 +65,7 @@
 
 ## Pitfalls
 
+- **showModal() throws if already open**: Calling `showModal()` on an open dialog throws `InvalidStateError`. Always guard: `if (!dialog.open) dialog.showModal()`. The `cancel` event from Esc must also be intercepted and routed through React state — native Esc close bypasses React's `open` prop, leaving state desynchronized.
 - **onPointerDown not onMouseDown for stopPropagation**: dnd-kit's PointerSensor fires on `onPointerDown`, which precedes `onMouseDown`. Calling `stopPropagation()` on `onMouseDown` does not prevent dnd-kit activation.
 - **setPointerCapture required for resize/draw**: Without it, fast pointer movement off the handle element causes events to stop firing. `setPointerCapture(e.pointerId)` guarantees `pointermove`/`pointerup` continue on the capturing element regardless of pointer position.
 - **Cumulative delta drift**: Using `movementY` deltas across frames causes floating-point drift. Always calculate slot position from absolute coordinates: `Math.round((clientY - containerTop) / 32)`.
@@ -90,3 +94,5 @@
 - `vitest.config.ts` -- Vitest config with @/ path alias resolution matching tsconfig
 - `src/components/calendar/TimeGrid.tsx` -- TimeGrid container with data-slots-column, draw preview, useBlockDraw integration
 - `src/components/calendar/TimeBlock.tsx` -- Resize handle, inline title editing, data-block attribute
+- `src/components/calendar/WeekNavigation.tsx` -- Navigation header (arrows, Today, +New, banner); week index via useLiveQuery
+- `src/components/calendar/CarryoverDialog.tsx` -- Native dialog with goal checkboxes grouped by role
