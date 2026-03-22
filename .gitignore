@@ -52,3 +52,6 @@ next-env.d.ts
 .planning/**/*.patch
 .planning/phases/**/*.html
 .planning/phases/**/screenshots/
+
+# Audit logs
+etc/audit/
