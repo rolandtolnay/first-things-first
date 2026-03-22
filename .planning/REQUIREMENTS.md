@@ -68,9 +68,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **DSGN-01**: App supports light mode and dark mode from launch
 - [x] **DSGN-02**: Blocks and goals are color-coded by role for quick scanning
-- [ ] **DSGN-03**: Visual design follows provided design inspiration (light, clean interface)
-- [ ] **DSGN-04**: Typography-forward, minimal clutter design approach
-- [ ] **DSGN-05**: Design system finalized using `frontend-design` skill with user-provided visual references during implementation
+- [x] **DSGN-03**: Visual design follows provided design inspiration (light, clean interface)
+- [x] **DSGN-04**: Typography-forward, minimal clutter design approach
+- [x] **DSGN-05**: Design system finalized using `frontend-design` skill with user-provided visual references during implementation
 
 ## v2 Requirements
 
@@ -172,9 +172,9 @@ Which phases cover which requirements. Updated by create-roadmap.
 | WEEK-04 | Phase 8 | Complete |
 | WEEK-05 | Phase 8 | Complete |
 | WEEK-06 | Phase 8 | Complete |
-| DSGN-03 | Phase 9 | Pending |
-| DSGN-04 | Phase 9 | Pending |
-| DSGN-05 | Phase 9 | Pending |
+| DSGN-03 | Phase 9 | Complete |
+| DSGN-04 | Phase 9 | Complete |
+| DSGN-05 | Phase 9 | Complete |
 
 **Coverage:**
 - v1 requirements: 38 total
