@@ -105,6 +105,21 @@ export function parseWeekId(weekId: WeekId): Date {
   return targetMonday;
 }
 
+const MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
 /**
  * Format a week ID for human display.
  * Input: "2026-W03" -> "Jan 13-19, 2026"
@@ -119,23 +134,8 @@ export function formatWeekId(weekId: WeekId): string {
   const gridSaturday = new Date(monday);
   gridSaturday.setUTCDate(monday.getUTCDate() + 5);
 
-  const monthNames = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-
-  const sunMonth = monthNames[gridSunday.getUTCMonth()];
-  const satMonth = monthNames[gridSaturday.getUTCMonth()];
+  const sunMonth = MONTH_NAMES[gridSunday.getUTCMonth()];
+  const satMonth = MONTH_NAMES[gridSaturday.getUTCMonth()];
   const sunDay = gridSunday.getUTCDate();
   const satDay = gridSaturday.getUTCDate();
   const year = gridSaturday.getUTCFullYear();

@@ -27,6 +27,14 @@ export function WeekView() {
   const [isCarryoverOpen, setIsCarryoverOpen] = useState(false);
   const initializedRef = useRef(false);
 
+  function openCarryover() {
+    setIsCarryoverOpen(true);
+  }
+
+  function closeCarryover() {
+    setIsCarryoverOpen(false);
+  }
+
   // On mount, determine initial week
   useEffect(() => {
     if (initializedRef.current) return;
@@ -69,7 +77,7 @@ export function WeekView() {
   if (!currentWeek && !isLoading) {
     return (
       <div className="h-full flex flex-col">
-        <WeekNavigation onNewWeek={() => setIsCarryoverOpen(true)} />
+        <WeekNavigation onNewWeek={openCarryover} />
       </div>
     );
   }
@@ -77,12 +85,12 @@ export function WeekView() {
   return (
     <div className="h-full flex flex-col">
       {/* Navigation header */}
-      <WeekNavigation onNewWeek={() => setIsCarryoverOpen(true)} />
+      <WeekNavigation onNewWeek={openCarryover} />
 
       {/* Carryover dialog */}
       <CarryoverDialog
         open={isCarryoverOpen}
-        onClose={() => setIsCarryoverOpen(false)}
+        onClose={closeCarryover}
         sourceWeek={currentWeek}
       />
 

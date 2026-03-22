@@ -58,8 +58,7 @@ export function WeekNavigation({ onNewWeek }: WeekNavigationProps) {
   }
 
   // Show banner when weeks exist but current calendar week hasn't been planned
-  const showBanner =
-    weekIds.length > 0 && !currentCalendarWeekExists;
+  const showBanner = weekIds.length > 0 && !currentCalendarWeekExists;
 
   return (
     <div className="shrink-0">
