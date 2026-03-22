@@ -122,31 +122,28 @@ const MONTH_NAMES = [
 
 /**
  * Format a week ID for human display.
- * Input: "2026-W03" -> "Jan 13-19, 2026"
+ * Input: "2026-W03" -> "Jan 12-18, 2026" (Monday-Sunday)
  */
 export function formatWeekId(weekId: WeekId): string {
   const monday = parseWeekId(weekId);
 
-  // The calendar grid shows Sunday (day before Monday) through Saturday
-  // Sunday = Monday - 1 day, Saturday = Monday + 5 days
-  const gridSunday = new Date(monday);
-  gridSunday.setUTCDate(monday.getUTCDate() - 1);
-  const gridSaturday = new Date(monday);
-  gridSaturday.setUTCDate(monday.getUTCDate() + 5);
+  // The calendar grid shows Monday through Sunday
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
 
-  const sunMonth = MONTH_NAMES[gridSunday.getUTCMonth()];
-  const satMonth = MONTH_NAMES[gridSaturday.getUTCMonth()];
-  const sunDay = gridSunday.getUTCDate();
-  const satDay = gridSaturday.getUTCDate();
-  const year = gridSaturday.getUTCFullYear();
+  const monMonth = MONTH_NAMES[monday.getUTCMonth()];
+  const sunMonth = MONTH_NAMES[sunday.getUTCMonth()];
+  const monDay = monday.getUTCDate();
+  const sunDay = sunday.getUTCDate();
+  const year = sunday.getUTCFullYear();
 
   // Same month
-  if (gridSunday.getUTCMonth() === gridSaturday.getUTCMonth()) {
-    return `${sunMonth} ${sunDay}-${satDay}, ${year}`;
+  if (monday.getUTCMonth() === sunday.getUTCMonth()) {
+    return `${monMonth} ${monDay}-${sunDay}, ${year}`;
   }
 
-  // Different months (e.g., "Dec 30 - Jan 5, 2026")
-  return `${sunMonth} ${sunDay} - ${satMonth} ${satDay}, ${year}`;
+  // Different months (e.g., "Dec 29 - Jan 4, 2026")
+  return `${monMonth} ${monDay} - ${sunMonth} ${sunDay}, ${year}`;
 }
 
 /**
@@ -175,20 +172,17 @@ export function getPreviousWeekId(weekId: WeekId): WeekId {
 }
 
 /**
- * Get array of 7 dates for a week (Sunday through Saturday).
- * Order: [Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday]
- * This matches DayOfWeek index (0 = Sunday through 6 = Saturday).
+ * Get array of 7 dates for a week (Monday through Sunday).
+ * Order: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+ * This matches DayOfWeek index (0 = Monday through 6 = Sunday).
  */
 export function getWeekDates(weekId: WeekId): Date[] {
   const monday = parseWeekId(weekId);
 
-  // Generate dates in DayOfWeek order (0=Sunday through 6=Saturday)
-  // Monday is day 1, so Sunday is day 0 (Monday - 1)
+  // Generate dates in DayOfWeek order (0=Monday through 6=Sunday)
   return Array.from({ length: 7 }, (_, dayIndex) => {
     const date = new Date(monday);
-    // Offset from Monday: Sunday = -1, Monday = 0, Tue = 1, ..., Sat = 5
-    const offset = dayIndex === 0 ? -1 : dayIndex - 1;
-    date.setDate(monday.getDate() + offset);
+    date.setDate(monday.getDate() + dayIndex);
     return date;
   });
 }
@@ -229,42 +223,40 @@ export function timeToSlot(time: string): number {
 // ============================================================================
 
 /**
- * Day names indexed by DayOfWeek (0 = Sunday)
+ * Day names indexed by DayOfWeek (0 = Monday)
  */
 export const DAY_NAMES = [
-  "Sunday",
   "Monday",
   "Tuesday",
   "Wednesday",
   "Thursday",
   "Friday",
   "Saturday",
+  "Sunday",
 ] as const;
 
 /**
- * Short day names indexed by DayOfWeek (0 = Sunday)
+ * Short day names indexed by DayOfWeek (0 = Monday)
  */
 export const DAY_NAMES_SHORT = [
-  "Sun",
   "Mon",
   "Tue",
   "Wed",
   "Thu",
   "Fri",
   "Sat",
+  "Sun",
 ] as const;
 
 /**
  * Get the date for a specific day within a week.
  * @param weekStartDate - Monday of the week
- * @param dayIndex - 0-6 (Sunday-Saturday)
+ * @param dayIndex - 0-6 (Monday-Sunday)
  */
 export function getDateForDayIndex(weekStartDate: Date, dayIndex: number): Date {
   const result = new Date(weekStartDate);
-  // weekStartDate is Monday (dayIndex would be 1 in a Sunday-start week)
-  // Adjust: Monday = 1, Tuesday = 2, ..., Saturday = 6, Sunday = 0 -> +6
-  const offset = dayIndex === 0 ? 6 : dayIndex - 1;
-  result.setDate(result.getDate() + offset);
+  // weekStartDate is Monday, dayIndex 0 = Monday, 1 = Tuesday, ..., 6 = Sunday
+  result.setDate(result.getDate() + dayIndex);
   return result;
 }
 

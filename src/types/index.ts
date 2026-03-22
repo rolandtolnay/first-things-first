@@ -29,7 +29,7 @@ export type RoleColor =
   | "fuchsia";
 
 /**
- * Day of week index (0 = Sunday through 6 = Saturday)
+ * Day of week index (0 = Monday through 6 = Sunday)
  */
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -110,7 +110,7 @@ export interface DayPriority {
   id: string;
   /** References Goal.id */
   goalId: string;
-  /** Day index 0-6 (Sunday-Saturday) */
+  /** Day index 0-6 (Monday-Sunday) */
   dayIndex: DayOfWeek;
   /** Position in the priorities list for this day */
   order: number;
@@ -131,7 +131,7 @@ export interface TimeBlock {
   goalId?: string;
   /** Role ID for color coding (from goal's role or manual assignment) */
   roleId?: string;
-  /** Day index 0-6 (Sunday-Saturday) */
+  /** Day index 0-6 (Monday-Sunday) */
   dayIndex: DayOfWeek;
   /**
    * Starting slot index (0-23)
@@ -162,7 +162,7 @@ export interface EveningBlock {
   goalId?: string;
   /** Role ID for color coding */
   roleId?: string;
-  /** Day index 0-6 (Sunday-Saturday) */
+  /** Day index 0-6 (Monday-Sunday) */
   dayIndex: DayOfWeek;
   /** Display text (goal text or freestyle title) */
   title: string;
