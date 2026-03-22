@@ -1,0 +1,1 @@
+/Users/rolandtolnay/Documents/Development/first-things-first/.agents/agents/ms-next-code-quality.md
