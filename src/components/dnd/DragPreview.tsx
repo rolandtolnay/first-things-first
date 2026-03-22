@@ -1,6 +1,5 @@
 import type { RoleColor } from "@/types";
-import { getRoleColorStyle } from "@/lib/role-colors";
-import { cn } from "@/lib/utils";
+import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 
 interface DragPreviewProps {
   text: string;
@@ -8,52 +7,39 @@ interface DragPreviewProps {
   variant?: "default" | "compact" | "evening";
 }
 
-const variantStyles = {
-  default: {
-    container: "flex items-center gap-2 py-1.5 px-3 rounded-md bg-card border border-border shadow-lg pointer-events-none min-w-[120px] max-w-[240px]",
-    text: "text-sm text-foreground truncate",
-  },
-  compact: {
-    container: "flex items-center gap-1.5 py-1 px-2 rounded bg-card border border-border shadow-lg pointer-events-none min-w-[100px] max-w-[200px]",
-    text: "text-xs text-foreground truncate",
-  },
-  evening: {
-    container: "flex items-center gap-2 py-2 px-3 rounded-sm shadow-lg pointer-events-none min-w-[100px] max-w-[200px]",
-    text: "text-xs font-medium text-foreground truncate",
-  },
-};
-
 export function DragPreview({ text, roleColor, variant = "default" }: DragPreviewProps) {
-  const styles = variantStyles[variant];
-  const colorStyle = roleColor ? getRoleColorStyle(roleColor) : undefined;
-
-  if (variant === "evening") {
-    return (
-      <div
-        className={cn(styles.container, !colorStyle && "bg-muted border border-border")}
-        style={
-          colorStyle
-            ? {
-                backgroundColor: `${colorStyle.replace(")", " / 0.2)")}`,
-                borderLeft: `3px solid ${colorStyle}`,
-              }
-            : undefined
-        }
-      >
-        <span className={styles.text}>{text}</span>
-      </div>
-    );
-  }
+  const isCompact = variant === "compact" || variant === "evening";
+  const fontSize = isCompact ? '12px' : '14px';
+  const fontWeight = variant === "evening" ? 500 : undefined;
+  const padding = isCompact ? '6px 10px' : '8px 14px';
+  const minWidth = isCompact ? '100px' : '120px';
+  const maxWidth = isCompact ? '200px' : '240px';
 
   return (
     <div
-      className={styles.container}
+      className="flex items-center gap-2 pointer-events-none"
       style={{
-        borderLeftWidth: "3px",
-        borderLeftColor: colorStyle ?? "var(--border)",
+        backgroundColor: roleColor
+          ? getRoleColorStyleWithOpacity(roleColor, 0.08)
+          : 'var(--bg-card)',
+        borderLeft: `3px solid ${roleColor ? getRoleColorStyle(roleColor) : 'var(--border-subtle)'}`,
+        borderRadius: 'var(--radius-md)',
+        boxShadow: 'var(--shadow-drag)',
+        padding,
+        minWidth,
+        maxWidth,
       }}
     >
-      <span className={styles.text}>{text}</span>
+      <span
+        className="truncate"
+        style={{
+          fontSize,
+          fontWeight,
+          color: 'var(--text-primary)',
+        }}
+      >
+        {text}
+      </span>
     </div>
   );
 }

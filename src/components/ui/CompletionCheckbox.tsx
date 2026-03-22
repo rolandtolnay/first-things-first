@@ -7,13 +7,17 @@ interface CompletionCheckboxProps {
 export function CompletionCheckbox({
   completed,
   onToggle,
-  size = 14,
+  size = 16,
 }: CompletionCheckboxProps) {
   return (
     <button
       type="button"
-      className="flex-shrink-0 flex items-center justify-center transition-colors duration-150"
-      style={{ width: size, height: size }}
+      className="flex-shrink-0 flex items-center justify-center cursor-pointer"
+      style={{
+        width: 32,
+        height: 32,
+        padding: (32 - size) / 2,
+      }}
       onClick={(e) => {
         e.stopPropagation();
         onToggle();
@@ -32,6 +36,10 @@ export function CompletionCheckbox({
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
+        style={{
+          transition: 'transform 200ms ease',
+          transform: completed ? 'scale(1)' : 'scale(1)',
+        }}
       >
         {completed ? (
           <>
@@ -39,12 +47,12 @@ export function CompletionCheckbox({
               cx="12"
               cy="12"
               r="10"
-              fill="hsl(var(--success))"
-              stroke="hsl(var(--success))"
+              fill="var(--success)"
+              stroke="var(--success)"
             />
             <path
               d="M9 12l2 2 4-4"
-              stroke="hsl(var(--success-foreground))"
+              stroke="white"
               fill="none"
             />
           </>
@@ -53,8 +61,8 @@ export function CompletionCheckbox({
             cx="12"
             cy="12"
             r="10"
-            stroke="hsl(var(--muted-foreground))"
-            fill="none"
+            stroke="var(--border-emphasis)"
+            fill="var(--bg-card)"
           />
         )}
       </svg>
