@@ -74,7 +74,6 @@ export function BlockCard({
       inputRef.current.focus();
       inputRef.current.select();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing]);
 
   // Sync text prop to edit value
@@ -100,6 +99,15 @@ export function BlockCard({
   const borderStyle = freestyle ? "dashed" : "solid";
 
   const hasMenu = (onToggle || onDelete) && !isEditing;
+
+  function handleMenuInteraction() {
+    suppressBlockDraw();
+  }
+
+  function handleMenuAction(action?: () => void) {
+    suppressBlockDraw();
+    action?.();
+  }
 
   function handleDoubleClick() {
     if (editable && onEdit) {
@@ -162,13 +170,16 @@ export function BlockCard({
   const menuItems = (
     <>
       {onToggle && (
-        <ContextMenuItem onClick={onToggle}>
+        <ContextMenuItem onSelect={() => handleMenuAction(onToggle)}>
           {completed ? <Circle className="size-3.5 mr-2" /> : <CheckCircle className="size-3.5 mr-2" />}
           {completed ? "Mark incomplete" : "Mark complete"}
         </ContextMenuItem>
       )}
       {onDelete && (
-        <ContextMenuItem className="text-destructive" onClick={onDelete}>
+        <ContextMenuItem
+          className="text-destructive"
+          onSelect={() => handleMenuAction(onDelete)}
+        >
           <Trash2 className="size-3.5 mr-2" />
           Delete
         </ContextMenuItem>
@@ -247,27 +258,47 @@ export function BlockCard({
       {hasMenu && !isEditing && (
         <DropdownMenu onOpenChange={(open) => { if (!open) suppressBlockDraw(); }}>
           <DropdownMenuTrigger asChild>
-            <div
+            <button
+              type="button"
               className={cn(
                 "absolute right-0.5 p-1 rounded hover:bg-black/10 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity",
                 compact ? "top-0" : "top-2"
               )}
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMenuInteraction();
+              }}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                handleMenuInteraction();
+              }}
               onDoubleClick={(e) => e.stopPropagation()}
+              aria-label="Open block menu"
             >
               <MoreVertical className="size-4 text-muted-foreground" />
-            </div>
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent
+            align="end"
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              handleMenuInteraction();
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
             {onToggle && (
-              <DropdownMenuItem onClick={onToggle}>
+              <DropdownMenuItem onSelect={() => handleMenuAction(onToggle)}>
                 {completed ? <Circle className="size-3.5 mr-2" /> : <CheckCircle className="size-3.5 mr-2" />}
                 {completed ? "Mark incomplete" : "Mark complete"}
               </DropdownMenuItem>
             )}
             {onDelete && (
-              <DropdownMenuItem className="text-destructive" onClick={onDelete}>
+              <DropdownMenuItem
+                className="text-destructive"
+                onSelect={() => handleMenuAction(onDelete)}
+              >
                 <Trash2 className="size-3.5 mr-2" />
                 Delete
               </DropdownMenuItem>
@@ -285,7 +316,15 @@ export function BlockCard({
         <ContextMenuTrigger asChild>
           {cardContent}
         </ContextMenuTrigger>
-        <ContextMenuContent>
+        <ContextMenuContent
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            handleMenuInteraction();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
           {menuItems}
         </ContextMenuContent>
       </ContextMenu>
