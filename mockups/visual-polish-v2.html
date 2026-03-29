@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>First Things First — Visual Polish v2</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; background: #F7FAF9; color: #1a2e2a; font-size: 13px; line-height: 1.4; overflow: hidden; height: 900px; width: 1440px; }
+
+  /* === LAYOUT === */
+  .app { display: grid; grid-template-columns: 260px 1fr; grid-template-rows: 56px 1fr; height: 900px; }
+  .header { grid-column: 1 / -1; background: #fff; border-bottom: 1px solid #e2e8e4; display: flex; align-items: center; padding: 0 24px; gap: 16px; z-index: 10; }
+  .sidebar { grid-row: 2; background: #fff; border-right: 1px solid #e2e8e4; overflow-y: auto; padding: 16px 0; }
+  .main { grid-row: 2; overflow: auto; display: flex; flex-direction: column; }
+
+  /* === HEADER === */
+  .logo { font-weight: 800; font-size: 16px; color: #14B8A6; letter-spacing: -0.3px; }
+  .week-nav { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+  .week-nav .arrow { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #d4ddd9; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #5a6e68; font-size: 14px; }
+  .week-label { font-weight: 700; font-size: 14px; color: #1a2e2a; }
+  .week-sub { font-size: 12px; color: #7a8e88; margin-left: 4px; font-weight: 400; }
+  .header-right { display: flex; align-items: center; gap: 12px; margin-left: 24px; }
+  .today-btn { background: #14B8A6; color: #fff; border: none; border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+  /* === SIDEBAR === */
+  .sidebar-section { padding: 0 16px; }
+  .balance-bar-wrap { margin-bottom: 4px; }
+  .balance-label { font-size: 11px; font-weight: 600; color: #7a8e88; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .balance-bar { height: 12px; border-radius: 6px; display: flex; overflow: hidden; background: #eef3f1; }
+  .balance-bar span { display: block; height: 100%; }
+  .balance-stats { font-size: 11px; color: #7a8e88; margin-top: 6px; margin-bottom: 16px; }
+  .balance-stats strong { color: #5a6e68; }
+  .sidebar-divider { height: 1px; background: #e2e8e4; margin: 0 16px 12px; }
+
+  /* Role sections */
+  .role-section { margin: 0 12px 8px; padding: 10px 12px; border-radius: 8px; border-left: 4px solid; position: relative; }
+  .role-section.dad { border-left-color: #10B981; background: rgba(16,185,129,0.04); }
+  .role-section.developer { border-left-color: #F43F5E; background: rgba(244,63,94,0.04); }
+  .role-section.health { border-left-color: #0EA5E9; background: rgba(14,165,233,0.04); }
+  .role-section.growth { border-left-color: #8B5CF6; background: rgba(139,92,246,0.04); }
+  .role-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .role-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .role-dot.dad { background: #10B981; }
+  .role-dot.developer { background: #F43F5E; }
+  .role-dot.health { background: #0EA5E9; }
+  .role-dot.growth { background: #8B5CF6; }
+  .role-name { font-weight: 700; font-size: 13px; }
+  .role-hours { font-size: 11px; color: #7a8e88; margin-left: auto; font-weight: 500; }
+  .goal-item { font-size: 12px; color: #5a6e68; padding: 4px 0 4px 18px; position: relative; }
+  .goal-item::before { content: ''; position: absolute; left: 0; top: 50%; width: 6px; height: 6px; border-radius: 50%; transform: translateY(-50%); border: 1.5px solid #a0b0aa; }
+
+  /* === MAIN GRID === */
+  .grid-wrap { flex: 1; display: flex; flex-direction: column; }
+
+  /* Day headers */
+  .day-headers { display: grid; grid-template-columns: 56px repeat(7, 1fr); background: #fff; border-bottom: 1px solid #e2e8e4; min-height: 52px; position: sticky; top: 0; z-index: 5; }
+  .day-corner { display: flex; align-items: center; justify-content: center; border-right: 1px solid #eef3f1; }
+  .day-header { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 4px; border-right: 1px solid #eef3f1; gap: 2px; position: relative; }
+  .day-header.today { background: rgba(20,184,166,0.07); }
+  .day-name { font-size: 11px; font-weight: 600; color: #7a8e88; text-transform: uppercase; letter-spacing: 0.5px; }
+  .day-header.today .day-name { color: #14B8A6; }
+  .day-date-row { display: flex; align-items: center; gap: 6px; }
+  .day-date { font-size: 14px; font-weight: 700; color: #1a2e2a; }
+  .today-circle { background: #14B8A6; color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+  /* Mini pie */
+  .mini-pie { width: 36px; height: 36px; border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; }
+  .mini-pie-label { font-size: 9px; font-weight: 700; color: #5a6e68; z-index: 1; }
+
+  /* Focus bar (TOP) */
+  .focus-bar { display: grid; grid-template-columns: 56px repeat(7, 1fr); background: linear-gradient(180deg, rgba(20,184,166,0.06) 0%, rgba(20,184,166,0.02) 100%); border-bottom: 2px solid rgba(20,184,166,0.15); min-height: 80px; }
+  .focus-label { display: flex; align-items: center; justify-content: center; border-right: 1px solid #eef3f1; font-size: 12px; font-weight: 800; color: #14B8A6; letter-spacing: 0.5px; }
+  .focus-cell { border-right: 1px solid #eef3f1; padding: 8px 6px; display: flex; align-items: flex-start; }
+  .focus-cell.today { background: rgba(20,184,166,0.05); }
+  .focus-card { background: #fff; border-radius: 8px; padding: 8px 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); width: 100%; font-size: 11px; font-weight: 600; border-left: 3px solid; }
+  .focus-card.dad { border-left-color: #10B981; color: #1a2e2a; }
+  .focus-card.developer { border-left-color: #F43F5E; color: #1a2e2a; }
+  .focus-card.health { border-left-color: #0EA5E9; color: #1a2e2a; }
+  .focus-card.growth { border-left-color: #8B5CF6; color: #1a2e2a; }
+  .focus-card.completed { opacity: 0.55; text-decoration: line-through; }
+  .focus-card .check { color: #10B981; font-size: 12px; margin-right: 4px; }
+  .focus-card .role-tag { font-size: 9px; font-weight: 500; color: #7a8e88; margin-top: 2px; display: block; }
+
+  /* Time grid */
+  .time-grid { display: grid; grid-template-columns: 56px repeat(7, 1fr); flex: 1; }
+  .time-label { border-right: 1px solid #eef3f1; border-bottom: 1px solid #eef3f1; display: flex; align-items: flex-start; justify-content: flex-end; padding: 4px 8px 0 0; font-size: 11px; color: #a0b0aa; font-weight: 500; height: 52px; }
+  .grid-cell { border-right: 1px solid #eef3f1; border-bottom: 1px solid #eef3f1; height: 52px; padding: 2px 4px; position: relative; }
+  .grid-cell.today { background: rgba(20,184,166,0.04); }
+
+  /* Time blocks */
+  .block { border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: 600; border-left: 3px solid; box-shadow: 0 1px 2px rgba(0,0,0,0.06); position: relative; overflow: hidden; }
+  .block.h1 { height: 48px; }
+  .block.h2 { height: 100px; }
+  .block.h3 { height: 152px; }
+  .block .block-time { font-size: 9px; font-weight: 500; color: #7a8e88; margin-top: 1px; }
+  .block.dad { border-left-color: #10B981; background: rgba(16,185,129,0.12); }
+  .block.developer { border-left-color: #F43F5E; background: rgba(244,63,94,0.12); }
+  .block.health { border-left-color: #0EA5E9; background: rgba(14,165,233,0.12); }
+  .block.growth { border-left-color: #8B5CF6; background: rgba(139,92,246,0.12); }
+  .block.completed { opacity: 0.5; }
+  .block.completed .block-title { text-decoration: line-through; }
+  .block .check-icon { position: absolute; top: 4px; right: 6px; color: #10B981; font-size: 11px; }
+
+  /* Span blocks that cover multiple hours */
+  .span2 { grid-row: span 2; }
+  .span3 { grid-row: span 3; }
+
+  /* Current time indicator */
+  .now-line { position: absolute; left: 0; right: 0; height: 2px; background: #F43F5E; z-index: 3; top: 28px; }
+  .now-dot { position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: #F43F5E; }
+
+  /* Evening section */
+  .evening-row { display: grid; grid-template-columns: 56px repeat(7, 1fr); background: rgba(20,30,26,0.02); border-top: 1px solid #d4ddd9; }
+  .evening-label { border-right: 1px solid #eef3f1; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 10px; color: #a0b0aa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; height: 52px; }
+  .evening-cell { border-right: 1px solid #eef3f1; height: 52px; padding: 2px 4px; }
+  .evening-cell.today { background: rgba(20,184,166,0.04); }
+
+  /* Scrollable area for time grid */
+  .scroll-area { overflow-y: auto; flex: 1; }
+
+  /* Pie chart via conic-gradient */
+  .pie-mon { background: conic-gradient(#14B8A6 0deg 180deg, #eef3f1 180deg 360deg); }
+  .pie-tue { background: conic-gradient(#14B8A6 0deg 120deg, #eef3f1 120deg 360deg); }
+  .pie-wed { background: conic-gradient(#14B8A6 0deg 90deg, #eef3f1 90deg 360deg); }
+  .pie-thu { background: conic-gradient(#14B8A6 0deg 270deg, #eef3f1 270deg 360deg); }
+  .pie-fri { background: conic-gradient(#14B8A6 0deg 72deg, #eef3f1 72deg 360deg); }
+  .pie-sat { background: conic-gradient(#14B8A6 0deg 180deg, #eef3f1 180deg 360deg); }
+  .pie-sun { background: conic-gradient(#14B8A6 0deg 0deg, #eef3f1 0deg 360deg); }
+  .pie-inner { position: absolute; width: 26px; height: 26px; border-radius: 50%; background: #fff; top: 5px; left: 5px; }
+  .day-header.today .pie-inner { background: rgba(20,184,166,0.07); }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- HEADER -->
+  <header class="header">
+    <span class="logo">First Things First</span>
+    <div class="week-nav">
+      <div class="arrow">&#8249;</div>
+      <span class="week-label">Mar 23 – 29<span class="week-sub">Week 13</span></span>
+      <div class="arrow">&#8250;</div>
+    </div>
+    <div class="header-right">
+      <button class="today-btn">Today</button>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7a8e88" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="balance-label">Weekly Balance</div>
+      <div class="balance-bar-wrap">
+        <div class="balance-bar">
+          <span style="width:27.8%;background:#10B981"></span>
+          <span style="width:44.4%;background:#F43F5E"></span>
+          <span style="width:16.7%;background:#0EA5E9"></span>
+          <span style="width:11.1%;background:#8B5CF6"></span>
+        </div>
+      </div>
+      <div class="balance-stats"><strong>18h</strong> planned &middot; <strong>7h</strong> done</div>
+    </div>
+    <div class="sidebar-divider"></div>
+
+    <div class="role-section dad">
+      <div class="role-header">
+        <span class="role-dot dad"></span>
+        <span class="role-name">Dad</span>
+        <span class="role-hours">5h planned</span>
+      </div>
+      <div class="goal-item">Play with kids</div>
+      <div class="goal-item">Help with homework</div>
+      <div class="goal-item">Cook dinner</div>
+    </div>
+
+    <div class="role-section developer">
+      <div class="role-header">
+        <span class="role-dot developer"></span>
+        <span class="role-name">Developer</span>
+        <span class="role-hours">8h planned</span>
+      </div>
+      <div class="goal-item">Write code</div>
+      <div class="goal-item">Code review</div>
+      <div class="goal-item">Ship feature</div>
+    </div>
+
+    <div class="role-section health">
+      <div class="role-header">
+        <span class="role-dot health"></span>
+        <span class="role-name">Health</span>
+        <span class="role-hours">3h planned</span>
+      </div>
+      <div class="goal-item">Morning run</div>
+      <div class="goal-item">Meal prep</div>
+    </div>
+
+    <div class="role-section growth">
+      <div class="role-header">
+        <span class="role-dot growth"></span>
+        <span class="role-name">Personal Growth</span>
+        <span class="role-hours">2h planned</span>
+      </div>
+      <div class="goal-item">Read a book</div>
+      <div class="goal-item">Journaling</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- Day Headers -->
+    <div class="day-headers">
+      <div class="day-corner"></div>
+      <div class="day-header">
+        <span class="day-name">Mon</span>
+        <div class="day-date-row">
+          <span class="day-date">23</span>
+          <div class="mini-pie pie-mon"><div class="pie-inner"></div><span class="mini-pie-label">2/4</span></div>
+        </div>
+      </div>
+      <div class="day-header">
+        <span class="day-name">Tue</span>
+        <div class="day-date-row">
+          <span class="day-date">24</span>
+          <div class="mini-pie pie-tue"><div class="pie-inner"></div><span class="mini-pie-label">1/3</span></div>
+        </div>
+      </div>
+      <div class="day-header">
+        <span class="day-name">Wed</span>
+        <div class="day-date-row">
+          <span class="day-date">25</span>
+          <div class="mini-pie pie-wed"><div class="pie-inner"></div><span class="mini-pie-label">1/4</span></div>
+        </div>
+      </div>
+      <div class="day-header">
+        <span class="day-name">Thu</span>
+        <div class="day-date-row">
+          <span class="day-date">26</span>
+          <div class="mini-pie pie-thu"><div class="pie-inner"></div><span class="mini-pie-label">3/4</span></div>
+        </div>
+      </div>
+      <div class="day-header">
+        <span class="day-name">Fri</span>
+        <div class="day-date-row">
+          <span class="day-date">27</span>
+          <div class="mini-pie pie-fri"><div class="pie-inner"></div><span class="mini-pie-label">1/5</span></div>
+        </div>
+      </div>
+      <div class="day-header">
+        <span class="day-name">Sat</span>
+        <div class="day-date-row">
+          <span class="day-date">28</span>
+          <div class="mini-pie pie-sat"><div class="pie-inner"></div><span class="mini-pie-label">1/2</span></div>
+        </div>
+      </div>
+      <div class="day-header today">
+        <span class="day-name">Sun</span>
+        <div class="day-date-row">
+          <div class="today-circle">29</div>
+          <div class="mini-pie pie-sun"><div class="pie-inner" style="background:rgba(20,184,166,0.07)"></div><span class="mini-pie-label">0/4</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Focus Bar (TOP) -->
+    <div class="focus-bar">
+      <div class="focus-label">TOP</div>
+      <!-- Mon -->
+      <div class="focus-cell">
+        <div class="focus-card dad completed"><span class="check">&#10003;</span>Cook dinner<span class="role-tag">Dad</span></div>
+      </div>
+      <!-- Tue -->
+      <div class="focus-cell">
+        <div class="focus-card dad">Cook dinner<span class="role-tag">Dad</span></div>
+      </div>
+      <!-- Wed -->
+      <div class="focus-cell">
+        <div class="focus-card growth">Read a book<span class="role-tag">Personal Growth</span></div>
+      </div>
+      <!-- Thu -->
+      <div class="focus-cell">
+        <div class="focus-card health completed"><span class="check">&#10003;</span>Morning run<span class="role-tag">Health</span></div>
+      </div>
+      <!-- Fri -->
+      <div class="focus-cell">
+        <div class="focus-card developer">Ship feature<span class="role-tag">Developer</span></div>
+      </div>
+      <!-- Sat -->
+      <div class="focus-cell"></div>
+      <!-- Sun (today) -->
+      <div class="focus-cell today">
+        <div class="focus-card developer">Write code<span class="role-tag">Developer</span></div>
+      </div>
+    </div>
+
+    <!-- Scrollable time grid -->
+    <div class="scroll-area">
+      <!-- We'll lay this out as a CSS grid with named rows for each hour -->
+      <div style="display:grid; grid-template-columns: 56px repeat(7,1fr); grid-auto-rows: 52px;">
+        <!-- 8:00 -->
+        <div class="time-label">8:00</div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell">
+          <div class="block health h1"><span class="block-title">Morning run</span><div class="block-time">8:00 – 9:00</div></div>
+        </div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell today">
+          <div class="block health h1"><span class="block-title">Morning run</span><div class="block-time">8:00 – 9:00</div></div>
+        </div>
+
+        <!-- 9:00 -->
+        <div class="time-label">9:00</div>
+        <div class="grid-cell">
+          <div class="block developer h2"><span class="block-title">Write code</span><div class="block-time">9:00 – 11:00</div></div>
+        </div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell">
+          <div class="block developer h3"><span class="block-title">Write code</span><div class="block-time">9:00 – 12:00</div></div>
+        </div>
+        <div class="grid-cell">
+          <div class="block developer h2 completed"><span class="block-title">Ship feature</span><div class="block-time">9:00 – 11:00</div><span class="check-icon">&#10003;</span></div>
+        </div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell today"></div>
+
+        <!-- 10:00 -->
+        <div class="time-label">10:00</div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell">
+          <div class="block developer h2"><span class="block-title">Code review</span><div class="block-time">10:00 – 12:00</div></div>
+        </div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell">
+          <div class="block developer h2"><span class="block-title">Code review</span><div class="block-time">10:00 – 12:00</div></div>
+        </div>
+        <div class="grid-cell">
+          <div class="block dad h3"><span class="block-title">Play with kids</span><div class="block-time">10:00 – 1:00</div></div>
+        </div>
+        <div class="grid-cell today">
+          <div class="block growth h2"><span class="block-title">Read a book</span><div class="block-time">10:00 – 12:00</div></div>
+        </div>
+
+        <!-- 11:00 -->
+        <div class="time-label">11:00</div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell today"></div>
+
+        <!-- 12:00 -->
+        <div class="time-label">12:00</div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell">
+          <div class="block health h1"><span class="block-title">Meal prep</span><div class="block-time">12:00 – 1:00</div></div>
+        </div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell today"></div>
+
+        <!-- 13:00 -->
+        <div class="time-label">1:00</div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell today"></div>
+
+        <!-- 14:00 -->
+        <div class="time-label">2:00</div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell">
+          <div class="block growth h1"><span class="block-title">Journaling</span><div class="block-time">2:00 – 3:00</div></div>
+        </div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell today" style="position:relative;">
+          <div class="now-line"><div class="now-dot"></div></div>
+        </div>
+
+        <!-- 15:00 -->
+        <div class="time-label">3:00</div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell">
+          <div class="block dad h2"><span class="block-title">Help with homework</span><div class="block-time">3:00 – 5:00</div></div>
+        </div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell">
+          <div class="block dad h2" style="background:rgba(16,185,129,0.08); border-left-style:dashed;"><span class="block-title">Family outing</span><div class="block-time">3:00 – 5:00</div></div>
+        </div>
+        <div class="grid-cell today"></div>
+
+        <!-- 16:00 -->
+        <div class="time-label">4:00</div>
+        <div class="grid-cell">
+          <div class="block dad h2 completed"><span class="block-title">Play with kids</span><div class="block-time">4:00 – 6:00</div><span class="check-icon">&#10003;</span></div>
+        </div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell today"></div>
+
+        <!-- 17:00 -->
+        <div class="time-label">5:00</div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell today">
+          <div class="block dad h1"><span class="block-title">Cook dinner</span><div class="block-time">5:00 – 6:00</div></div>
+        </div>
+
+        <!-- 18:00 -->
+        <div class="time-label">6:00</div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell"></div>
+        <div class="grid-cell today"></div>
+      </div>
+
+      <!-- Evening section -->
+      <div class="evening-row">
+        <div class="evening-label">Eve</div>
+        <div class="evening-cell"></div>
+        <div class="evening-cell"></div>
+        <div class="evening-cell"></div>
+        <div class="evening-cell"></div>
+        <div class="evening-cell"></div>
+        <div class="evening-cell"></div>
+        <div class="evening-cell today"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

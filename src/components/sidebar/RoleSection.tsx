@@ -74,9 +74,9 @@ export function RoleSection({ role }: RoleSectionProps) {
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
-          className="flex flex-col rounded-lg p-3 mb-2"
+          className="flex flex-col rounded-[8px] p-3 mb-2"
           style={{
-            backgroundColor: getRoleColorStyleWithOpacity(role.color, 0.12),
+            backgroundColor: getRoleColorStyleWithOpacity(role.color, 0.10),
             borderLeft: `4px solid ${getRoleColorStyle(role.color)}`,
           }}
         >
@@ -115,7 +115,7 @@ export function RoleSection({ role }: RoleSectionProps) {
             )}
 
             {roleHours > 0 && !isEditing && (
-              <span className="text-caption text-muted-foreground ml-auto mr-5">{roleHours}h planned</span>
+              <span className="text-caption text-muted-foreground ml-auto">{roleHours}h planned</span>
             )}
 
             {/* Absolute-positioned menu button */}

@@ -61,7 +61,6 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
         editable
         variant="card"
         compact={false}
-        height={46}
         onToggle={() => toggleGoalCompleted(goal.id)}
         onEdit={handleEdit}
         onDelete={() => setAlertOpen(true)}

@@ -37,7 +37,7 @@ export function BlockCard({
   completed,
   editable,
   compact,
-  height = 56,
+  height,
   autoEdit,
   freestyle,
   variant = "default",
@@ -75,16 +75,16 @@ export function BlockCard({
     if (!isEditing) setEditValue(text);
   }, [text, isEditing]);
 
-  const lineClamp = height < 56 ? 1 : 2;
-  const fontSize = compact ? "text-xs" : "text-sm";
-  const padding = compact ? "px-2.5 py-2" : "px-3 py-2";
+  const lineClamp = height !== undefined && height < 56 ? 1 : 2;
+  const fontSize = compact ? "text-[11px]" : "text-[13px]";
+  const padding = compact ? "px-2 py-1" : "px-2.5 py-2.5";
 
   const isCard = variant === "card";
 
   const bgColor = isCard
     ? "var(--card)"
     : roleColor
-      ? getRoleColorStyleWithOpacity(roleColor, isHovered ? 0.20 : 0.15)
+      ? getRoleColorStyleWithOpacity(roleColor, isHovered ? 0.16 : 0.12)
       : completed
         ? "var(--completed-bg)"
         : "var(--muted)";
@@ -169,16 +169,16 @@ export function BlockCard({
     <div
       className={cn(
         "group relative flex items-start gap-1.5 transition-shadow",
-        isCard ? "rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)]" : "rounded-md",
+        isCard ? "rounded-[8px] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)]" : "rounded-[6px]",
         !completed && !isCard && "shadow-sm hover:shadow-md",
         fontSize,
         padding,
         className
       )}
       style={{
-        height: `${height}px`,
+        ...(height !== undefined && { height: `${height}px` }),
         backgroundColor: bgColor,
-        borderLeft: showBorder ? `${isCard ? 2 : 3}px ${borderStyle} ${getRoleColorStyle(roleColor!)}` : undefined,
+        borderLeft: showBorder ? `3px ${borderStyle} ${getRoleColorStyle(roleColor!)}` : undefined,
         opacity: completed ? "var(--completed-opacity)" : undefined,
         ...style,
       }}
@@ -195,14 +195,14 @@ export function BlockCard({
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          className="flex-1 font-medium"
+          className="flex-1 font-semibold"
           style={{ fontSize: "inherit", lineHeight: "1.4" }}
           placeholder={autoEdit ? "Block title..." : ""}
         />
       ) : (
         <div className={cn("flex-1 min-w-0", showToggle && "pr-5")}>
           <span
-            className="font-medium overflow-hidden block"
+            className="font-semibold overflow-hidden block"
             style={{
               display: "-webkit-box",
               WebkitLineClamp: lineClamp,
@@ -214,7 +214,7 @@ export function BlockCard({
           >
             {text}
           </span>
-          {subtitle && height >= 56 && (
+          {subtitle && (height === undefined || height >= 56) && (
             <span className="text-label text-muted-foreground truncate block mt-0.5">
               {subtitle}
             </span>
