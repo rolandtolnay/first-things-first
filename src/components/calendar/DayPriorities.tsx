@@ -55,12 +55,13 @@ export function DayPriorities({ dayIndex }: DayPrioritiesProps) {
     <div
       ref={setNodeRef}
       className={cn(
-        "px-1 py-2 bg-muted flex flex-col gap-2",
+        "px-1 py-2 flex flex-col gap-2",
         showDropHint && "border border-dashed border-primary bg-primary-soft",
         isOver && "bg-primary-soft"
       )}
       style={{
         height: `${PRIORITIES_SECTION_HEIGHT}px`,
+        backgroundColor: (isOver || showDropHint) ? undefined : 'color-mix(in srgb, var(--primary) 5%, var(--muted))',
         borderBottom: '1px solid var(--border-emphasis)',
         ...(isOver && !showDropHint && {
           outline: '1px dashed var(--primary)',

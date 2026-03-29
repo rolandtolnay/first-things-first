@@ -67,13 +67,13 @@ export function RoleSection({ role }: RoleSectionProps) {
         <div
           className="flex flex-col rounded-md p-3 mb-2"
           style={{
-            backgroundColor: getRoleColorStyleWithOpacity(role.color, 0.08),
+            backgroundColor: getRoleColorStyleWithOpacity(role.color, 0.12),
           }}
         >
           {/* Role header */}
           <div className="group relative flex items-center gap-2">
             <div
-              className="w-2 h-2 rounded-full flex-shrink-0"
+              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
               style={{ backgroundColor: getRoleColorStyle(role.color) }}
               aria-hidden="true"
             />
@@ -86,12 +86,12 @@ export function RoleSection({ role }: RoleSectionProps) {
                 onChange={(e) => setEditValue(e.target.value)}
                 onBlur={save}
                 onKeyDown={handleKeyDown}
-                className="flex-1 text-base font-semibold text-foreground"
+                className="flex-1 text-base font-bold text-foreground"
                 aria-label="Edit role name"
               />
             ) : (
               <span
-                className="flex-1 min-w-0 cursor-pointer text-base font-semibold text-foreground overflow-hidden"
+                className="flex-1 min-w-0 cursor-pointer text-base font-bold text-foreground overflow-hidden"
                 style={{
                   display: "-webkit-box",
                   WebkitLineClamp: 2,

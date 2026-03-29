@@ -13,7 +13,7 @@
 
 :root {
   /* Backgrounds */
-  --background: #F0FDFA;
+  --background: #F7FAF9;
   --card: #FFFFFF;
   --card-foreground: #0F172A;
   --muted: #F5F7FA;
@@ -60,16 +60,16 @@
   --sidebar-foreground: #0F172A;
 
   /* Today */
-  --today: rgba(20, 184, 166, 0.04);
+  --today: rgba(20, 184, 166, 0.08);
 
   /* Popover */
   --popover: #FFFFFF;
   --popover-foreground: #0F172A;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
   --shadow-drag: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
   --shadow-dialog: 0 8px 32px rgba(0, 0, 0, 0.10), 0 4px 8px rgba(0, 0, 0, 0.04);
 
@@ -134,7 +134,7 @@
   --completed-bg: rgba(255, 255, 255, 0.02);
   --sidebar: #141D2B;
   --sidebar-foreground: #F1F5F9;
-  --today: rgba(45, 212, 191, 0.05);
+  --today: rgba(45, 212, 191, 0.08);
   --popover: #1A2332;
   --popover-foreground: #F1F5F9;
 

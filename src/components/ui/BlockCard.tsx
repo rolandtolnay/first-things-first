@@ -77,7 +77,7 @@ export function BlockCard({
   const padding = compact ? "px-2.5 py-2" : "px-3 py-2";
 
   const bgColor = roleColor
-    ? getRoleColorStyleWithOpacity(roleColor, isHovered ? 0.12 : 0.08)
+    ? getRoleColorStyleWithOpacity(roleColor, isHovered ? 0.20 : 0.15)
     : completed
       ? "var(--completed-bg)"
       : "var(--muted)";
@@ -166,7 +166,7 @@ export function BlockCard({
       style={{
         height: `${height}px`,
         backgroundColor: bgColor,
-        border: roleColor && !completed ? `0.5px solid ${getRoleColorStyle(roleColor)}` : undefined,
+        borderLeft: roleColor && !completed ? `3px solid ${getRoleColorStyle(roleColor)}` : undefined,
         opacity: completed ? "var(--completed-opacity)" : undefined,
         ...style,
       }}
@@ -200,6 +200,8 @@ export function BlockCard({
             WebkitLineClamp: lineClamp,
             WebkitBoxOrient: "vertical",
             lineHeight: "1.4",
+            textDecoration: completed ? "line-through" : undefined,
+            textDecorationColor: completed ? "var(--muted-foreground)" : undefined,
           }}
         >
           {text}
