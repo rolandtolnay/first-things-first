@@ -7,7 +7,7 @@ interface PieChartProps {
 
 export function PieChart({ completed, total, size = 28, showLabel = true }: PieChartProps) {
   const center = size / 2;
-  const strokeWidth = 3.5;
+  const strokeWidth = 4.2;
   const radius = center - strokeWidth / 2 - 0.5;
   const circumference = 2 * Math.PI * radius;
   const percent = total > 0 ? completed / total : 0;

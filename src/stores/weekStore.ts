@@ -47,7 +47,7 @@ const ROLE_COLORS: RoleColor[] = [
  * Get the next available color for a new role.
  * Cycles through the palette based on existing role count.
  */
-function getNextRoleColor(existingRoles: Role[]): RoleColor {
+export function getNextRoleColor(existingRoles: Role[]): RoleColor {
   return ROLE_COLORS[existingRoles.length % ROLE_COLORS.length];
 }
 

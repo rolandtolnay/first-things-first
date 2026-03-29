@@ -9,6 +9,7 @@ interface AddItemInputProps {
   placeholder: string;
   onAdd: (value: string) => void;
   icon?: ReactNode;
+  variant?: "default" | "dashed";
 }
 
 export function AddItemInput({
@@ -16,6 +17,7 @@ export function AddItemInput({
   placeholder,
   onAdd,
   icon,
+  variant = "default",
 }: AddItemInputProps) {
   const [isInputMode, setIsInputMode] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -75,6 +77,21 @@ export function AddItemInput({
           aria-label={placeholder}
         />
       </div>
+    );
+  }
+
+  if (variant === "dashed") {
+    return (
+      <button
+        onClick={() => {
+          setIsInputMode(true);
+          setInputValue("");
+        }}
+        className="w-full py-2.5 rounded-lg border-2 border-dashed border-muted-foreground/25 text-sm text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground/60 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+      >
+        {icon}
+        {label}
+      </button>
     );
   }
 

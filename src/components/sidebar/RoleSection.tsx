@@ -21,7 +21,12 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { GoalList } from "./GoalList";
 import type { Role } from "@/types";
 
@@ -81,9 +86,9 @@ export function RoleSection({ role }: RoleSectionProps) {
           }}
         >
           {/* Role header */}
-          <div className="group relative flex items-center gap-2">
+          <div className="group relative flex items-start gap-2">
             <div
-              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+              className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-[5px]"
               style={{ backgroundColor: getRoleColorStyle(role.color) }}
               aria-hidden="true"
             />
@@ -115,13 +120,13 @@ export function RoleSection({ role }: RoleSectionProps) {
             )}
 
             {roleHours > 0 && !isEditing && (
-              <span className="text-caption text-muted-foreground ml-auto">{roleHours}h planned</span>
+              <span className="text-caption text-muted-foreground ml-auto mt-0.5 shrink-0 group-hover:opacity-0 transition-opacity">{roleHours}h planned</span>
             )}
 
             {/* Absolute-positioned menu button */}
             {!isEditing && (
-              <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-                <PopoverTrigger asChild>
+              <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+                <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon-xs"
@@ -132,28 +137,21 @@ export function RoleSection({ role }: RoleSectionProps) {
                   >
                     <MoreVertical className="size-3.5" />
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-auto min-w-[160px] p-1"
-                  align="end"
-                  side="bottom"
-                >
-                  <button
-                    className="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded-sm hover:bg-accent text-foreground"
-                    onClick={() => { setAddingGoal(true); setMenuOpen(false); }}
-                  >
-                    <Plus className="size-3.5" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => { setAddingGoal(true); setMenuOpen(false); }}>
+                    <Plus className="size-3.5 mr-2" />
                     Add goal
-                  </button>
-                  <button
-                    className="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded-sm hover:bg-accent text-destructive"
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive"
                     onClick={() => { setDeleteDialogOpen(true); setMenuOpen(false); }}
                   >
-                    <Trash2 className="size-3.5" />
+                    <Trash2 className="size-3.5 mr-2" />
                     Delete role
-                  </button>
-                </PopoverContent>
-              </Popover>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
 

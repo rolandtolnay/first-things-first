@@ -1,15 +1,22 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Check, Circle, CheckCircle, Trash2 } from "lucide-react";
+import { MoreVertical, Check, CheckCircle, Circle, Trash2 } from "lucide-react";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { suppressBlockDraw } from "@/hooks/useBlockDraw";
 import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import type { RoleColor } from "@/types";
 
@@ -92,7 +99,6 @@ export function BlockCard({
   const showBorder = roleColor && (isCard || !completed);
   const borderStyle = freestyle ? "dashed" : "solid";
 
-  const showToggle = onToggle && !isEditing;
   const hasMenu = (onToggle || onDelete) && !isEditing;
 
   function handleDoubleClick() {
@@ -104,6 +110,11 @@ export function BlockCard({
 
   function handleSave() {
     const trimmed = editValue.trim();
+    if (!trimmed && freestyle && onDelete) {
+      onDelete();
+      setIsEditing(false);
+      return;
+    }
     if (trimmed && trimmed !== text) {
       onEdit?.(trimmed);
     }
@@ -152,7 +163,7 @@ export function BlockCard({
     <>
       {onToggle && (
         <ContextMenuItem onClick={onToggle}>
-          <CheckCircle className="size-3.5 mr-2" />
+          {completed ? <Circle className="size-3.5 mr-2" /> : <CheckCircle className="size-3.5 mr-2" />}
           {completed ? "Mark incomplete" : "Mark complete"}
         </ContextMenuItem>
       )}
@@ -200,7 +211,7 @@ export function BlockCard({
           placeholder={autoEdit ? "Block title..." : ""}
         />
       ) : (
-        <div className={cn("flex-1 min-w-0", showToggle && "pr-5")}>
+        <div className={cn("flex-1 min-w-0", (hasMenu || completed) && "pr-5")}>
           <span
             className="font-semibold overflow-hidden block"
             style={{
@@ -222,19 +233,47 @@ export function BlockCard({
         </div>
       )}
 
-      {/* Completion toggle — top-right */}
-      {showToggle && (
-        <div
-          className="absolute top-2 right-1.5"
-          onClick={(e) => { e.stopPropagation(); onToggle(); }}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          {completed ? (
-            <Check className="size-3.5 text-primary" strokeWidth={3} />
-          ) : (
-            <Circle className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-          )}
-        </div>
+      {/* Completed indicator — top-right, aligned with text */}
+      {completed && !isEditing && (
+        <Check
+          className="absolute right-2 text-primary group-hover:opacity-0 transition-opacity"
+          style={{ top: compact ? "0.35rem" : "0.75rem" }}
+          size={14}
+          strokeWidth={3}
+        />
+      )}
+
+      {/* Menu button — top-right */}
+      {hasMenu && !isEditing && (
+        <DropdownMenu onOpenChange={(open) => { if (!open) suppressBlockDraw(); }}>
+          <DropdownMenuTrigger asChild>
+            <div
+              className={cn(
+                "absolute right-0.5 p-1 rounded hover:bg-black/10 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity",
+                compact ? "top-0" : "top-2"
+              )}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
+            >
+              <MoreVertical className="size-4 text-muted-foreground" />
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {onToggle && (
+              <DropdownMenuItem onClick={onToggle}>
+                {completed ? <Circle className="size-3.5 mr-2" /> : <CheckCircle className="size-3.5 mr-2" />}
+                {completed ? "Mark incomplete" : "Mark complete"}
+              </DropdownMenuItem>
+            )}
+            {onDelete && (
+              <DropdownMenuItem className="text-destructive" onClick={onDelete}>
+                <Trash2 className="size-3.5 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
     </div>
   );
@@ -242,7 +281,7 @@ export function BlockCard({
   // Wrap with ContextMenu if there are menu actions
   if (hasMenu) {
     return (
-      <ContextMenu>
+      <ContextMenu onOpenChange={(open) => { if (!open) suppressBlockDraw(); }}>
         <ContextMenuTrigger asChild>
           {cardContent}
         </ContextMenuTrigger>

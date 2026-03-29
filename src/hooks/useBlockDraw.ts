@@ -21,6 +21,29 @@ import { SLOT_HEIGHT } from "@/lib/constants";
 // Tracks whether ANY day column currently has a freestyle block being edited.
 let globalEditingBlock = false;
 
+// Suppresses stray pointer events after menu actions (e.g. Delete) that would
+// otherwise land on the grid and start drawing a freestyle block. Uses a boolean
+// flag cleared after two animation frames to ensure all stray events are absorbed.
+let suppressDraw = false;
+let suppressTimeout: ReturnType<typeof setTimeout> | null = null;
+
+export function suppressBlockDraw() {
+  suppressDraw = true;
+  // Clear any previous timeout
+  if (suppressTimeout) clearTimeout(suppressTimeout);
+  // Double-RAF ensures we survive the full event dispatch cycle
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      suppressDraw = false;
+    });
+  });
+  // Fallback timeout in case RAF doesn't fire (e.g. tab in background)
+  suppressTimeout = setTimeout(() => {
+    suppressDraw = false;
+    suppressTimeout = null;
+  }, 500);
+}
+
 interface DrawState {
   startSlot: number;
   currentEndSlot: number;
@@ -66,6 +89,9 @@ export function useBlockDraw(
 
       // Only respond to primary button (left click)
       if (e.button !== 0) return;
+
+      // Skip stray pointer events from recently-closed menus
+      if (suppressDraw) return;
 
       // If any day column has a freestyle block being edited, dismiss it instead
       if (globalEditingBlock) {

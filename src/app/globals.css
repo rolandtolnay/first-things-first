@@ -249,6 +249,10 @@ body {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
+[data-slot="dropdown-menu-item"]:focus-visible,
+[data-slot="context-menu-item"]:focus-visible {
+  outline: none;
+}
 
 /* Selection highlight with theme colors */
 ::selection {

@@ -66,15 +66,15 @@ export function DayColumn({ dayIndex, date }: DayColumnProps) {
       >
         {/* Left: stacked day name + date */}
         <div className="flex flex-col items-start leading-none">
-          <span className="text-label font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+          <span className="text-label font-bold uppercase tracking-[0.05em] text-muted-foreground">
             {dayName}
           </span>
           {isToday ? (
-            <span className="bg-primary text-primary-foreground w-[30px] h-[30px] rounded-full flex items-center justify-center text-sm font-semibold">
+            <span className="bg-primary text-primary-foreground w-[30px] h-[30px] rounded-full flex items-center justify-center text-[15px] font-bold">
               {dateNum}
             </span>
           ) : (
-            <span className="text-lg font-semibold text-foreground">{dateNum}</span>
+            <span className="text-lg font-bold text-foreground">{dateNum}</span>
           )}
         </div>
 

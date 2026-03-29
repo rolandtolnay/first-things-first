@@ -1,6 +1,6 @@
 "use client";
 
-import { PRIORITIES_SECTION_HEIGHT, EVENING_SECTION_HEIGHT, TIME_LABELS_WIDTH } from "@/lib/constants";
+import { EVENING_SECTION_HEIGHT, PRIORITIES_SECTION_HEIGHT, TIME_LABELS_WIDTH } from "@/lib/constants";
 
 const SLOT_COUNT = 24;
 
@@ -10,11 +10,11 @@ export function TimeLabelsColumn() {
   return (
     <div className="flex-shrink-0 flex flex-col" style={{ width: `${TIME_LABELS_WIDTH}px` }}>
       {/* Header spacer */}
-      <div className="sticky top-0 z-10 bg-card h-[56px] border-b border-border" />
+      <div className="sticky top-0 z-10 bg-card h-[56px]" />
 
       {/* TOP label */}
       <div
-        className="flex items-start justify-end pr-2 pt-2 text-label font-bold tracking-[0.06em] text-muted-foreground uppercase border-b border-border-emphasis"
+        className="flex items-start justify-end pr-2 pt-2 text-label font-bold tracking-[0.06em] text-muted-foreground uppercase"
         style={{ height: `${PRIORITIES_SECTION_HEIGHT}px` }}
       >
         TOP
@@ -39,7 +39,7 @@ export function TimeLabelsColumn() {
 
       {/* EVE label */}
       <div
-        className="flex items-start justify-end pr-2 pt-2 text-label font-semibold tracking-[0.04em] text-muted-foreground uppercase border-t border-border-emphasis"
+        className="flex items-start justify-end pr-2 pt-2 text-label font-semibold tracking-[0.04em] text-muted-foreground uppercase"
         style={{ height: `${EVENING_SECTION_HEIGHT}px` }}
       >
         EVE
