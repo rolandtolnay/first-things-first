@@ -61,7 +61,7 @@ export function DayPriorities({ dayIndex }: DayPrioritiesProps) {
       )}
       style={{
         height: `${PRIORITIES_SECTION_HEIGHT}px`,
-        borderBottom: '1px solid var(--border)',
+        borderBottom: '1px solid var(--border-emphasis)',
         ...(isOver && !showDropHint && {
           outline: '1px dashed var(--primary)',
           outlineOffset: '-1px',

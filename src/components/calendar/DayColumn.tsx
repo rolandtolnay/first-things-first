@@ -53,13 +53,13 @@ export function DayColumn({ dayIndex, date }: DayColumnProps) {
     <div
       className="flex flex-col min-w-[140px]"
       style={{
-        borderRight: '1px solid rgba(226, 232, 240, 0.5)',
+        borderRight: '1px solid color-mix(in srgb, var(--border) 80%, transparent)',
         backgroundColor: isToday ? 'var(--today)' : undefined,
       }}
     >
       {/* Single-line header with pie chart */}
       <div
-        className="flex items-center gap-1.5 px-2 pt-2 pb-0.5 sticky top-0 z-10 h-[35px] border-b border-border"
+        className="flex items-center gap-1.5 px-2 py-2.5 sticky top-0 z-10 h-[40px] border-b border-border"
         style={{
           backgroundColor: isToday ? 'var(--today)' : 'var(--card)',
         }}

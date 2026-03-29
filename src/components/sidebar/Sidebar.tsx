@@ -16,7 +16,7 @@ export function Sidebar() {
       </header>
       <Separator />
       <ScrollArea className="flex-1">
-        <div className="p-3 pb-4">
+        <div className="p-3 pb-4 overflow-hidden">
           <RoleList />
         </div>
       </ScrollArea>

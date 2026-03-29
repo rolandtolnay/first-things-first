@@ -47,7 +47,7 @@ export function EveningSlot({ dayIndex }: EveningSlotProps) {
       )}
       style={{
         height: `${EVENING_SECTION_HEIGHT}px`,
-        borderTop: '1px solid var(--border)',
+        borderTop: '1px solid var(--border-emphasis)',
         ...(isOver && !showDropHint && {
           outline: '1px dashed var(--primary)',
           outlineOffset: '-1px',
@@ -112,7 +112,7 @@ function DraggableEveningBlock({
         roleColor={roleColor}
         completed={eveningBlock.completed}
         compact
-        height={40}
+        height={56}
         onToggle={() => toggleEveningBlockCompleted(eveningBlock.id)}
         onDelete={onDelete}
       />

@@ -69,7 +69,7 @@ export function TimeBlock({
       {...attributes}
       data-block
       className={cn(
-        "absolute left-0 right-0 z-10 group bg-card rounded-md",
+        "absolute left-2 right-2 z-10 group bg-card rounded-md",
         "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-90",
         isResizing && "z-20"

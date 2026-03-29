@@ -39,8 +39,8 @@ export function TimeSlot({ slotIndex, dayIndex }: TimeSlotProps) {
       className="h-7 relative"
       style={{
         borderBottom: isHourStart
-          ? '1px solid var(--border)'
-          : '1px solid rgba(226, 232, 240, 0.3)',
+          ? '1px solid color-mix(in srgb, var(--border) 80%, transparent)'
+          : '1px solid color-mix(in srgb, var(--border) 55%, transparent)',
         ...(isOver && {
           backgroundColor: 'rgba(20, 184, 166, 0.2)',
           boxShadow: 'inset 0 0 0 1px var(--primary)',
