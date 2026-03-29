@@ -13,7 +13,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { Goal, RoleColor } from "@/types";
 import type { GoalDragData } from "@/types/dnd";
@@ -56,26 +55,17 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
         isDragging && "opacity-50"
       )}
     >
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div>
-            <BlockCard
-              text={goal.text}
-              roleColor={roleColor}
-              completed={goal.completed}
-              editable
-              compact={false}
-              height={56}
-              onToggle={() => toggleGoalCompleted(goal.id)}
-              onEdit={handleEdit}
-              onDelete={() => setAlertOpen(true)}
-            />
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-[240px]">
-          {goal.text}
-        </TooltipContent>
-      </Tooltip>
+      <BlockCard
+        text={goal.text}
+        roleColor={roleColor}
+        completed={goal.completed}
+        editable
+        compact={false}
+        height={56}
+        onToggle={() => toggleGoalCompleted(goal.id)}
+        onEdit={handleEdit}
+        onDelete={() => setAlertOpen(true)}
+      />
 
       <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
         <AlertDialogContent>

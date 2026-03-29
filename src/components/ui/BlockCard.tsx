@@ -138,7 +138,7 @@ export function BlockCard({
       style={{
         height: `${height}px`,
         backgroundColor: bgColor,
-        borderLeft: roleColor ? `3px solid ${getRoleColorStyle(roleColor)}` : undefined,
+        border: roleColor ? `0.5px solid ${getRoleColorStyle(roleColor)}` : undefined,
         opacity: completed ? "var(--completed-opacity)" : undefined,
         ...style,
       }}

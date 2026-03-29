@@ -59,12 +59,12 @@ export function RoleSection({ role }: RoleSectionProps) {
             onChange={(e) => setEditValue(e.target.value)}
             onBlur={save}
             onKeyDown={handleKeyDown}
-            className="flex-1 min-w-0 h-auto py-0.5 text-[15px] font-semibold"
+            className="flex-1 min-w-0 h-auto py-0.5 text-base font-semibold"
             aria-label="Edit role name"
           />
         ) : (
           <span
-            className="flex-1 min-w-0 truncate cursor-pointer text-[15px] font-semibold text-foreground"
+            className="flex-1 min-w-0 truncate cursor-pointer text-base font-semibold text-foreground"
             onDoubleClick={startEdit}
             title={role.name}
           >
@@ -105,7 +105,7 @@ export function RoleSection({ role }: RoleSectionProps) {
         )}
       </div>
 
-      <div className="mt-2">
+      <div className="mt-3">
         <GoalList roleId={role.id} roleColor={role.color} />
       </div>
     </div>
