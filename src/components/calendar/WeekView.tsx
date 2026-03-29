@@ -14,6 +14,7 @@ import { getCurrentWeekId, getWeekDates } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { useWeekStore } from "@/stores/weekStore";
 import { DayColumn } from "./DayColumn";
+import { TimeLabelsColumn } from "./TimeLabelsColumn";
 import { WeekNavigation } from "./WeekNavigation";
 import { CarryoverDialog } from "./CarryoverDialog";
 
@@ -95,16 +96,22 @@ export function WeekView() {
         viewedWeekId={selectedWeekId}
       />
 
-      {/* Day columns */}
+      {/* Day columns with shared time labels */}
       <div className="flex-1 overflow-auto">
-        <div className="grid grid-cols-7 min-w-[1000px] h-full">
-          {dates.map((date, index) => (
-            <DayColumn
-              key={index}
-              dayIndex={index as DayOfWeek}
-              date={date}
-            />
-          ))}
+        <div className="flex min-w-[1000px] h-full">
+          {/* Shared time labels column */}
+          <TimeLabelsColumn />
+
+          {/* Day columns */}
+          <div className="grid grid-cols-7 flex-1">
+            {dates.map((date, index) => (
+              <DayColumn
+                key={index}
+                dayIndex={index as DayOfWeek}
+                date={date}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>

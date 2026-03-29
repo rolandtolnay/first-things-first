@@ -3,10 +3,10 @@
 /**
  * TimeGrid - Time slot grid for 8:00-20:00
  *
- * Renders 24 TimeSlot components (30-minute intervals) with time labels
- * at hour boundaries on the left side. Uses CSS Grid for alignment.
+ * Renders 24 TimeSlot components (30-minute intervals).
  * TimeBlocks overlay the slot column with absolute positioning.
  * Supports click-drag-draw for freestyle block creation.
+ * Time labels are rendered separately by TimeLabelsColumn.
  */
 
 import { useMemo } from "react";
@@ -43,74 +43,46 @@ export function TimeGrid({ dayIndex }: TimeGridProps) {
   } = useBlockDraw(dayIndex, blocks);
 
   return (
-    <div className="grid grid-cols-[3rem_1fr]">
-      {/* Time labels column */}
-      <div>
-        {slots.map((slotIndex) => {
-          const isHourStart = slotIndex % 2 === 0;
-          const hour = 8 + Math.floor(slotIndex / 2);
+    <div
+      className="relative"
+      data-slots-column
+      {...containerProps}
+      style={
+        isDrawing
+          ? { touchAction: "none", userSelect: "none" }
+          : undefined
+      }
+    >
+      {/* Grid of slots */}
+      {slots.map((slotIndex) => (
+        <TimeSlot key={slotIndex} slotIndex={slotIndex} dayIndex={dayIndex} />
+      ))}
 
-          return (
-            <div
-              key={slotIndex}
-              className="h-8 flex items-start justify-end pr-2"
-              style={{
-                fontSize: '12px',
-                fontWeight: 500,
-                lineHeight: '1.4',
-                letterSpacing: '0.01em',
-                color: 'var(--text-muted)',
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              {isHourStart && `${hour}:00`}
-            </div>
-          );
-        })}
-      </div>
+      {/* Blocks overlaid with absolute positioning */}
+      {blocks.map((block) => (
+        <TimeBlock
+          key={block.id}
+          block={block}
+          dayBlocks={blocks}
+          editingBlockId={newBlockId}
+          onClearEditing={clearNewBlockId}
+        />
+      ))}
 
-      {/* Slots column with blocks overlay */}
-      <div
-        className="relative"
-        data-slots-column
-        {...containerProps}
-        style={
-          isDrawing
-            ? { touchAction: "none", userSelect: "none" }
-            : undefined
-        }
-      >
-        {/* Grid of slots */}
-        {slots.map((slotIndex) => (
-          <TimeSlot key={slotIndex} slotIndex={slotIndex} dayIndex={dayIndex} />
-        ))}
-
-        {/* Blocks overlaid with absolute positioning */}
-        {blocks.map((block) => (
-          <TimeBlock
-            key={block.id}
-            block={block}
-            dayBlocks={blocks}
-            editingBlockId={newBlockId}
-            onClearEditing={clearNewBlockId}
-          />
-        ))}
-
-        {/* Draw preview during click-drag-draw */}
-        {isDrawing && previewBlock && (
-          <div
-            className="absolute left-0 right-0 z-20 pointer-events-none"
-            style={{
-              top: `${previewBlock.startSlot * 32}px`,
-              height: `${previewBlock.duration * 32}px`,
-              borderRadius: 'var(--radius-md)',
-              border: '2px dashed var(--primary)',
-              backgroundColor: 'rgba(20, 184, 166, 0.1)',
-              opacity: 0.5,
-            }}
-          />
-        )}
-      </div>
+      {/* Draw preview during click-drag-draw */}
+      {isDrawing && previewBlock && (
+        <div
+          className="absolute left-0 right-0 z-20 pointer-events-none"
+          style={{
+            top: `${previewBlock.startSlot * 32}px`,
+            height: `${previewBlock.duration * 32}px`,
+            borderRadius: 'var(--radius-md)',
+            border: '2px dashed var(--primary)',
+            backgroundColor: 'rgba(20, 184, 166, 0.1)',
+            opacity: 0.5,
+          }}
+        />
+      )}
     </div>
   );
 }
