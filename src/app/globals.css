@@ -52,7 +52,7 @@
   --accent-foreground: #0F172A;
 
   /* Completion */
-  --completed-opacity: 0.55;
+  --completed-opacity: 0.75;
   --completed-bg: rgba(0, 0, 0, 0.02);
 
   /* Sidebar */

@@ -75,10 +75,10 @@ export function BlockCard({
   const fontSize = compact ? "text-xs" : "text-sm";
   const padding = compact ? "px-2.5 py-2" : "px-3 py-2";
 
-  const bgColor = completed
-    ? "var(--completed-bg)"
-    : roleColor
-      ? getRoleColorStyleWithOpacity(roleColor, isHovered ? 0.12 : 0.08)
+  const bgColor = roleColor
+    ? getRoleColorStyleWithOpacity(roleColor, isHovered ? 0.12 : 0.08)
+    : completed
+      ? "var(--completed-bg)"
       : "var(--muted)";
 
   const hasMenu = (onToggle || onDelete) && !isEditing;
@@ -156,7 +156,8 @@ export function BlockCard({
   const cardContent = (
     <div
       className={cn(
-        "group relative flex items-start gap-1.5 rounded-md shadow-sm hover:shadow-md transition-shadow",
+        "group relative flex items-start gap-1.5 rounded-md transition-shadow",
+        !completed && "shadow-sm hover:shadow-md",
         fontSize,
         padding,
         className
@@ -164,7 +165,7 @@ export function BlockCard({
       style={{
         height: `${height}px`,
         backgroundColor: bgColor,
-        border: roleColor ? `0.5px solid ${getRoleColorStyle(roleColor)}` : undefined,
+        border: roleColor && !completed ? `0.5px solid ${getRoleColorStyle(roleColor)}` : undefined,
         opacity: completed ? "var(--completed-opacity)" : undefined,
         ...style,
       }}
