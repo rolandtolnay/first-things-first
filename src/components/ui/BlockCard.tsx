@@ -1,15 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Check, MoreVertical, CheckCircle, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Check, Circle, CheckCircle, Trash2 } from "lucide-react";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
@@ -23,6 +21,9 @@ interface BlockCardProps {
   compact?: boolean;
   height?: number;
   autoEdit?: boolean;
+  freestyle?: boolean;
+  variant?: "default" | "card";
+  subtitle?: string;
   className?: string;
   style?: React.CSSProperties;
   onToggle?: () => void;
@@ -38,6 +39,9 @@ export function BlockCard({
   compact,
   height = 56,
   autoEdit,
+  freestyle,
+  variant = "default",
+  subtitle,
   className,
   style,
   onToggle,
@@ -47,7 +51,6 @@ export function BlockCard({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(text);
   const [isHovered, setIsHovered] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Auto-edit for newly created freestyle blocks
@@ -76,12 +79,20 @@ export function BlockCard({
   const fontSize = compact ? "text-xs" : "text-sm";
   const padding = compact ? "px-2.5 py-2" : "px-3 py-2";
 
-  const bgColor = roleColor
-    ? getRoleColorStyleWithOpacity(roleColor, isHovered ? 0.20 : 0.15)
-    : completed
-      ? "var(--completed-bg)"
-      : "var(--muted)";
+  const isCard = variant === "card";
 
+  const bgColor = isCard
+    ? "var(--card)"
+    : roleColor
+      ? getRoleColorStyleWithOpacity(roleColor, isHovered ? 0.20 : 0.15)
+      : completed
+        ? "var(--completed-bg)"
+        : "var(--muted)";
+
+  const showBorder = roleColor && (isCard || !completed);
+  const borderStyle = freestyle ? "dashed" : "solid";
+
+  const showToggle = onToggle && !isEditing;
   const hasMenu = (onToggle || onDelete) && !isEditing;
 
   function handleDoubleClick() {
@@ -157,8 +168,9 @@ export function BlockCard({
   const cardContent = (
     <div
       className={cn(
-        "group relative flex items-start gap-1.5 rounded-md transition-shadow",
-        !completed && "shadow-sm hover:shadow-md",
+        "group relative flex items-start gap-1.5 transition-shadow",
+        isCard ? "rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)]" : "rounded-md",
+        !completed && !isCard && "shadow-sm hover:shadow-md",
         fontSize,
         padding,
         className
@@ -166,7 +178,7 @@ export function BlockCard({
       style={{
         height: `${height}px`,
         backgroundColor: bgColor,
-        borderLeft: roleColor && !completed ? `3px solid ${getRoleColorStyle(roleColor)}` : undefined,
+        borderLeft: showBorder ? `${isCard ? 2 : 3}px ${borderStyle} ${getRoleColorStyle(roleColor!)}` : undefined,
         opacity: completed ? "var(--completed-opacity)" : undefined,
         ...style,
       }}
@@ -174,11 +186,6 @@ export function BlockCard({
       onMouseLeave={() => setIsHovered(false)}
       onDoubleClick={handleDoubleClick}
     >
-      {/* Completed check icon */}
-      {completed && onToggle && (
-        <Check className="size-3.5 flex-shrink-0 text-primary mt-0.5" strokeWidth={3} />
-      )}
-
       {/* Text or editing input */}
       {isEditing ? (
         <Input
@@ -193,64 +200,41 @@ export function BlockCard({
           placeholder={autoEdit ? "Block title..." : ""}
         />
       ) : (
-        <span
-          className="flex-1 min-w-0 font-medium overflow-hidden"
-          style={{
-            display: "-webkit-box",
-            WebkitLineClamp: lineClamp,
-            WebkitBoxOrient: "vertical",
-            lineHeight: "1.4",
-            textDecoration: completed ? "line-through" : undefined,
-            textDecorationColor: completed ? "var(--muted-foreground)" : undefined,
-          }}
-        >
-          {text}
-        </span>
+        <div className={cn("flex-1 min-w-0", showToggle && "pr-5")}>
+          <span
+            className="font-medium overflow-hidden block"
+            style={{
+              display: "-webkit-box",
+              WebkitLineClamp: lineClamp,
+              WebkitBoxOrient: "vertical",
+              lineHeight: "1.4",
+              textDecoration: completed ? "line-through" : undefined,
+              textDecorationColor: completed ? "var(--muted-foreground)" : undefined,
+            }}
+          >
+            {text}
+          </span>
+          {subtitle && height >= 56 && (
+            <span className="text-label text-muted-foreground truncate block mt-0.5">
+              {subtitle}
+            </span>
+          )}
+        </div>
       )}
 
-      {/* Absolute-positioned menu button (overlay, doesn't steal text space) */}
-      {hasMenu && (
-        <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              className={cn(
-                "absolute top-1 right-1 rounded-sm border-0 bg-transparent text-foreground/60 hover:bg-foreground/10 hover:text-foreground/80 transition-opacity",
-                menuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-              )}
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-            >
-              <MoreVertical className="size-3.5" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-auto min-w-[160px] p-1"
-            align="end"
-            side="bottom"
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            {onToggle && (
-              <button
-                className="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded-sm hover:bg-accent text-foreground"
-                onClick={() => { onToggle(); setMenuOpen(false); }}
-              >
-                <CheckCircle className="size-3.5" />
-                {completed ? "Mark incomplete" : "Mark complete"}
-              </button>
-            )}
-            {onDelete && (
-              <button
-                className="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded-sm hover:bg-accent text-destructive"
-                onClick={() => { onDelete(); setMenuOpen(false); }}
-              >
-                <Trash2 className="size-3.5" />
-                Delete
-              </button>
-            )}
-          </PopoverContent>
-        </Popover>
+      {/* Completion toggle — top-right */}
+      {showToggle && (
+        <div
+          className="absolute top-2 right-1.5"
+          onClick={(e) => { e.stopPropagation(); onToggle(); }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {completed ? (
+            <Check className="size-3.5 text-primary" strokeWidth={3} />
+          ) : (
+            <Circle className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          )}
+        </div>
       )}
     </div>
   );

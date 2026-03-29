@@ -55,7 +55,7 @@ export function GoalList({ roleId, roleColor, addingGoal, onAddingGoalDone }: Go
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5">
       {goals.map((goal) => (
         <GoalItem key={goal.id} goal={goal} roleColor={roleColor} />
       ))}

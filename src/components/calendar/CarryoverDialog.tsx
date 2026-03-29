@@ -145,7 +145,7 @@ export function CarryoverDialog({
         {/* Completion summary */}
         {completionSummary && (
           <div className="rounded-md bg-primary-soft p-3 mb-4">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+            <div className="text-caption font-semibold uppercase tracking-wider text-muted-foreground mb-1">
               Last Week
             </div>
             <div className="text-sm font-medium">

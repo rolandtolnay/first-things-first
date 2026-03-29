@@ -57,11 +57,11 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
     >
       <BlockCard
         text={goal.text}
-        roleColor={roleColor}
         completed={goal.completed}
         editable
+        variant="card"
         compact={false}
-        height={56}
+        height={46}
         onToggle={() => toggleGoalCompleted(goal.id)}
         onEdit={handleEdit}
         onDelete={() => setAlertOpen(true)}

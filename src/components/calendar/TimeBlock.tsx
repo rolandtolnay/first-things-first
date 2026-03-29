@@ -86,20 +86,15 @@ export function TimeBlock({
         completed={block.completed}
         compact
         editable={isFreestyle}
+        freestyle={isFreestyle}
         height={height}
         autoEdit={isNewFreestyle}
+        subtitle={`${slotToTime(block.startSlot)} \u2013 ${slotToTime(block.startSlot + displayDuration)}`}
         onToggle={() => toggleTimeBlockCompleted(block.id)}
         onDelete={isNewFreestyle ? handleAutoDelete : () => deleteTimeBlock(block.id)}
         onEdit={isFreestyle ? handleEdit : undefined}
         className="h-full"
       />
-
-      {/* Time label during resize */}
-      {isResizing && previewDuration !== null && (
-        <span className="absolute bottom-1 left-2 text-[10px] text-muted-foreground">
-          {slotToTime(block.startSlot)} &ndash; {slotToTime(block.startSlot + previewDuration)}
-        </span>
-      )}
 
       {/* Resize handle at bottom edge — large hit area, small pill indicator */}
       <div

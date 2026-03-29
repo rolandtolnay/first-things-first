@@ -10,11 +10,11 @@ export function TimeLabelsColumn() {
   return (
     <div className="flex-shrink-0 flex flex-col" style={{ width: `${TIME_LABELS_WIDTH}px` }}>
       {/* Header spacer */}
-      <div className="sticky top-0 z-10 bg-card h-[40px] border-b border-border" />
+      <div className="sticky top-0 z-10 bg-card h-[56px] border-b border-border" />
 
       {/* TOP label */}
       <div
-        className="flex items-start justify-end pr-2 pt-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase border-b border-border-emphasis"
+        className="flex items-start justify-end pr-2 pt-2 text-label font-bold tracking-[0.06em] text-muted-foreground uppercase border-b border-border-emphasis"
         style={{ height: `${PRIORITIES_SECTION_HEIGHT}px` }}
       >
         TOP
@@ -29,7 +29,7 @@ export function TimeLabelsColumn() {
           return (
             <div
               key={slotIndex}
-              className="h-7 flex items-start justify-end pr-2 text-[11px] font-medium text-muted-foreground tabular-nums"
+              className="h-7 flex items-start justify-end pr-2 text-label font-medium text-muted-foreground tabular-nums"
             >
               {isHourStart && `${hour}:00`}
             </div>
@@ -39,7 +39,7 @@ export function TimeLabelsColumn() {
 
       {/* EVE label */}
       <div
-        className="flex items-start justify-end pr-2 pt-2 text-[11px] text-muted-foreground uppercase border-t border-border-emphasis"
+        className="flex items-start justify-end pr-2 pt-2 text-label font-semibold tracking-[0.04em] text-muted-foreground uppercase border-t border-border-emphasis"
         style={{ height: `${EVENING_SECTION_HEIGHT}px` }}
       >
         EVE

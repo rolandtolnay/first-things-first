@@ -16,12 +16,14 @@ import { useBlockDraw } from "@/hooks/useBlockDraw";
 import { SLOT_HEIGHT } from "@/lib/constants";
 import { TimeSlot } from "./TimeSlot";
 import { TimeBlock } from "./TimeBlock";
+import { CurrentTimeIndicator } from "./CurrentTimeIndicator";
 
 interface TimeGridProps {
   dayIndex: DayOfWeek;
+  isToday?: boolean;
 }
 
-export function TimeGrid({ dayIndex }: TimeGridProps) {
+export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
   // Generate 24 slots: 0-23 representing 8:00-19:30
   const slots = Array.from({ length: 24 }, (_, i) => i as TimeSlotIndex);
 
@@ -69,6 +71,9 @@ export function TimeGrid({ dayIndex }: TimeGridProps) {
           onClearEditing={clearNewBlockId}
         />
       ))}
+
+      {/* Current time indicator */}
+      {isToday && <CurrentTimeIndicator />}
 
       {/* Draw preview during click-drag-draw */}
       {isDrawing && previewBlock && (

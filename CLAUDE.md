@@ -18,3 +18,17 @@ Always check `src/components/ui/` first to see what's already installed before a
 1. Modify the existing shared component so the change is reflected app-wide.
 2. If modifying would cause regressions elsewhere, flag it and ask — we may make a local exception or create a new shared variant.
 The goal is consistency: all UI flows through shared components so the app looks and behaves uniformly.
+
+## Tailwind v4 Custom Theme Tokens
+
+When adding custom values to `@theme inline` in `globals.css`, use the **same prefix as the built-in utilities** you want to extend:
+
+- `--text-*` → `text-*` (font sizes)
+- `--color-*` → color utilities
+- `--radius-*` → `rounded-*`
+- `--shadow-*` → `shadow-*`
+
+**Wrong:** `--font-size-label: 10px` (unrecognized namespace, generates nothing)
+**Right:** `--text-label: 10px` (generates `.text-label { font-size: 10px }`)
+
+Tailwind v4 silently ignores unknown class names — the build won't warn you. If a new utility class doesn't seem to work, check the compiled CSS output to confirm it exists.

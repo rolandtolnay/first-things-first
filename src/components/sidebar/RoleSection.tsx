@@ -33,6 +33,15 @@ export function RoleSection({ role }: RoleSectionProps) {
   const updateRole = useWeekStore((state) => state.updateRole);
   const deleteRole = useWeekStore((state) => state.deleteRole);
 
+  const roleHours = useWeekStore((state) => {
+    const week = state.currentWeek;
+    if (!week) return 0;
+    let h = 0;
+    for (const tb of week.timeBlocks) if (tb.roleId === role.id) h += tb.duration * 0.5;
+    for (const eb of week.eveningBlocks) if (eb.roleId === role.id) h += 1;
+    return h;
+  });
+
   const handleSaveRole = useCallback(
     (value: string) => updateRole(role.id, { name: value }),
     [updateRole, role.id]
@@ -65,9 +74,10 @@ export function RoleSection({ role }: RoleSectionProps) {
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
-          className="flex flex-col rounded-md p-3 mb-2"
+          className="flex flex-col rounded-lg p-3 mb-2"
           style={{
             backgroundColor: getRoleColorStyleWithOpacity(role.color, 0.12),
+            borderLeft: `4px solid ${getRoleColorStyle(role.color)}`,
           }}
         >
           {/* Role header */}
@@ -86,12 +96,12 @@ export function RoleSection({ role }: RoleSectionProps) {
                 onChange={(e) => setEditValue(e.target.value)}
                 onBlur={save}
                 onKeyDown={handleKeyDown}
-                className="flex-1 text-base font-bold text-foreground"
+                className="flex-1 text-sm font-bold text-foreground"
                 aria-label="Edit role name"
               />
             ) : (
               <span
-                className="flex-1 min-w-0 cursor-pointer text-base font-bold text-foreground overflow-hidden"
+                className="flex-1 min-w-0 cursor-pointer text-sm font-bold text-foreground overflow-hidden"
                 style={{
                   display: "-webkit-box",
                   WebkitLineClamp: 2,
@@ -102,6 +112,10 @@ export function RoleSection({ role }: RoleSectionProps) {
               >
                 {role.name}
               </span>
+            )}
+
+            {roleHours > 0 && !isEditing && (
+              <span className="text-caption text-muted-foreground ml-auto mr-5">{roleHours}h planned</span>
             )}
 
             {/* Absolute-positioned menu button */}
@@ -143,7 +157,7 @@ export function RoleSection({ role }: RoleSectionProps) {
             )}
           </div>
 
-          <div className="mt-3">
+          <div className="mt-1.5">
             <GoalList roleId={role.id} roleColor={role.color} addingGoal={addingGoal} onAddingGoalDone={() => setAddingGoal(false)} />
           </div>
         </div>

@@ -71,7 +71,7 @@ export function AddItemInput({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="text-[13px]"
+          className="text-sm"
           aria-label={placeholder}
         />
       </div>

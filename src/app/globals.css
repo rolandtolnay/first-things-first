@@ -80,6 +80,10 @@
   --radius-xl: 20px;
   --radius-full: 9999px;
 
+  /* Grid aesthetics */
+  --grid-line: color-mix(in srgb, var(--border) 50%, transparent);
+  --grid-line-subtle: color-mix(in srgb, var(--border) 30%, transparent);
+
   /* Durations */
   --duration-fast: 150ms;
   --duration-normal: 200ms;
@@ -137,6 +141,9 @@
   --today: rgba(45, 212, 191, 0.08);
   --popover: #1A2332;
   --popover-foreground: #F1F5F9;
+
+  --grid-line: color-mix(in srgb, var(--border) 50%, transparent);
+  --grid-line-subtle: color-mix(in srgb, var(--border) 30%, transparent);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -214,8 +221,10 @@
   --radius-lg: 14px;
   --radius-xl: 20px;
 
-  /* Typography */
-  --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+  /* Typography scale (app-specific) */
+  --text-label: 10px;   /* section labels, timestamps, day names */
+  --text-caption: 11px; /* secondary info, role hours, pie labels */
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* Shadows */
   --shadow-sm: var(--shadow-sm);
@@ -232,7 +241,7 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* Focus visible styles for accessibility */

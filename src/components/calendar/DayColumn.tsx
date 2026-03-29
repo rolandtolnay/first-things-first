@@ -53,29 +53,33 @@ export function DayColumn({ dayIndex, date }: DayColumnProps) {
     <div
       className="flex flex-col min-w-[140px]"
       style={{
-        borderRight: '1px solid color-mix(in srgb, var(--border) 80%, transparent)',
+        borderRight: '1px solid var(--grid-line)',
         backgroundColor: isToday ? 'var(--today)' : undefined,
       }}
     >
-      {/* Single-line header with pie chart */}
+      {/* Header with stacked day/date and donut chart */}
       <div
-        className="flex items-center gap-1.5 px-2 py-2.5 sticky top-0 z-10 h-[40px] border-b border-border"
+        className="flex items-center justify-between px-2 sticky top-0 z-10 h-[56px] border-b border-border"
         style={{
           backgroundColor: isToday ? 'var(--today)' : 'var(--card)',
         }}
       >
-        <PieChart completed={completed} total={total} size={24} />
-        <span className="text-xs text-secondary-foreground">
-          {dayName}
-        </span>
-        <span
-          className={cn(
-            "text-sm",
-            isToday ? "font-bold text-primary" : "text-secondary-foreground"
+        {/* Left: stacked day name + date */}
+        <div className="flex flex-col items-start leading-none">
+          <span className="text-label font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+            {dayName}
+          </span>
+          {isToday ? (
+            <span className="bg-primary text-primary-foreground w-[30px] h-[30px] rounded-full flex items-center justify-center text-sm font-semibold">
+              {dateNum}
+            </span>
+          ) : (
+            <span className="text-lg font-semibold text-foreground">{dateNum}</span>
           )}
-        >
-          {dateNum}
-        </span>
+        </div>
+
+        {/* Right: donut chart */}
+        <PieChart completed={completed} total={total} size={28} />
       </div>
 
       {/* Day Priorities section */}
@@ -83,7 +87,7 @@ export function DayColumn({ dayIndex, date }: DayColumnProps) {
 
       {/* Time grid */}
       <div className="flex-1">
-        <TimeGrid dayIndex={dayIndex} />
+        <TimeGrid dayIndex={dayIndex} isToday={isToday} />
       </div>
 
       {/* Evening slot */}

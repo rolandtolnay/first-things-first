@@ -86,10 +86,12 @@ export function WeekNavigation({ onNewWeek }: WeekNavigationProps) {
         </Tooltip>
 
         {/* Date range label */}
-        <h2 className="flex items-center gap-2 text-[15px] font-semibold text-foreground">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
           {selectedWeekId ? formatWeekId(selectedWeekId) : "Loading..."}
           {isCurrentCalendarWeek && (
-            <Badge variant="secondary">This week</Badge>
+            <Badge className="bg-primary-soft text-primary text-caption font-semibold border-0">
+              This week
+            </Badge>
           )}
         </h2>
 

@@ -112,6 +112,7 @@ function DraggableEveningBlock({
         roleColor={roleColor}
         completed={eveningBlock.completed}
         compact
+        freestyle={eveningBlock.type === "freestyle"}
         height={56}
         onToggle={() => toggleEveningBlockCompleted(eveningBlock.id)}
         onDelete={onDelete}
