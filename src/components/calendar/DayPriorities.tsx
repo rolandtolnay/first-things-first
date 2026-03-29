@@ -55,7 +55,7 @@ export function DayPriorities({ dayIndex }: DayPrioritiesProps) {
     <div
       ref={setNodeRef}
       className={cn(
-        "p-2 bg-muted flex flex-col gap-2",
+        "px-1 py-2 bg-muted flex flex-col gap-2",
         showDropHint && "border border-dashed border-primary bg-primary-soft",
         isOver && "bg-primary-soft"
       )}

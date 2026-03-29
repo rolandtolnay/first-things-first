@@ -4,16 +4,25 @@ import type { RoleColor } from "@/types";
 interface DragPreviewProps {
   text: string;
   roleColor?: RoleColor;
+  width?: number;
+  height?: number;
 }
 
-export function DragPreview({ text, roleColor }: DragPreviewProps) {
+export function DragPreview({ text, roleColor, width, height }: DragPreviewProps) {
   return (
-    <div className="pointer-events-none w-[200px]" style={{ boxShadow: 'var(--shadow-drag)' }}>
+    <div
+      className="pointer-events-none"
+      style={{
+        width: width ? `${width}px` : "200px",
+        height: height ? `${height}px` : undefined,
+        boxShadow: "var(--shadow-drag)",
+      }}
+    >
       <BlockCard
         text={text}
         roleColor={roleColor}
         compact
-        height={56}
+        height={height ?? 56}
       />
     </div>
   );

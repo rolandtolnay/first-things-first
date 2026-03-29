@@ -69,7 +69,7 @@ export function TimeBlock({
       {...attributes}
       data-block
       className={cn(
-        "absolute left-2 right-2 z-10 group bg-card rounded-md",
+        "absolute left-1 right-1 z-10 group bg-card rounded-md",
         "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-90",
         isResizing && "z-20"
@@ -101,15 +101,18 @@ export function TimeBlock({
         </span>
       )}
 
-      {/* Resize handle at bottom edge */}
+      {/* Resize handle at bottom edge — large hit area, small pill indicator */}
       <div
-        className={cn(
-          "absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize",
-          "opacity-0 group-hover:opacity-100 transition-opacity"
-        )}
-        style={{ borderBottom: '2px solid var(--border-emphasis)' }}
+        className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize flex items-end justify-center pb-0.5"
         {...handleProps}
-      />
+      >
+        <div
+          className={cn(
+            "w-6 h-[3px] rounded-full bg-foreground/40 transition-opacity",
+            "opacity-0 group-hover:opacity-100"
+          )}
+        />
+      </div>
     </div>
   );
 }

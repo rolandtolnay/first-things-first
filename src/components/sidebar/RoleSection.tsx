@@ -2,10 +2,10 @@
 
 import { useCallback, useState } from "react";
 import { MoreVertical, Plus, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
 import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import { useEditableText } from "@/hooks/useEditableText";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -86,7 +86,7 @@ export function RoleSection({ role }: RoleSectionProps) {
                 onChange={(e) => setEditValue(e.target.value)}
                 onBlur={save}
                 onKeyDown={handleKeyDown}
-                className="flex-1 min-w-0 h-auto py-0.5 text-base font-semibold"
+                className="flex-1 text-base font-semibold text-foreground"
                 aria-label="Edit role name"
               />
             ) : (

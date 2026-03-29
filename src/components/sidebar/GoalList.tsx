@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useRef, useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
 import { GoalItem } from "./GoalItem";
-import { Input } from "@/components/ui/input";
 import type { RoleColor } from "@/types";
 
 interface GoalListProps {
@@ -69,7 +69,7 @@ export function GoalList({ roleId, roleColor, addingGoal, onAddingGoalDone }: Go
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder="Goal text..."
-          className="text-sm"
+          className="font-medium text-foreground"
           aria-label="New goal text"
         />
       )}

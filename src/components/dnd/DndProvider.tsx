@@ -46,6 +46,7 @@ interface DndProviderProps {
 export function DndProvider({ children }: DndProviderProps) {
   // Track currently dragged item data for DragOverlay
   const [activeData, setActiveData] = useState<DragData | null>(null);
+  const [activeRect, setActiveRect] = useState<{ width: number; height: number } | null>(null);
   // Ref preserves drag type across the re-render caused by setActiveData(null)
   // so dropAnimation stays correct when dnd-kit reads it
   const activeTypeRef = useRef<DragData["type"] | null>(null);
@@ -70,11 +71,22 @@ export function DndProvider({ children }: DndProviderProps) {
     useSensor(KeyboardSensor)
   );
 
-  // Handle drag start - capture active item data
+  // Handle drag start - capture active item data and source dimensions
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const data = event.active.data.current as DragData;
     activeTypeRef.current = data.type;
     setActiveData(data);
+
+    // Find the draggable source element from the pointer event target
+    const target = event.activatorEvent.target as HTMLElement | null;
+    if (target) {
+      // Walk up to the element with dnd-kit's draggable attributes (role="button")
+      const draggable = target.closest<HTMLElement>('[role="button"]');
+      if (draggable) {
+        const rect = draggable.getBoundingClientRect();
+        setActiveRect({ width: rect.width, height: rect.height });
+      }
+    }
   }, []);
 
   // Handle drag end - process drop and clear active state
@@ -84,6 +96,7 @@ export function DndProvider({ children }: DndProviderProps) {
 
       // Clear active state
       setActiveData(null);
+      setActiveRect(null);
 
       // No valid drop target
       if (!over) return;
@@ -365,6 +378,7 @@ export function DndProvider({ children }: DndProviderProps) {
   // Handle drag cancel - clear active state
   const handleDragCancel = useCallback(() => {
     setActiveData(null);
+    setActiveRect(null);
   }, []);
 
   return (
@@ -388,7 +402,7 @@ export function DndProvider({ children }: DndProviderProps) {
             : { duration: 200, easing: "ease" } // Everything else moves
         }
       >
-        {activeData ? <DragOverlayContent data={activeData} /> : null}
+        {activeData ? <DragOverlayContent data={activeData} sourceRect={activeRect} /> : null}
       </DragOverlay>
     </DndContext>
   );

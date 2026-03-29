@@ -14,7 +14,7 @@ export function TimeLabelsColumn() {
 
       {/* TOP label */}
       <div
-        className="flex items-center justify-end pr-2 text-[11px] text-muted-foreground uppercase border-b border-border-emphasis"
+        className="flex items-start justify-end pr-2 pt-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase border-b border-border-emphasis"
         style={{ height: `${PRIORITIES_SECTION_HEIGHT}px` }}
       >
         TOP
@@ -39,7 +39,7 @@ export function TimeLabelsColumn() {
 
       {/* EVE label */}
       <div
-        className="flex items-center justify-end pr-2 text-[11px] text-muted-foreground uppercase border-t border-border-emphasis"
+        className="flex items-start justify-end pr-2 pt-2 text-[11px] text-muted-foreground uppercase border-t border-border-emphasis"
         style={{ height: `${EVENING_SECTION_HEIGHT}px` }}
       >
         EVE

@@ -11,11 +11,15 @@
  * After creation, sets newBlockId to trigger inline title editing on the block.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { DayOfWeek, TimeBlock, TimeSlotIndex } from "@/types";
 import { hasOverlap, getClampedDuration } from "@/lib/overlap";
 import { useWeekStore } from "@/stores/weekStore";
 import { SLOT_HEIGHT } from "@/lib/constants";
+
+// Module-level flag shared across all useBlockDraw instances (all days).
+// Tracks whether ANY day column currently has a freestyle block being edited.
+let globalEditingBlock = false;
 
 interface DrawState {
   startSlot: number;
@@ -52,6 +56,7 @@ export function useBlockDraw(
 
   const clearNewBlockId = useCallback(() => {
     setNewBlockId(null);
+    globalEditingBlock = false;
   }, []);
 
   const onPointerDown = useCallback(
@@ -62,6 +67,14 @@ export function useBlockDraw(
       // Only respond to primary button (left click)
       if (e.button !== 0) return;
 
+      // If any day column has a freestyle block being edited, dismiss it instead
+      if (globalEditingBlock) {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+        return;
+      }
+
       const rect = e.currentTarget.getBoundingClientRect();
       const startSlot = Math.floor((e.clientY - rect.top) / SLOT_HEIGHT);
 
@@ -71,11 +84,6 @@ export function useBlockDraw(
       // Check if starting slot overlaps existing blocks
       if (hasOverlap(startSlot, startSlot + 1, dayBlocks)) return;
 
-      // Blur any focused element (e.g. inline title input) before preventing default,
-      // so handleInlineBlur fires and cleans up unconfirmed empty blocks
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
       // Prevent default to avoid text selection
       e.preventDefault();
       // Capture pointer for reliable tracking
@@ -122,9 +130,9 @@ export function useBlockDraw(
     async (e: React.PointerEvent) => {
       if (!isDrawing || !drawState) return;
 
-      // Calculate final duration (min 1 slot)
+      // Calculate final duration (min 2 slots = 1 hour)
       const duration = Math.max(
-        1,
+        2,
         drawState.currentEndSlot - drawState.startSlot
       );
 
@@ -140,6 +148,7 @@ export function useBlockDraw(
 
       // Set the new block ID to trigger inline editing
       setNewBlockId(block.id);
+      globalEditingBlock = true;
 
       // Clear drawing state
       setIsDrawing(false);

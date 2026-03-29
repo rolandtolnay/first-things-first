@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Check, MoreVertical, CheckCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -11,6 +10,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import type { RoleColor } from "@/types";
@@ -62,9 +62,10 @@ export function BlockCard({
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
-      if (editValue) inputRef.current.select();
+      inputRef.current.select();
     }
-  }, [isEditing, editValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing]);
 
   // Sync text prop to edit value
   useEffect(() => {
@@ -187,8 +188,9 @@ export function BlockCard({
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          className="flex-1 min-w-0 h-auto py-0.5 text-inherit"
-          placeholder={autoEdit ? "Block title..." : "Edit text..."}
+          className="flex-1 font-medium"
+          style={{ fontSize: "inherit", lineHeight: "1.4" }}
+          placeholder={autoEdit ? "Block title..." : ""}
         />
       ) : (
         <span

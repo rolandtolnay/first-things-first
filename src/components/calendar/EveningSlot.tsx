@@ -41,7 +41,7 @@ export function EveningSlot({ dayIndex }: EveningSlotProps) {
     <div
       ref={setNodeRef}
       className={cn(
-        "p-2 bg-muted",
+        "p-1 bg-muted",
         showDropHint && "border border-dashed border-primary bg-primary-soft",
         isOver && "bg-primary-soft"
       )}

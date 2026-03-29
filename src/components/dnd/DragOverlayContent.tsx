@@ -7,33 +7,36 @@ import { DragPreview } from "./DragPreview";
 
 interface DragOverlayContentProps {
   data: DragData;
+  sourceRect?: { width: number; height: number } | null;
 }
 
-export function DragOverlayContent({ data }: DragOverlayContentProps) {
+export function DragOverlayContent({ data, sourceRect }: DragOverlayContentProps) {
   if (data.type === "goal") {
-    return <GoalOverlay data={data} />;
+    return <GoalOverlay data={data} sourceRect={sourceRect} />;
   }
   if (data.type === "block") {
-    return <BlockOverlay data={data} />;
+    return <BlockOverlay data={data} sourceRect={sourceRect} />;
   }
   if (data.type === "priority") {
-    return <PriorityOverlay data={data} />;
+    return <PriorityOverlay data={data} sourceRect={sourceRect} />;
   }
   if (data.type === "evening") {
-    return <EveningOverlay data={data} />;
+    return <EveningOverlay data={data} sourceRect={sourceRect} />;
   }
   return null;
 }
 
-function GoalOverlay({ data }: { data: GoalDragData }) {
+type SourceRect = { width: number; height: number } | null | undefined;
+
+function GoalOverlay({ data, sourceRect }: { data: GoalDragData; sourceRect?: SourceRect }) {
   const roleColor = useWeekStore((state) =>
     state.currentWeek?.roles.find((r) => r.id === data.roleId)?.color
   ) as RoleColor | undefined;
 
-  return <DragPreview text={data.text} roleColor={roleColor ?? "teal"} />;
+  return <DragPreview text={data.text} roleColor={roleColor ?? "teal"} width={sourceRect?.width} height={sourceRect?.height} />;
 }
 
-function BlockOverlay({ data }: { data: BlockDragData }) {
+function BlockOverlay({ data, sourceRect }: { data: BlockDragData; sourceRect?: SourceRect }) {
   const block = useWeekStore((state) =>
     state.currentWeek?.timeBlocks.find((b) => b.id === data.blockId)
   );
@@ -47,24 +50,26 @@ function BlockOverlay({ data }: { data: BlockDragData }) {
     <DragPreview
       text={block.title}
       roleColor={block.roleId ? (roleColor ?? "teal") : undefined}
+      width={sourceRect?.width}
+      height={sourceRect?.height}
     />
   );
 }
 
-function PriorityOverlay({ data }: { data: PriorityDragData }) {
+function PriorityOverlay({ data, sourceRect }: { data: PriorityDragData; sourceRect?: SourceRect }) {
   const roleColor = useWeekStore((state) =>
     state.currentWeek?.roles.find((r) => r.id === data.roleId)?.color
   ) as RoleColor | undefined;
 
-  return <DragPreview text={data.text} roleColor={roleColor ?? "teal"} />;
+  return <DragPreview text={data.text} roleColor={roleColor ?? "teal"} width={sourceRect?.width} height={sourceRect?.height} />;
 }
 
-function EveningOverlay({ data }: { data: EveningDragData }) {
+function EveningOverlay({ data, sourceRect }: { data: EveningDragData; sourceRect?: SourceRect }) {
   const roleColor = useWeekStore((state) =>
     data.roleId ? state.currentWeek?.roles.find((r) => r.id === data.roleId)?.color : undefined
   ) as RoleColor | undefined;
 
-  return <DragPreview text={data.title} roleColor={roleColor} />;
+  return <DragPreview text={data.title} roleColor={roleColor} width={sourceRect?.width} height={sourceRect?.height} />;
 }
 
 export default DragOverlayContent;
