@@ -12,6 +12,7 @@ import { useState, useRef, useCallback } from "react";
 import type { TimeBlock } from "@/types";
 import { getClampedDuration } from "@/lib/overlap";
 import { useWeekStore } from "@/stores/weekStore";
+import { SLOT_HEIGHT } from "@/lib/constants";
 
 interface UseBlockResizeResult {
   handleProps: {
@@ -62,7 +63,7 @@ export function useBlockResize(
 
       // Calculate new end slot from absolute pointer position
       const relativeY = e.clientY - containerRectRef.current.top;
-      const newEndSlot = Math.round(relativeY / 32);
+      const newEndSlot = Math.round(relativeY / SLOT_HEIGHT);
       const newDuration = newEndSlot - block.startSlot;
 
       // Clamp with overlap prevention (excludes self)

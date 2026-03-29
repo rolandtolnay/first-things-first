@@ -15,6 +15,7 @@ import { useState, useCallback } from "react";
 import type { DayOfWeek, TimeBlock, TimeSlotIndex } from "@/types";
 import { hasOverlap, getClampedDuration } from "@/lib/overlap";
 import { useWeekStore } from "@/stores/weekStore";
+import { SLOT_HEIGHT } from "@/lib/constants";
 
 interface DrawState {
   startSlot: number;
@@ -62,7 +63,7 @@ export function useBlockDraw(
       if (e.button !== 0) return;
 
       const rect = e.currentTarget.getBoundingClientRect();
-      const startSlot = Math.floor((e.clientY - rect.top) / 32);
+      const startSlot = Math.floor((e.clientY - rect.top) / SLOT_HEIGHT);
 
       // Validate range
       if (startSlot < 0 || startSlot > 23) return;
@@ -95,7 +96,7 @@ export function useBlockDraw(
       if (!isDrawing || !drawState) return;
 
       const relativeY = e.clientY - drawState.containerRect.top;
-      let currentEndSlot = Math.round(relativeY / 32);
+      let currentEndSlot = Math.round(relativeY / SLOT_HEIGHT);
 
       // Clamp minimum to startSlot + 1 (at least one slot)
       currentEndSlot = Math.max(drawState.startSlot + 1, currentEndSlot);

@@ -12,7 +12,7 @@ export function AddRoleButton() {
       label="Add role"
       placeholder="Role name..."
       onAdd={(name) => addRole({ name })}
-      icon={<Plus size={14} style={{ color: 'var(--primary)' }} />}
+      icon={<Plus size={14} className="text-primary" />}
     />
   );
 }

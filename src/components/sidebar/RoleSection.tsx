@@ -1,20 +1,22 @@
 "use client";
 
-/**
- * RoleSection Component
- *
- * Combines a role header with its goals list.
- * Displays:
- * - Role header (color dot, name, edit/delete)
- * - GoalList underneath
- * - Entire section tinted with role color at 8% opacity
- */
-
 import { useCallback } from "react";
 import { Trash2 } from "lucide-react";
 import { useWeekStore } from "@/stores/weekStore";
 import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import { useEditableText } from "@/hooks/useEditableText";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { GoalList } from "./GoalList";
 import type { Role } from "@/types";
 
@@ -34,59 +36,35 @@ export function RoleSection({ role }: RoleSectionProps) {
   const { isEditing, editValue, setEditValue, inputRef, startEdit, save, handleKeyDown } =
     useEditableText(role.name, handleSaveRole);
 
-  const handleDelete = () => {
-    if (window.confirm(`Delete role "${role.name}"? This will also delete all goals for this role.`)) {
-      deleteRole(role.id);
-    }
-  };
-
   return (
     <div
-      className="flex flex-col"
+      className="flex flex-col rounded-md p-3 mb-2"
       style={{
         backgroundColor: getRoleColorStyleWithOpacity(role.color, 0.08),
-        borderRadius: 'var(--radius-md)',
-        padding: '12px',
-        marginBottom: '12px',
       }}
     >
       {/* Role header */}
-      <div className="group flex items-center gap-2 transition-colors">
-        {/* Color indicator - 8px dot */}
+      <div className="group flex items-center gap-2">
         <div
           className="w-2 h-2 rounded-full flex-shrink-0"
           style={{ backgroundColor: getRoleColorStyle(role.color) }}
           aria-hidden="true"
         />
 
-        {/* Name display or edit input */}
         {isEditing ? (
-          <input
+          <Input
             ref={inputRef}
             type="text"
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onBlur={save}
             onKeyDown={handleKeyDown}
-            className="flex-1 min-w-0 bg-transparent focus:outline-none"
-            style={{
-              fontSize: '15px',
-              fontWeight: 600,
-              border: `1px solid var(--border-emphasis)`,
-              borderRadius: 'var(--radius-sm)',
-              padding: '2px 6px',
-            }}
+            className="flex-1 min-w-0 h-auto py-0.5 text-[15px] font-semibold"
             aria-label="Edit role name"
           />
         ) : (
           <span
-            className="flex-1 min-w-0 truncate cursor-pointer"
-            style={{
-              fontSize: '15px',
-              fontWeight: 600,
-              lineHeight: '1.4',
-              color: 'var(--text-primary)',
-            }}
+            className="flex-1 min-w-0 truncate cursor-pointer text-[15px] font-semibold text-foreground"
             onDoubleClick={startEdit}
             title={role.name}
           >
@@ -94,27 +72,39 @@ export function RoleSection({ role }: RoleSectionProps) {
           </span>
         )}
 
-        {/* Delete button (visible on hover) */}
         {!isEditing && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded cursor-pointer"
-            style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--destructive)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-muted)';
-            }}
-            aria-label={`Delete role ${role.name}`}
-          >
-            <Trash2 size={14} />
-          </button>
+          <AlertDialog>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                    aria-label={`Delete role ${role.name}`}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </AlertDialogTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Delete role</TooltipContent>
+            </Tooltip>
+            <AlertDialogContent>
+              <AlertDialogTitle>Delete role</AlertDialogTitle>
+              <AlertDialogDescription>
+                Delete &ldquo;{role.name}&rdquo;? This will also delete all goals for this role.
+              </AlertDialogDescription>
+              <div className="flex justify-end gap-2 mt-4">
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => deleteRole(role.id)}>
+                  Delete
+                </AlertDialogAction>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </div>
 
-      {/* Goals list - inside colored section, no extra indent */}
       <div className="mt-2">
         <GoalList roleId={role.id} roleColor={role.color} />
       </div>

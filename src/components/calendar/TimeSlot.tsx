@@ -36,10 +36,10 @@ export function TimeSlot({ slotIndex, dayIndex }: TimeSlotProps) {
   return (
     <div
       ref={setNodeRef}
-      className="h-8 relative"
+      className="h-7 relative"
       style={{
         borderBottom: isHourStart
-          ? '1px solid var(--border-subtle)'
+          ? '1px solid var(--border)'
           : '1px solid rgba(226, 232, 240, 0.3)',
         ...(isOver && {
           backgroundColor: 'rgba(20, 184, 166, 0.2)',

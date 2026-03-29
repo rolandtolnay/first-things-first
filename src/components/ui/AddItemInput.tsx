@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface AddItemInputProps {
   label: string;
@@ -60,8 +62,8 @@ export function AddItemInput({
 
   if (isInputMode) {
     return (
-      <div style={{ padding: '4px 0' }}>
-        <input
+      <div className="py-1">
+        <Input
           ref={inputRef}
           type="text"
           value={inputValue}
@@ -69,14 +71,7 @@ export function AddItemInput({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full bg-transparent focus:outline-none"
-          style={{
-            fontSize: '13px',
-            border: `1px solid var(--border-emphasis)`,
-            borderRadius: 'var(--radius-md)',
-            padding: '6px 10px',
-            backgroundColor: 'var(--bg-card)',
-          }}
+          className="text-[13px]"
           aria-label={placeholder}
         />
       </div>
@@ -84,33 +79,19 @@ export function AddItemInput({
   }
 
   return (
-    <div style={{ padding: '4px 0' }}>
-      <button
-        type="button"
+    <div className="py-1">
+      <Button
+        variant="link"
+        size="sm"
         onClick={() => {
           setIsInputMode(true);
           setInputValue("");
         }}
-        className="flex items-center gap-1 transition-colors cursor-pointer"
-        style={{
-          fontSize: '13px',
-          fontWeight: 500,
-          color: 'var(--text-muted)',
-          padding: '4px 8px',
-          borderRadius: 'var(--radius-md)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
-          e.currentTarget.style.color = 'var(--text-secondary)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'transparent';
-          e.currentTarget.style.color = 'var(--text-muted)';
-        }}
+        className="text-muted-foreground"
       >
         {icon || <span className="mr-1">+</span>}
         {label}
-      </button>
+      </Button>
     </div>
   );
 }

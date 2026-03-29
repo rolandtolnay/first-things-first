@@ -13,6 +13,7 @@ import { useMemo } from "react";
 import type { TimeSlotIndex, DayOfWeek } from "@/types";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockDraw } from "@/hooks/useBlockDraw";
+import { SLOT_HEIGHT } from "@/lib/constants";
 import { TimeSlot } from "./TimeSlot";
 import { TimeBlock } from "./TimeBlock";
 
@@ -74,8 +75,8 @@ export function TimeGrid({ dayIndex }: TimeGridProps) {
         <div
           className="absolute left-0 right-0 z-20 pointer-events-none"
           style={{
-            top: `${previewBlock.startSlot * 32}px`,
-            height: `${previewBlock.duration * 32}px`,
+            top: `${previewBlock.startSlot * SLOT_HEIGHT}px`,
+            height: `${previewBlock.duration * SLOT_HEIGHT}px`,
             borderRadius: 'var(--radius-md)',
             border: '2px dashed var(--primary)',
             backgroundColor: 'rgba(20, 184, 166, 0.1)',

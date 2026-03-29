@@ -9,31 +9,19 @@ interface MainLayoutProps {
 
 export function MainLayout({ sidebar, children }: MainLayoutProps) {
   return (
-    <div className="h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-page)' }}>
-      <div className="flex flex-row gap-6 p-6 flex-1 min-h-0">
-        {/* Sidebar card */}
+    <div className="h-screen flex flex-col bg-background">
+      <div className="flex flex-row flex-1 min-h-0">
+        {/* Sidebar */}
         <aside
-          className="w-[280px] shrink-0 overflow-hidden flex flex-col"
-          style={{
-            backgroundColor: 'var(--bg-card)',
-            boxShadow: 'var(--shadow-card)',
-            borderRadius: 'var(--radius-xl)',
-          }}
+          className="w-[280px] shrink-0 overflow-hidden flex flex-col bg-sidebar border-r border-border"
         >
           <div className="flex-1 overflow-y-auto">
             {sidebar}
           </div>
         </aside>
 
-        {/* Board card */}
-        <main
-          className="flex-1 min-w-0 overflow-hidden flex flex-col"
-          style={{
-            backgroundColor: 'var(--bg-card)',
-            boxShadow: 'var(--shadow-card)',
-            borderRadius: 'var(--radius-xl)',
-          }}
-        >
+        {/* Board */}
+        <main className="flex-1 min-w-0 overflow-hidden flex flex-col bg-card">
           <div className="flex-1 overflow-y-auto">
             {children}
           </div>

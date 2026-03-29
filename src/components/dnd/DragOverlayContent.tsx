@@ -56,7 +56,7 @@ function PriorityOverlay({ data }: { data: PriorityDragData }) {
     state.currentWeek?.roles.find((r) => r.id === data.roleId)?.color
   ) as RoleColor | undefined;
 
-  return <DragPreview text={data.text} roleColor={roleColor ?? "teal"} variant="compact" />;
+  return <DragPreview text={data.text} roleColor={roleColor ?? "teal"} />;
 }
 
 function EveningOverlay({ data }: { data: EveningDragData }) {
@@ -64,7 +64,7 @@ function EveningOverlay({ data }: { data: EveningDragData }) {
     data.roleId ? state.currentWeek?.roles.find((r) => r.id === data.roleId)?.color : undefined
   ) as RoleColor | undefined;
 
-  return <DragPreview text={data.title} roleColor={roleColor} variant="evening" />;
+  return <DragPreview text={data.title} roleColor={roleColor} />;
 }
 
 export default DragOverlayContent;

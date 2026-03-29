@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Geist } from "next/font/google";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { DatabaseProvider } from "@/providers/DatabaseProvider";
 import { DndProvider } from "@/components/dnd";
 import "./globals.css";
@@ -38,9 +39,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
       <body className={`${plusJakarta.variable} antialiased`}>
         <ThemeProvider>
-          <DndProvider>
-            <DatabaseProvider>{children}</DatabaseProvider>
-          </DndProvider>
+          <TooltipProvider>
+            <DndProvider>
+              <DatabaseProvider>{children}</DatabaseProvider>
+            </DndProvider>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -3,6 +3,8 @@
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 function useMounted() {
   const [mounted, setMounted] = useState(false);
@@ -19,42 +21,30 @@ export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
 
   if (!mounted) {
-    // Return placeholder with same dimensions to avoid layout shift
     return (
-      <button
-        className="flex h-9 w-9 items-center justify-center cursor-pointer"
-        style={{
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border-subtle)',
-          backgroundColor: 'var(--bg-card)',
-        }}
-        aria-label="Toggle theme"
-      />
+      <Button variant="ghost" size="icon" aria-label="Toggle theme" disabled>
+        <Moon className="size-4 text-secondary-foreground" />
+      </Button>
     );
   }
 
   return (
-    <button
-      onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-      className="flex h-9 w-9 items-center justify-center cursor-pointer transition-colors"
-      style={{
-        borderRadius: 'var(--radius-md)',
-        border: '1px solid var(--border-subtle)',
-        backgroundColor: 'var(--bg-card)',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'var(--bg-card)';
-      }}
-      aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
-    >
-      {resolvedTheme === 'dark' ? (
-        <Sun size={16} style={{ color: 'var(--text-secondary)' }} />
-      ) : (
-        <Moon size={16} style={{ color: 'var(--text-secondary)' }} />
-      )}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+          aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
+        >
+          {resolvedTheme === 'dark' ? (
+            <Sun className="size-4 text-secondary-foreground" />
+          ) : (
+            <Moon className="size-4 text-secondary-foreground" />
+          )}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Toggle theme</TooltipContent>
+    </Tooltip>
   );
 }

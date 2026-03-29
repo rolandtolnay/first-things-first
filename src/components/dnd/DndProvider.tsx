@@ -36,6 +36,7 @@ import type { DayOfWeek, TimeSlotIndex } from "@/types";
 import type { DragData, DropZoneData, GoalDragData, BlockDragData, PriorityDragData, EveningDragData } from "@/types/dnd";
 import { useWeekStore } from "@/stores/weekStore";
 import { hasOverlap, getClampedDuration } from "@/lib/overlap";
+import { MAX_PRIORITIES_PER_DAY } from "@/lib/constants";
 import { DragOverlayContent } from "./DragOverlayContent";
 
 interface DndProviderProps {
@@ -90,6 +91,13 @@ export function DndProvider({ children }: DndProviderProps) {
       const dragData = active.data.current as DragData;
       const dropData = over.data.current as DropZoneData;
 
+      // Helper: check if priorities section is full
+      const isPrioritiesFull = (dayIdx: number) => {
+        const currentWeek = useWeekStore.getState().currentWeek;
+        const count = currentWeek?.dayPriorities?.filter((p) => p.dayIndex === dayIdx).length ?? 0;
+        return count >= MAX_PRIORITIES_PER_DAY;
+      };
+
       // Handle block drops
       if (dragData.type === "block") {
         const blockData = dragData as BlockDragData;
@@ -99,8 +107,8 @@ export function DndProvider({ children }: DndProviderProps) {
 
         // Block → Priorities: Create priority from block (if goal-based)
         if (dropData.zone === "priorities") {
-          // Freestyle blocks (no goalId) can't become priorities - silently skip
           if (!block.goalId) return;
+          if (isPrioritiesFull(dropData.dayIndex)) return;
           addDayPriority({
             goalId: block.goalId,
             dayIndex: dropData.dayIndex as DayOfWeek,
@@ -205,8 +213,8 @@ export function DndProvider({ children }: DndProviderProps) {
 
         // Priority → Priorities (different day): Move priority
         if (dropData.zone === "priorities") {
-          // Skip if same day (no-op)
           if (priorityData.sourceDayIndex === dropData.dayIndex) return;
+          if (isPrioritiesFull(dropData.dayIndex)) return;
 
           addDayPriority({
             goalId: priorityData.goalId,
@@ -230,8 +238,8 @@ export function DndProvider({ children }: DndProviderProps) {
 
         // Evening → Priorities: Create priority (if goal-based)
         if (dropData.zone === "priorities") {
-          // Freestyle evening blocks (no goalId) can't become priorities - silently skip
           if (!eveningData.goalId) return;
+          if (isPrioritiesFull(dropData.dayIndex)) return;
           addDayPriority({
             goalId: eveningData.goalId,
             dayIndex: dropData.dayIndex as DayOfWeek,
@@ -297,6 +305,7 @@ export function DndProvider({ children }: DndProviderProps) {
 
       // Handle priorities drops (creates DayPriority entry)
       if (dropData.zone === "priorities") {
+        if (isPrioritiesFull(dropData.dayIndex)) return;
         addDayPriority({
           goalId: goalData.goalId,
           dayIndex: dropData.dayIndex as DayOfWeek,

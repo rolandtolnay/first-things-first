@@ -16,7 +16,7 @@ export function AddGoalButton({ roleId }: AddGoalButtonProps) {
       label="Add goal"
       placeholder="Goal text..."
       onAdd={(text) => addGoal({ roleId, text })}
-      icon={<Plus size={14} style={{ color: 'var(--primary)' }} />}
+      icon={<Plus size={14} className="text-primary" />}
     />
   );
 }
