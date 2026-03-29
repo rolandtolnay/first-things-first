@@ -98,7 +98,7 @@ export function WeekView() {
 
       {/* Day columns with shared time labels */}
       <div className="flex-1 overflow-auto">
-        <div className="flex min-w-[1000px] h-full">
+        <div className="flex min-w-[1000px] min-h-full">
           {/* Shared time labels column */}
           <TimeLabelsColumn />
 
