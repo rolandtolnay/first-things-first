@@ -46,10 +46,19 @@ through `withWeek` (one transition → one persist). **Cross-zone moves**
 are **atomic**: a single updater touches both arrays, so there is no half-state.
 Rejection is silent (`return null`), preserving drag-and-drop snap-back. The
 explicit verb-per-transition names (`moveBlockToEvening`, `convertPriorityToBlock`,
-…) are each individually testable. `DndProvider` is now a flat dispatch on
-`(dragData.type, dropData.zone)` that builds intent and calls one action; it keeps
-only DnD policy (the `over == null` guard, the `isPrioritiesFull` capacity gate,
-and the goal single-array creates).
+…) are each individually testable.
+
+The **DnD dispatch policy** now lives in `src/lib/drop-routing.ts` (pure — no
+React/dnd-kit/store imports). `resolveDrop(dragData, dropData, snapshot)` is the
+`(dragData.type, dropData.zone)` routing matrix: it returns a plain `DropIntent`
+(a data object naming one store action + its args) or `null` when the drop is a
+no-op. Only two guards live there — the `MAX_PRIORITIES_PER_DAY` capacity gate
+(no store action checks it) and the goal→evening "already occupied" pre-check
+(`addEveningBlock` *throws* on a duplicate, so this keeps snap-back silent); every
+other rejection already returns `null` from the store action. `dispatchDropIntent`
+is the thin intent → action mapping. `DndProvider` is reduced to **snapshot →
+resolve → dispatch**: it keeps the `over == null` guard and reads fresh state via
+`getState()` at drop time (drops must see the current week, not a stale render).
 
 ## Role Balance — `src/lib/role-balance.ts`
 
