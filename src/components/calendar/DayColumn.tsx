@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import type { DayOfWeek } from "@/types";
 import { isSameDay, DAY_NAMES_SHORT } from "@/lib/utils";
 import { useWeekStore } from "@/stores/weekStore";
-import { cn } from "@/lib/utils";
 import { DayPriorities } from "./DayPriorities";
 import { TimeGrid } from "./TimeGrid";
 import { EveningSlot } from "./EveningSlot";

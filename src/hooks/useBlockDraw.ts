@@ -11,7 +11,7 @@
  * After creation, sets newBlockId to trigger inline title editing on the block.
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback } from "react";
 import type { DayOfWeek, TimeBlock, TimeSlotIndex } from "@/types";
 import { canStartAt, resolveDrawPreview, resolveDrawCommit } from "@/lib/scheduling";
 import { useWeekStore } from "@/stores/weekStore";
@@ -154,7 +154,7 @@ export function useBlockDraw(
   );
 
   const onPointerUp = useCallback(
-    async (e: React.PointerEvent) => {
+    async () => {
       if (!isDrawing || !drawState) return;
 
       // Final duration: apply the min-block floor THEN re-clamp to free space,

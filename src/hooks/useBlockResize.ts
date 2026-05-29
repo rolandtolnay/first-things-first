@@ -75,7 +75,7 @@ export function useBlockResize(
   );
 
   const onPointerUp = useCallback(
-    (e: React.PointerEvent) => {
+    () => {
       if (!isResizing) return;
 
       // Pointer capture auto-releases on pointerup

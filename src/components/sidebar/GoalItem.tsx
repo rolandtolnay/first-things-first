@@ -11,7 +11,6 @@ import {
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import type { Goal, RoleColor } from "@/types";
@@ -19,10 +18,11 @@ import type { GoalDragData } from "@/types/dnd";
 
 interface GoalItemProps {
   goal: Goal;
+  // Threaded from RoleList for role-color tinting; not yet consumed here.
   roleColor: RoleColor;
 }
 
-export function GoalItem({ goal, roleColor }: GoalItemProps) {
+export function GoalItem({ goal }: GoalItemProps) {
   const updateGoal = useWeekStore((state) => state.updateGoal);
   const deleteGoal = useWeekStore((state) => state.deleteGoal);
   const toggleGoalCompleted = useWeekStore((state) => state.toggleGoalCompleted);

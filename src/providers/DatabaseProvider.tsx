@@ -18,7 +18,9 @@ interface DatabaseProviderProps {
  * Safe to render immediately - initialization happens in background.
  */
 export function DatabaseProvider({ children }: DatabaseProviderProps) {
-  const [isInitialized, setIsInitialized] = useState(false);
+  // Value intentionally unread — rendering doesn't gate on init (see below);
+  // we keep the setter to surface init status for future use / debugging.
+  const [, setIsInitialized] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
