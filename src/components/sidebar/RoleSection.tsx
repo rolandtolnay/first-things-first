@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { MoreVertical, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
+import { slotsToHours, EVENING_BLOCK_HOURS } from "@/lib/time-model";
 import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import { useEditableText } from "@/hooks/useEditableText";
 import { Button } from "@/components/ui/button";
@@ -38,12 +39,15 @@ export function RoleSection({ role }: RoleSectionProps) {
   const updateRole = useWeekStore((state) => state.updateRole);
   const deleteRole = useWeekStore((state) => state.deleteRole);
 
+  // Primitive selector (returns a number) to preserve re-render frequency;
+  // weighting goes through the shared time-model helpers so the magic numbers
+  // match computeRoleBalance exactly.
   const roleHours = useWeekStore((state) => {
     const week = state.currentWeek;
     if (!week) return 0;
     let h = 0;
-    for (const tb of week.timeBlocks) if (tb.roleId === role.id) h += tb.duration * 0.5;
-    for (const eb of week.eveningBlocks) if (eb.roleId === role.id) h += 1;
+    for (const tb of week.timeBlocks) if (tb.roleId === role.id) h += slotsToHours(tb.duration);
+    for (const eb of week.eveningBlocks) if (eb.roleId === role.id) h += EVENING_BLOCK_HOURS;
     return h;
   });
 

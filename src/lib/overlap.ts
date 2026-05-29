@@ -6,12 +6,11 @@
  */
 
 import type { TimeBlock } from "@/types";
+import { MAX_BLOCK_SLOTS, TOTAL_SLOTS } from "./time-model";
 
-/** Maximum block duration in slots (8 hours = 16 x 30-min slots) */
-export const MAX_BLOCK_SLOTS = 16;
-
-/** Total slots in a day (24 x 30-min slots covering 8:00-20:00) */
-export const TOTAL_SLOTS = 24;
+// Re-exported so existing importers (and overlap.test.ts) stay untouched while
+// time-model remains the single home for these values.
+export { MAX_BLOCK_SLOTS, TOTAL_SLOTS } from "./time-model";
 
 /**
  * Check if a time range [startSlot, endSlot) overlaps any existing blocks.
@@ -77,5 +76,7 @@ export function getClampedDuration(
   excludeId?: string
 ): number {
   const maxAvailable = getMaxAvailableDuration(startSlot, dayBlocks, excludeId);
+  // Floor of 1 slot is a hard "never zero/negative duration" clamp — distinct
+  // from MIN_BLOCK_SLOTS (the draw/drop default), so kept as a literal.
   return Math.max(1, Math.min(requestedDuration, maxAvailable));
 }

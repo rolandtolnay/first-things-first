@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SLOT_HEIGHT } from "@/lib/constants";
+import { DAY_START_HOUR, DAY_END_HOUR, timeToPixels } from "@/lib/time-model";
 
 export function CurrentTimeIndicator() {
   const [now, setNow] = useState(() => new Date());
@@ -15,9 +15,9 @@ export function CurrentTimeIndicator() {
   const minutes = now.getMinutes();
 
   // Only render between 8:00 and 20:00
-  if (hours < 8 || hours >= 20) return null;
+  if (hours < DAY_START_HOUR || hours >= DAY_END_HOUR) return null;
 
-  const top = ((hours - 8) * 60 + minutes) / 30 * SLOT_HEIGHT;
+  const top = timeToPixels(hours, minutes);
 
   return (
     <div

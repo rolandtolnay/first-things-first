@@ -1,4 +1,4 @@
-export const SLOT_HEIGHT = 28;
+// SLOT_HEIGHT now lives in @/lib/time-model (single owner of the time domain).
 export const TIME_LABELS_WIDTH = 44;
 export const MAX_PRIORITIES_PER_DAY = 2;
 export const PRIORITIES_SECTION_HEIGHT = 72;

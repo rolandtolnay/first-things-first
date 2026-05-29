@@ -8,6 +8,11 @@
 import { create } from "zustand";
 import { db, saveWeek } from "@/lib/db";
 import { generateId, getWeekStartDate, parseWeekId } from "@/lib/utils";
+import {
+  resolveNewPlacement,
+  resolveMovePlacement,
+  resolveResize,
+} from "@/lib/scheduling";
 import type {
   Week,
   WeekId,
@@ -17,6 +22,8 @@ import type {
   TimeBlock,
   EveningBlock,
   RoleColor,
+  DayOfWeek,
+  TimeSlotIndex,
   CreateRoleInput,
   CreateGoalInput,
   CreateTimeBlockInput,
@@ -101,6 +108,31 @@ interface WeekStore {
   updateEveningBlock: (blockId: string, updates: Partial<Omit<EveningBlock, "id">>) => Promise<void>;
   deleteEveningBlock: (blockId: string) => Promise<void>;
   toggleEveningBlockCompleted: (blockId: string) => Promise<void>;
+
+  // -------------------------------------------------------------------------
+  // Scheduling operations (placement-aware; route through @/lib/scheduling).
+  // Each decides via the pure layer, then mutates via withWeek so persistence
+  // semantics match existing CRUD. Rejection is silent: return null, never throw.
+  // -------------------------------------------------------------------------
+
+  // Same-zone
+  placeTimeBlockAt: (
+    input: Omit<CreateTimeBlockInput, "startSlot" | "duration">,
+    startSlot: number,
+    requested?: number
+  ) => Promise<TimeBlock | null>;
+  moveTimeBlock: (blockId: string, dayIndex: DayOfWeek, startSlot: number) => Promise<TimeBlock | null>;
+  resizeTimeBlock: (blockId: string, requested: number) => Promise<void>;
+
+  // Atomic cross-zone (each = one withWeek updater touching both arrays)
+  moveBlockToEvening: (blockId: string, dayIndex: DayOfWeek) => Promise<EveningBlock | null>;
+  convertBlockToPriority: (blockId: string, dayIndex: DayOfWeek) => Promise<DayPriority | null>;
+  convertPriorityToBlock: (priorityId: string, dayIndex: DayOfWeek, startSlot: number) => Promise<TimeBlock | null>;
+  convertPriorityToEvening: (priorityId: string, dayIndex: DayOfWeek) => Promise<EveningBlock | null>;
+  movePriorityToDay: (priorityId: string, dayIndex: DayOfWeek) => Promise<DayPriority | null>;
+  moveEveningToBlock: (eveningBlockId: string, dayIndex: DayOfWeek, startSlot: number) => Promise<TimeBlock | null>;
+  convertEveningToPriority: (eveningBlockId: string, dayIndex: DayOfWeek) => Promise<DayPriority | null>;
+  moveEveningToDay: (eveningBlockId: string, dayIndex: DayOfWeek) => Promise<EveningBlock | null>;
 }
 
 // ============================================================================
@@ -161,6 +193,21 @@ async function withWeek(
   });
 
   await get().saveCurrentWeek();
+}
+
+/** Append position for a new priority on a given day (mirrors addDayPriority). */
+function nextPriorityOrder(week: Week, dayIndex: number): number {
+  return week.dayPriorities.filter((p) => p.dayIndex === dayIndex).length;
+}
+
+/**
+ * Role color id + display title carried from a goal onto a derived block/evening.
+ * Returns empty title / undefined role when the goal can't be found (unreachable
+ * in practice — a priority/evening always references an existing goal).
+ */
+function goalFields(week: Week, goalId: string): { roleId: string | undefined; title: string } {
+  const goal = week.goals.find((g) => g.id === goalId);
+  return { roleId: goal?.roleId, title: goal?.text ?? "" };
 }
 
 // ============================================================================
@@ -369,17 +416,11 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     const week = get().currentWeek;
     if (!week) throw new Error("No week loaded");
 
-    // Calculate order (append to end of day's priorities)
-    const dayPriorities = week.dayPriorities.filter(
-      (p) => p.dayIndex === input.dayIndex
-    );
-    const order = dayPriorities.length;
-
     const priority: DayPriority = {
       id: generateId(),
       goalId: input.goalId,
       dayIndex: input.dayIndex,
-      order,
+      order: nextPriorityOrder(week, input.dayIndex), // append to end of day's priorities
       completed: input.completed ?? false,
     };
 
@@ -507,6 +548,270 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     await withWeek(get, set, (week) => ({
       eveningBlocks: week.eveningBlocks.map((b) => (b.id === blockId ? { ...b, completed: !b.completed } : b)),
     }));
+  },
+
+  // -------------------------------------------------------------------------
+  // Scheduling Operations (placement-aware)
+  // -------------------------------------------------------------------------
+
+  placeTimeBlockAt: async (input, startSlot, requested) => {
+    const week = get().currentWeek;
+    if (!week) return null;
+
+    const dayBlocks = week.timeBlocks.filter((b) => b.dayIndex === input.dayIndex);
+    const placement = resolveNewPlacement(startSlot, dayBlocks, requested);
+    if (!placement.ok) return null;
+
+    const block: TimeBlock = {
+      id: generateId(),
+      ...input,
+      startSlot: placement.startSlot as TimeSlotIndex,
+      duration: placement.duration,
+    };
+
+    await withWeek(get, set, (w) => ({ timeBlocks: [...w.timeBlocks, block] }));
+    return block;
+  },
+
+  moveTimeBlock: async (blockId, dayIndex, startSlot) => {
+    const week = get().currentWeek;
+    if (!week) return null;
+
+    const block = week.timeBlocks.find((b) => b.id === blockId);
+    if (!block) return null;
+
+    const dayBlocks = week.timeBlocks.filter((b) => b.dayIndex === dayIndex);
+    // Exclude self so the block doesn't collide with its own footprint.
+    const placement = resolveMovePlacement(startSlot, block.duration, dayBlocks, blockId);
+    if (!placement.ok) return null;
+
+    const moved: TimeBlock = {
+      ...block,
+      dayIndex,
+      startSlot: startSlot as TimeSlotIndex,
+    };
+    await withWeek(get, set, (w) => ({
+      timeBlocks: w.timeBlocks.map((b) => (b.id === blockId ? moved : b)),
+    }));
+    return moved;
+  },
+
+  resizeTimeBlock: async (blockId, requested) => {
+    const week = get().currentWeek;
+    if (!week) return;
+
+    const block = week.timeBlocks.find((b) => b.id === blockId);
+    if (!block) return;
+
+    const dayBlocks = week.timeBlocks.filter((b) => b.dayIndex === block.dayIndex);
+    const duration = resolveResize(requested, block.startSlot, dayBlocks, blockId);
+
+    await withWeek(get, set, (w) => ({
+      timeBlocks: w.timeBlocks.map((b) => (b.id === blockId ? { ...b, duration } : b)),
+    }));
+  },
+
+  moveBlockToEvening: async (blockId, dayIndex) => {
+    const week = get().currentWeek;
+    if (!week) return null;
+
+    const block = week.timeBlocks.find((b) => b.id === blockId);
+    if (!block) return null;
+    // Precondition before the updater: the inlined add bypasses addEveningBlock's
+    // throw guard, so replicate the "one evening block per day" check here.
+    if (week.eveningBlocks.some((b) => b.dayIndex === dayIndex)) return null;
+
+    const evening: EveningBlock = {
+      id: generateId(),
+      type: block.goalId ? "goal" : "freestyle",
+      goalId: block.goalId,
+      roleId: block.roleId,
+      dayIndex,
+      title: block.title,
+      completed: false,
+    };
+    await withWeek(get, set, (w) => ({
+      eveningBlocks: [...w.eveningBlocks, evening],
+      timeBlocks: w.timeBlocks.filter((b) => b.id !== blockId),
+    }));
+    return evening;
+  },
+
+  convertBlockToPriority: async (blockId, dayIndex) => {
+    const week = get().currentWeek;
+    if (!week) return null;
+
+    const block = week.timeBlocks.find((b) => b.id === blockId);
+    if (!block || !block.goalId) return null;
+
+    const priority: DayPriority = {
+      id: generateId(),
+      goalId: block.goalId,
+      dayIndex,
+      order: nextPriorityOrder(week, dayIndex),
+      completed: false,
+    };
+    await withWeek(get, set, (w) => ({
+      dayPriorities: [...w.dayPriorities, priority],
+      timeBlocks: w.timeBlocks.filter((b) => b.id !== blockId),
+    }));
+    return priority;
+  },
+
+  convertPriorityToBlock: async (priorityId, dayIndex, startSlot) => {
+    const week = get().currentWeek;
+    if (!week) return null;
+
+    const priority = week.dayPriorities.find((p) => p.id === priorityId);
+    if (!priority) return null;
+
+    const dayBlocks = week.timeBlocks.filter((b) => b.dayIndex === dayIndex);
+    const placement = resolveNewPlacement(startSlot, dayBlocks);
+    if (!placement.ok) return null;
+
+    const { roleId, title } = goalFields(week, priority.goalId);
+    const block: TimeBlock = {
+      id: generateId(),
+      type: "goal",
+      goalId: priority.goalId,
+      roleId,
+      dayIndex,
+      startSlot: placement.startSlot as TimeSlotIndex,
+      duration: placement.duration,
+      title,
+      completed: false,
+    };
+    await withWeek(get, set, (w) => ({
+      timeBlocks: [...w.timeBlocks, block],
+      dayPriorities: w.dayPriorities.filter((p) => p.id !== priorityId),
+    }));
+    return block;
+  },
+
+  convertPriorityToEvening: async (priorityId, dayIndex) => {
+    const week = get().currentWeek;
+    if (!week) return null;
+
+    const priority = week.dayPriorities.find((p) => p.id === priorityId);
+    if (!priority) return null;
+    if (week.eveningBlocks.some((b) => b.dayIndex === dayIndex)) return null;
+
+    const { roleId, title } = goalFields(week, priority.goalId);
+    const evening: EveningBlock = {
+      id: generateId(),
+      type: "goal",
+      goalId: priority.goalId,
+      roleId,
+      dayIndex,
+      title,
+      completed: false,
+    };
+    await withWeek(get, set, (w) => ({
+      eveningBlocks: [...w.eveningBlocks, evening],
+      dayPriorities: w.dayPriorities.filter((p) => p.id !== priorityId),
+    }));
+    return evening;
+  },
+
+  movePriorityToDay: async (priorityId, dayIndex) => {
+    const week = get().currentWeek;
+    if (!week) return null;
+
+    const priority = week.dayPriorities.find((p) => p.id === priorityId);
+    if (!priority) return null;
+    if (priority.dayIndex === dayIndex) return null; // same-day no-op
+
+    const moved: DayPriority = {
+      id: generateId(),
+      goalId: priority.goalId,
+      dayIndex,
+      order: nextPriorityOrder(week, dayIndex),
+      completed: false,
+    };
+    await withWeek(get, set, (w) => ({
+      dayPriorities: [
+        ...w.dayPriorities.filter((p) => p.id !== priorityId),
+        moved,
+      ],
+    }));
+    return moved;
+  },
+
+  moveEveningToBlock: async (eveningBlockId, dayIndex, startSlot) => {
+    const week = get().currentWeek;
+    if (!week) return null;
+
+    const evening = week.eveningBlocks.find((b) => b.id === eveningBlockId);
+    if (!evening) return null;
+
+    const dayBlocks = week.timeBlocks.filter((b) => b.dayIndex === dayIndex);
+    const placement = resolveNewPlacement(startSlot, dayBlocks);
+    if (!placement.ok) return null;
+
+    const block: TimeBlock = {
+      id: generateId(),
+      type: evening.goalId ? "goal" : "freestyle",
+      goalId: evening.goalId,
+      roleId: evening.roleId,
+      dayIndex,
+      startSlot: placement.startSlot as TimeSlotIndex,
+      duration: placement.duration,
+      title: evening.title,
+      completed: false,
+    };
+    await withWeek(get, set, (w) => ({
+      timeBlocks: [...w.timeBlocks, block],
+      eveningBlocks: w.eveningBlocks.filter((b) => b.id !== eveningBlockId),
+    }));
+    return block;
+  },
+
+  convertEveningToPriority: async (eveningBlockId, dayIndex) => {
+    const week = get().currentWeek;
+    if (!week) return null;
+
+    const evening = week.eveningBlocks.find((b) => b.id === eveningBlockId);
+    if (!evening || !evening.goalId) return null;
+
+    const priority: DayPriority = {
+      id: generateId(),
+      goalId: evening.goalId,
+      dayIndex,
+      order: nextPriorityOrder(week, dayIndex),
+      completed: false,
+    };
+    await withWeek(get, set, (w) => ({
+      dayPriorities: [...w.dayPriorities, priority],
+      eveningBlocks: w.eveningBlocks.filter((b) => b.id !== eveningBlockId),
+    }));
+    return priority;
+  },
+
+  moveEveningToDay: async (eveningBlockId, dayIndex) => {
+    const week = get().currentWeek;
+    if (!week) return null;
+
+    const evening = week.eveningBlocks.find((b) => b.id === eveningBlockId);
+    if (!evening) return null;
+    if (evening.dayIndex === dayIndex) return null; // same-day no-op
+    if (week.eveningBlocks.some((b) => b.dayIndex === dayIndex)) return null;
+
+    const moved: EveningBlock = {
+      id: generateId(),
+      type: evening.type,
+      goalId: evening.goalId,
+      roleId: evening.roleId,
+      dayIndex,
+      title: evening.title,
+      completed: false, // Reset completed status on move (matches prior behaviour)
+    };
+    await withWeek(get, set, (w) => ({
+      eveningBlocks: [
+        ...w.eveningBlocks.filter((b) => b.id !== eveningBlockId),
+        moved,
+      ],
+    }));
+    return moved;
   },
 }));
 

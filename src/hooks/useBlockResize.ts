@@ -10,9 +10,9 @@
 
 import { useState, useRef, useCallback } from "react";
 import type { TimeBlock } from "@/types";
-import { getClampedDuration } from "@/lib/overlap";
+import { resolveResize } from "@/lib/scheduling";
 import { useWeekStore } from "@/stores/weekStore";
-import { SLOT_HEIGHT } from "@/lib/constants";
+import { pixelToSlotRound } from "@/lib/time-model";
 
 interface UseBlockResizeResult {
   handleProps: {
@@ -32,7 +32,7 @@ export function useBlockResize(
   const [previewDuration, setPreviewDuration] = useState<number | null>(null);
   const containerRectRef = useRef<DOMRect | null>(null);
 
-  const updateTimeBlock = useWeekStore((state) => state.updateTimeBlock);
+  const resizeTimeBlock = useWeekStore((state) => state.resizeTimeBlock);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -63,16 +63,11 @@ export function useBlockResize(
 
       // Calculate new end slot from absolute pointer position
       const relativeY = e.clientY - containerRectRef.current.top;
-      const newEndSlot = Math.round(relativeY / SLOT_HEIGHT);
+      const newEndSlot = pixelToSlotRound(relativeY);
       const newDuration = newEndSlot - block.startSlot;
 
       // Clamp with overlap prevention (excludes self)
-      const clamped = getClampedDuration(
-        newDuration,
-        block.startSlot,
-        dayBlocks,
-        block.id
-      );
+      const clamped = resolveResize(newDuration, block.startSlot, dayBlocks, block.id);
 
       setPreviewDuration(clamped);
     },
@@ -88,14 +83,14 @@ export function useBlockResize(
 
       // Commit to store only if duration actually changed
       if (finalDuration !== block.duration) {
-        updateTimeBlock(block.id, { duration: finalDuration });
+        resizeTimeBlock(block.id, finalDuration);
       }
 
       setIsResizing(false);
       setPreviewDuration(null);
       containerRectRef.current = null;
     },
-    [isResizing, previewDuration, block.duration, block.id, updateTimeBlock]
+    [isResizing, previewDuration, block.duration, block.id, resizeTimeBlock]
   );
 
   return {

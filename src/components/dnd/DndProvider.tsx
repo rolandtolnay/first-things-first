@@ -32,10 +32,8 @@ import {
   useSensors,
   rectIntersection,
 } from "@dnd-kit/core";
-import type { DayOfWeek, TimeSlotIndex } from "@/types";
-import type { DragData, DropZoneData, GoalDragData, BlockDragData, PriorityDragData, EveningDragData } from "@/types/dnd";
+import type { DragData, DropZoneData } from "@/types/dnd";
 import { useWeekStore } from "@/stores/weekStore";
-import { hasOverlap, getClampedDuration } from "@/lib/overlap";
 import { MAX_PRIORITIES_PER_DAY } from "@/lib/constants";
 import { DragOverlayContent } from "./DragOverlayContent";
 
@@ -51,14 +49,21 @@ export function DndProvider({ children }: DndProviderProps) {
   // so dropAnimation stays correct when dnd-kit reads it
   const activeTypeRef = useRef<DragData["type"] | null>(null);
 
-  // Get store actions for drop handling
+  // Get store actions for drop handling.
+  // goal→priorities and goal→evening are single-array, non-placement creates and
+  // stay inline; every placement / cross-zone move routes through a scheduling action.
   const addDayPriority = useWeekStore((state) => state.addDayPriority);
-  const addTimeBlock = useWeekStore((state) => state.addTimeBlock);
   const addEveningBlock = useWeekStore((state) => state.addEveningBlock);
-  const updateTimeBlock = useWeekStore((state) => state.updateTimeBlock);
-  const deleteTimeBlock = useWeekStore((state) => state.deleteTimeBlock);
-  const removeDayPriority = useWeekStore((state) => state.removeDayPriority);
-  const deleteEveningBlock = useWeekStore((state) => state.deleteEveningBlock);
+  const placeTimeBlockAt = useWeekStore((state) => state.placeTimeBlockAt);
+  const moveTimeBlock = useWeekStore((state) => state.moveTimeBlock);
+  const moveBlockToEvening = useWeekStore((state) => state.moveBlockToEvening);
+  const convertBlockToPriority = useWeekStore((state) => state.convertBlockToPriority);
+  const convertPriorityToBlock = useWeekStore((state) => state.convertPriorityToBlock);
+  const convertPriorityToEvening = useWeekStore((state) => state.convertPriorityToEvening);
+  const movePriorityToDay = useWeekStore((state) => state.movePriorityToDay);
+  const moveEveningToBlock = useWeekStore((state) => state.moveEveningToBlock);
+  const convertEveningToPriority = useWeekStore((state) => state.convertEveningToPriority);
+  const moveEveningToDay = useWeekStore((state) => state.moveEveningToDay);
 
   // Configure sensors with activation constraints
   const sensors = useSensors(
@@ -89,7 +94,12 @@ export function DndProvider({ children }: DndProviderProps) {
     }
   }, []);
 
-  // Handle drag end - process drop and clear active state
+  // Handle drag end — flat dispatch on (dragData.type, dropData.zone).
+  //
+  // Each branch builds intent and calls one store action; the placement
+  // decisions (overlap, clamping) and the atomic cross-zone moves live in the
+  // scheduling layer + store. What stays here is DnD policy: the over==null
+  // guard, the isPrioritiesFull capacity gate, and the goal single-array creates.
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
@@ -103,276 +113,106 @@ export function DndProvider({ children }: DndProviderProps) {
 
       const dragData = active.data.current as DragData;
       const dropData = over.data.current as DropZoneData;
+      const day = dropData.dayIndex;
+      const slot = dropData.slotIndex;
 
-      // Helper: check if priorities section is full
+      // Capacity policy: priorities section is full for this day.
       const isPrioritiesFull = (dayIdx: number) => {
         const currentWeek = useWeekStore.getState().currentWeek;
         const count = currentWeek?.dayPriorities?.filter((p) => p.dayIndex === dayIdx).length ?? 0;
         return count >= MAX_PRIORITIES_PER_DAY;
       };
 
-      // Handle block drops
-      if (dragData.type === "block") {
-        const blockData = dragData as BlockDragData;
-        const currentWeek = useWeekStore.getState().currentWeek;
-        const block = currentWeek?.timeBlocks.find((b) => b.id === blockData.blockId);
-        if (!block) return;
-
-        // Block → Priorities: Create priority from block (if goal-based)
-        if (dropData.zone === "priorities") {
-          if (!block.goalId) return;
-          if (isPrioritiesFull(dropData.dayIndex)) return;
-          addDayPriority({
-            goalId: block.goalId,
-            dayIndex: dropData.dayIndex as DayOfWeek,
-            completed: false,
-          });
-          deleteTimeBlock(blockData.blockId);
-          return;
-        }
-
-        // Block → Evening: Create evening block from time block
-        if (dropData.zone === "evening") {
-          // Check if evening slot is already occupied
-          const existingEvening = currentWeek?.eveningBlocks.find(
-            (b) => b.dayIndex === dropData.dayIndex
-          );
-          if (existingEvening) return; // Silently skip if occupied
-
-          addEveningBlock({
-            type: block.goalId ? "goal" : "freestyle",
-            goalId: block.goalId,
-            roleId: block.roleId,
-            dayIndex: dropData.dayIndex as DayOfWeek,
-            title: block.title,
-            completed: false,
-          });
-          deleteTimeBlock(blockData.blockId);
-          return;
-        }
-
-        // Block → Timegrid: Move block to new day/slot (with overlap check)
-        if (dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
-          const dayBlocks = (currentWeek?.timeBlocks ?? []).filter(
-            (b) => b.dayIndex === dropData.dayIndex
-          );
-          // Check overlap (exclude self so block doesn't collide with itself)
-          if (
-            hasOverlap(
-              dropData.slotIndex,
-              dropData.slotIndex + block.duration,
-              dayBlocks,
-              blockData.blockId
-            )
-          ) {
-            return; // Silent snap-back (dnd-kit animates back)
+      switch (dragData.type) {
+        case "block": {
+          const { blockId } = dragData;
+          if (dropData.zone === "priorities") {
+            if (isPrioritiesFull(day)) return;
+            convertBlockToPriority(blockId, day);
+          } else if (dropData.zone === "evening") {
+            moveBlockToEvening(blockId, day);
+          } else if (dropData.zone === "timegrid" && slot !== undefined) {
+            moveTimeBlock(blockId, day, slot);
           }
-          updateTimeBlock(blockData.blockId, {
-            dayIndex: dropData.dayIndex as DayOfWeek,
-            startSlot: dropData.slotIndex as TimeSlotIndex,
-          });
-          return;
-        }
-        return;
-      }
-
-      // Handle priority drops (move existing priority)
-      if (dragData.type === "priority") {
-        const priorityData = dragData as PriorityDragData;
-
-        // Priority → Timegrid: Create time block and remove priority (with overlap clamping)
-        if (dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
-          const dayBlocks = (useWeekStore.getState().currentWeek?.timeBlocks ?? []).filter(
-            (b) => b.dayIndex === dropData.dayIndex
-          );
-          // Reject if drop slot is already occupied
-          if (hasOverlap(dropData.slotIndex, dropData.slotIndex + 1, dayBlocks)) return;
-          const clampedDuration = getClampedDuration(2, dropData.slotIndex, dayBlocks);
-          if (clampedDuration < 1) return; // No space available
-          addTimeBlock({
-            type: "goal",
-            goalId: priorityData.goalId,
-            roleId: priorityData.roleId,
-            dayIndex: dropData.dayIndex as DayOfWeek,
-            startSlot: dropData.slotIndex as TimeSlotIndex,
-            duration: clampedDuration,
-            title: priorityData.text,
-            completed: false,
-          });
-          removeDayPriority(priorityData.priorityId);
           return;
         }
 
-        // Priority → Evening: Create evening block and remove priority
-        if (dropData.zone === "evening") {
-          // Check if evening slot is already occupied
-          const currentWeek = useWeekStore.getState().currentWeek;
-          const existingEvening = currentWeek?.eveningBlocks.find(
-            (b) => b.dayIndex === dropData.dayIndex
-          );
-          if (existingEvening) return; // Silently skip if occupied
-
-          addEveningBlock({
-            type: "goal",
-            goalId: priorityData.goalId,
-            roleId: priorityData.roleId,
-            dayIndex: dropData.dayIndex as DayOfWeek,
-            title: priorityData.text,
-            completed: false,
-          });
-          removeDayPriority(priorityData.priorityId);
+        case "priority": {
+          const { priorityId } = dragData;
+          if (dropData.zone === "timegrid" && slot !== undefined) {
+            convertPriorityToBlock(priorityId, day, slot);
+          } else if (dropData.zone === "evening") {
+            convertPriorityToEvening(priorityId, day);
+          } else if (dropData.zone === "priorities") {
+            if (isPrioritiesFull(day)) return;
+            movePriorityToDay(priorityId, day);
+          }
           return;
         }
 
-        // Priority → Priorities (different day): Move priority
-        if (dropData.zone === "priorities") {
-          if (priorityData.sourceDayIndex === dropData.dayIndex) return;
-          if (isPrioritiesFull(dropData.dayIndex)) return;
-
-          addDayPriority({
-            goalId: priorityData.goalId,
-            dayIndex: dropData.dayIndex as DayOfWeek,
-            completed: false,
-          });
-          removeDayPriority(priorityData.priorityId);
-          return;
-        }
-        return;
-      }
-
-      // Handle evening block drops (move existing evening block)
-      if (dragData.type === "evening") {
-        const eveningData = dragData as EveningDragData;
-        const currentWeek = useWeekStore.getState().currentWeek;
-        const eveningBlock = currentWeek?.eveningBlocks.find(
-          (b) => b.id === eveningData.eveningBlockId
-        );
-        if (!eveningBlock) return;
-
-        // Evening → Priorities: Create priority (if goal-based)
-        if (dropData.zone === "priorities") {
-          if (!eveningData.goalId) return;
-          if (isPrioritiesFull(dropData.dayIndex)) return;
-          addDayPriority({
-            goalId: eveningData.goalId,
-            dayIndex: dropData.dayIndex as DayOfWeek,
-            completed: false,
-          });
-          deleteEveningBlock(eveningData.eveningBlockId);
+        case "evening": {
+          const { eveningBlockId } = dragData;
+          if (dropData.zone === "priorities") {
+            if (isPrioritiesFull(day)) return;
+            convertEveningToPriority(eveningBlockId, day);
+          } else if (dropData.zone === "timegrid" && slot !== undefined) {
+            moveEveningToBlock(eveningBlockId, day, slot);
+          } else if (dropData.zone === "evening") {
+            moveEveningToDay(eveningBlockId, day);
+          }
           return;
         }
 
-        // Evening → Timegrid: Create time block (with overlap clamping)
-        if (dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
-          const dayBlocks = (currentWeek?.timeBlocks ?? []).filter(
-            (b) => b.dayIndex === dropData.dayIndex
-          );
-          // Reject if drop slot is already occupied
-          if (hasOverlap(dropData.slotIndex, dropData.slotIndex + 1, dayBlocks)) return;
-          const clampedDuration = getClampedDuration(2, dropData.slotIndex, dayBlocks);
-          if (clampedDuration < 1) return; // No space available
-          addTimeBlock({
-            type: eveningData.goalId ? "goal" : "freestyle",
-            goalId: eveningData.goalId,
-            roleId: eveningData.roleId,
-            dayIndex: dropData.dayIndex as DayOfWeek,
-            startSlot: dropData.slotIndex as TimeSlotIndex,
-            duration: clampedDuration,
-            title: eveningData.title,
-            completed: false,
-          });
-          deleteEveningBlock(eveningData.eveningBlockId);
+        case "goal": {
+          if (dropData.zone === "priorities") {
+            if (isPrioritiesFull(day)) return;
+            addDayPriority({ goalId: dragData.goalId, dayIndex: day, completed: false });
+          } else if (dropData.zone === "timegrid" && slot !== undefined) {
+            placeTimeBlockAt(
+              {
+                type: "goal",
+                goalId: dragData.goalId,
+                roleId: dragData.roleId,
+                dayIndex: day,
+                title: dragData.text,
+                completed: false,
+              },
+              slot
+            );
+          } else if (dropData.zone === "evening") {
+            // Single-array create — addEveningBlock guards the one-per-day rule,
+            // but pre-check so the throw never fires (silent snap-back).
+            const existing = useWeekStore
+              .getState()
+              .currentWeek?.eveningBlocks.find((b) => b.dayIndex === day);
+            if (existing) return;
+            addEveningBlock({
+              type: "goal",
+              goalId: dragData.goalId,
+              roleId: dragData.roleId,
+              dayIndex: day,
+              title: dragData.text,
+              completed: false,
+            });
+          }
           return;
         }
-
-        // Evening → Evening (different day): Move evening block
-        if (dropData.zone === "evening") {
-          // Skip if same day (no-op)
-          if (eveningData.sourceDayIndex === dropData.dayIndex) return;
-
-          // Check if target day already has evening block
-          const existingEvening = currentWeek?.eveningBlocks.find(
-            (b) => b.dayIndex === dropData.dayIndex
-          );
-          if (existingEvening) return; // Silently skip if occupied
-
-          // Create new evening block on target day with same data
-          addEveningBlock({
-            type: eveningBlock.type,
-            goalId: eveningBlock.goalId,
-            roleId: eveningBlock.roleId,
-            dayIndex: dropData.dayIndex as DayOfWeek,
-            title: eveningBlock.title,
-            completed: false, // Reset completed status on move
-          });
-          deleteEveningBlock(eveningData.eveningBlockId);
-          return;
-        }
-        return;
-      }
-
-      // Handle goal drops
-      if (dragData.type !== "goal") return;
-
-      const goalData = dragData as GoalDragData;
-
-      // Handle priorities drops (creates DayPriority entry)
-      if (dropData.zone === "priorities") {
-        if (isPrioritiesFull(dropData.dayIndex)) return;
-        addDayPriority({
-          goalId: goalData.goalId,
-          dayIndex: dropData.dayIndex as DayOfWeek,
-          completed: false,
-        });
-        return;
-      }
-
-      // Handle timegrid drops (creates TimeBlock with overlap clamping)
-      if (dropData.zone === "timegrid" && dropData.slotIndex !== undefined) {
-        const currentWeek = useWeekStore.getState().currentWeek;
-        const dayBlocks = (currentWeek?.timeBlocks ?? []).filter(
-          (b) => b.dayIndex === dropData.dayIndex
-        );
-        // Reject if drop slot is already occupied
-        if (hasOverlap(dropData.slotIndex, dropData.slotIndex + 1, dayBlocks)) return;
-        const clampedDuration = getClampedDuration(2, dropData.slotIndex, dayBlocks);
-        if (clampedDuration < 1) return; // No space available
-        addTimeBlock({
-          type: "goal",
-          goalId: goalData.goalId,
-          roleId: goalData.roleId,
-          dayIndex: dropData.dayIndex as DayOfWeek,
-          startSlot: dropData.slotIndex as TimeSlotIndex,
-          duration: clampedDuration,
-          title: goalData.text,
-          completed: false,
-        });
-        return;
-      }
-
-      // Handle evening drops (creates EveningBlock)
-      if (dropData.zone === "evening") {
-        // Check if evening slot is already occupied
-        const currentWeek = useWeekStore.getState().currentWeek;
-        const existingBlock = currentWeek?.eveningBlocks.find(
-          (b) => b.dayIndex === dropData.dayIndex
-        );
-        if (existingBlock) {
-          // Evening slot already has a block - silently skip
-          return;
-        }
-        addEveningBlock({
-          type: "goal",
-          goalId: goalData.goalId,
-          roleId: goalData.roleId,
-          dayIndex: dropData.dayIndex as DayOfWeek,
-          title: goalData.text,
-          completed: false,
-        });
-        return;
       }
     },
-    [addDayPriority, addTimeBlock, addEveningBlock, updateTimeBlock, deleteTimeBlock, removeDayPriority, deleteEveningBlock]
+    [
+      addDayPriority,
+      addEveningBlock,
+      placeTimeBlockAt,
+      moveTimeBlock,
+      moveBlockToEvening,
+      convertBlockToPriority,
+      convertPriorityToBlock,
+      convertPriorityToEvening,
+      movePriorityToDay,
+      moveEveningToBlock,
+      convertEveningToPriority,
+      moveEveningToDay,
+    ]
   );
 
   // Handle drag cancel - clear active state

@@ -13,9 +13,9 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { DayOfWeek, TimeBlock, TimeSlotIndex } from "@/types";
-import { hasOverlap, getClampedDuration } from "@/lib/overlap";
+import { canStartAt, resolveDrawPreview, resolveDrawCommit } from "@/lib/scheduling";
 import { useWeekStore } from "@/stores/weekStore";
-import { SLOT_HEIGHT } from "@/lib/constants";
+import { pixelToSlotFloor, pixelToSlotRound, MAX_SLOT_INDEX } from "@/lib/time-model";
 
 // Module-level flag shared across all useBlockDraw instances (all days).
 // Tracks whether ANY day column currently has a freestyle block being edited.
@@ -102,13 +102,13 @@ export function useBlockDraw(
       }
 
       const rect = e.currentTarget.getBoundingClientRect();
-      const startSlot = Math.floor((e.clientY - rect.top) / SLOT_HEIGHT);
+      const startSlot = pixelToSlotFloor(e.clientY - rect.top);
 
       // Validate range
-      if (startSlot < 0 || startSlot > 23) return;
+      if (startSlot < 0 || startSlot > MAX_SLOT_INDEX) return;
 
       // Check if starting slot overlaps existing blocks
-      if (hasOverlap(startSlot, startSlot + 1, dayBlocks)) return;
+      if (!canStartAt(startSlot, dayBlocks)) return;
 
       // Prevent default to avoid text selection
       e.preventDefault();
@@ -130,14 +130,15 @@ export function useBlockDraw(
       if (!isDrawing || !drawState) return;
 
       const relativeY = e.clientY - drawState.containerRect.top;
-      let currentEndSlot = Math.round(relativeY / SLOT_HEIGHT);
+      let currentEndSlot = pixelToSlotRound(relativeY);
 
-      // Clamp minimum to startSlot + 1 (at least one slot)
+      // Floor of one slot *during* drag (live-preview minimum) — distinct from
+      // MIN_BLOCK_SLOTS, the committed-block default applied on pointerup.
       currentEndSlot = Math.max(drawState.startSlot + 1, currentEndSlot);
 
-      // Clamp maximum using overlap detection
+      // Clamp maximum to free space ahead
       const requestedDuration = currentEndSlot - drawState.startSlot;
-      const clampedDuration = getClampedDuration(
+      const clampedDuration = resolveDrawPreview(
         requestedDuration,
         drawState.startSlot,
         dayBlocks
@@ -156,10 +157,13 @@ export function useBlockDraw(
     async (e: React.PointerEvent) => {
       if (!isDrawing || !drawState) return;
 
-      // Calculate final duration (min 2 slots = 1 hour)
-      const duration = Math.max(
-        2,
-        drawState.currentEndSlot - drawState.startSlot
+      // Final duration: apply the min-block floor THEN re-clamp to free space,
+      // so drawing in a 1-slot gap commits 1 slot instead of overlapping the
+      // neighbour (the draw-overshoot fix).
+      const duration = resolveDrawCommit(
+        drawState.currentEndSlot - drawState.startSlot,
+        drawState.startSlot,
+        dayBlocks
       );
 
       // Create the freestyle block
@@ -180,7 +184,7 @@ export function useBlockDraw(
       setIsDrawing(false);
       setDrawState(null);
     },
-    [isDrawing, drawState, dayIndex, addTimeBlock]
+    [isDrawing, drawState, dayIndex, dayBlocks, addTimeBlock]
   );
 
   // Compute preview block from draw state

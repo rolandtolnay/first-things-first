@@ -6,8 +6,8 @@ import type { BlockDragData } from "@/types/dnd";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockResize } from "@/hooks/useBlockResize";
 import { BlockCard } from "@/components/ui/BlockCard";
-import { cn, slotToTime } from "@/lib/utils";
-import { SLOT_HEIGHT } from "@/lib/constants";
+import { cn } from "@/lib/utils";
+import { slotToTime, slotToPixels, durationToPixels } from "@/lib/time-model";
 
 interface TimeBlockProps {
   block: TimeBlockType;
@@ -43,8 +43,8 @@ export function TimeBlock({
   const displayDuration = isResizing && previewDuration !== null
     ? previewDuration
     : block.duration;
-  const height = displayDuration * SLOT_HEIGHT;
-  const top = block.startSlot * SLOT_HEIGHT;
+  const height = durationToPixels(displayDuration);
+  const top = slotToPixels(block.startSlot);
 
   const roleColor = useWeekStore((state) =>
     block.roleId

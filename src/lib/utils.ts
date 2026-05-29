@@ -133,27 +133,7 @@ export function getWeekDates(weekId: WeekId): Date[] {
   });
 }
 
-// ============================================================================
-// Time Slot Calculations
-// ============================================================================
-
-export function slotToTime(slot: number): string {
-  const hour = Math.floor(slot / 2) + 8;
-  const minute = (slot % 2) * 30;
-  return `${hour}:${minute.toString().padStart(2, "0")}`;
-}
-
-export function timeToSlot(time: string): number {
-  const [hourStr, minStr] = time.split(":");
-  const hour = parseInt(hourStr, 10);
-  const minute = parseInt(minStr, 10);
-
-  if (hour < 8 || hour > 19 || (hour === 19 && minute > 30)) {
-    return -1;
-  }
-
-  return (hour - 8) * 2 + (minute >= 30 ? 1 : 0);
-}
+// Time slot ↔ clock conversions now live in @/lib/time-model.
 
 // ============================================================================
 // Day Index Helpers

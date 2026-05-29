@@ -1,11 +1,10 @@
 "use client";
 
 import { EVENING_SECTION_HEIGHT, PRIORITIES_SECTION_HEIGHT, TIME_LABELS_WIDTH } from "@/lib/constants";
-
-const SLOT_COUNT = 24;
+import { TOTAL_SLOTS, slotIsHourStart, slotToHourLabel } from "@/lib/time-model";
 
 export function TimeLabelsColumn() {
-  const slots = Array.from({ length: SLOT_COUNT }, (_, i) => i);
+  const slots = Array.from({ length: TOTAL_SLOTS }, (_, i) => i);
 
   return (
     <div className="flex-shrink-0 flex flex-col" style={{ width: `${TIME_LABELS_WIDTH}px` }}>
@@ -23,8 +22,8 @@ export function TimeLabelsColumn() {
       {/* Time labels */}
       <div className="flex-1">
         {slots.map((slotIndex) => {
-          const isHourStart = slotIndex % 2 === 0;
-          const hour = 8 + Math.floor(slotIndex / 2);
+          const isHourStart = slotIsHourStart(slotIndex);
+          const hour = slotToHourLabel(slotIndex);
 
           return (
             <div

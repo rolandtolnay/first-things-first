@@ -13,7 +13,7 @@ import { useMemo } from "react";
 import type { TimeSlotIndex, DayOfWeek } from "@/types";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockDraw } from "@/hooks/useBlockDraw";
-import { SLOT_HEIGHT } from "@/lib/constants";
+import { TOTAL_SLOTS, slotToPixels, durationToPixels } from "@/lib/time-model";
 import { TimeSlot } from "./TimeSlot";
 import { TimeBlock } from "./TimeBlock";
 import { CurrentTimeIndicator } from "./CurrentTimeIndicator";
@@ -25,7 +25,7 @@ interface TimeGridProps {
 
 export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
   // Generate 24 slots: 0-23 representing 8:00-19:30
-  const slots = Array.from({ length: 24 }, (_, i) => i as TimeSlotIndex);
+  const slots = Array.from({ length: TOTAL_SLOTS }, (_, i) => i as TimeSlotIndex);
 
   // Get raw time blocks from store (stable reference)
   const timeBlocks = useWeekStore((state) => state.currentWeek?.timeBlocks);
@@ -80,8 +80,8 @@ export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
         <div
           className="absolute left-0 right-0 z-20 pointer-events-none"
           style={{
-            top: `${previewBlock.startSlot * SLOT_HEIGHT}px`,
-            height: `${previewBlock.duration * SLOT_HEIGHT}px`,
+            top: `${slotToPixels(previewBlock.startSlot)}px`,
+            height: `${durationToPixels(previewBlock.duration)}px`,
             borderRadius: 'var(--radius-md)',
             border: '2px dashed var(--primary)',
             backgroundColor: 'rgba(20, 184, 166, 0.1)',
