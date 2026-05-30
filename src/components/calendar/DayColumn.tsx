@@ -4,10 +4,16 @@ import { useMemo } from "react";
 import type { DayOfWeek } from "@/types";
 import { isSameDay, DAY_NAMES_SHORT } from "@/lib/utils";
 import { useWeekStore } from "@/stores/weekStore";
+import { HEADER_HEIGHT } from "@/lib/constants";
 import { DayPriorities } from "./DayPriorities";
 import { TimeGrid } from "./TimeGrid";
 import { EveningSlot } from "./EveningSlot";
 import { PieChart } from "./PieChart";
+
+/** Faint accent wash behind today's column (derived from the accent token so
+ *  it tracks the theme's accent rather than a hardcoded amber lightness). */
+const TODAY_WASH = "color-mix(in oklab, var(--ds-accent), transparent 97.5%)";
+const TODAY_HEADER_WASH = "color-mix(in oklab, var(--ds-accent), transparent 95%)";
 
 interface DayColumnProps {
   dayIndex: DayOfWeek;
@@ -52,33 +58,39 @@ export function DayColumn({ dayIndex, date }: DayColumnProps) {
     <div
       className="flex flex-col min-w-[140px]"
       style={{
-        borderRight: '1px solid var(--grid-line)',
-        backgroundColor: isToday ? 'var(--today)' : undefined,
+        borderRight: '1px solid var(--ds-line)',
+        backgroundColor: isToday ? TODAY_WASH : undefined,
       }}
     >
-      {/* Header with stacked day/date and donut chart */}
+      {/* Header with stacked day/date and the completion Donut */}
       <div
-        className="flex items-center justify-between px-2 sticky top-0 z-10 h-[56px] border-b border-border"
+        className="flex items-center justify-between px-3 sticky top-0 z-10 border-b border-border"
         style={{
-          backgroundColor: isToday ? 'var(--today)' : 'var(--card)',
+          height: `${HEADER_HEIGHT}px`,
+          backgroundColor: isToday ? TODAY_HEADER_WASH : 'var(--ds-window)',
         }}
       >
         {/* Left: stacked day name + date */}
-        <div className="flex flex-col items-start leading-none">
-          <span className="text-label font-bold uppercase tracking-[0.05em] text-muted-foreground">
+        <div className="flex flex-col items-start gap-0.5 leading-none">
+          <span className="font-mono text-label uppercase tracking-[0.12em] text-secondary-foreground">
             {dayName}
           </span>
           {isToday ? (
-            <span className="bg-primary text-primary-foreground w-[30px] h-[30px] rounded-full flex items-center justify-center text-[15px] font-bold">
+            <span
+              className="bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[13px] font-bold tabular-nums mt-0.5"
+              style={{ width: 26, height: 26 }}
+            >
               {dateNum}
             </span>
           ) : (
-            <span className="text-lg font-bold text-foreground">{dateNum}</span>
+            <span className="text-[20px] font-semibold text-foreground tabular-nums tracking-[-0.02em]">
+              {dateNum}
+            </span>
           )}
         </div>
 
-        {/* Right: donut chart */}
-        <PieChart completed={completed} total={total} size={28} />
+        {/* Right: completion Donut */}
+        <PieChart completed={completed} total={total} size={26} showLabel={false} />
       </div>
 
       {/* Day Priorities section */}

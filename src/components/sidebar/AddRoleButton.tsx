@@ -5,12 +5,28 @@ import { Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
 import { getNextRoleColor } from "@/stores/weekStore";
-import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
+import { getRoleColorStyle } from "@/lib/role-colors";
 
-export function AddRoleButton() {
+interface AddRoleButtonProps {
+  /** Controlled "currently adding" state, owned by RoleList. */
+  isAdding: boolean;
+  onStartAdding: () => void;
+  onDone: () => void;
+}
+
+/**
+ * The "add role" affordance: a dashed, mono ghost button at the bottom of the
+ * role list that swaps to an inline role-card preview (tinted to the next role
+ * color) while typing. The add state is controlled by RoleList so the same flow
+ * can be triggered from the section label's + action.
+ */
+export function AddRoleButton({
+  isAdding,
+  onStartAdding,
+  onDone,
+}: AddRoleButtonProps) {
   const addRole = useWeekStore((state) => state.addRole);
   const roles = useWeekStore((state) => state.currentWeek?.roles);
-  const [isAdding, setIsAdding] = useState(false);
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -28,12 +44,12 @@ export function AddRoleButton() {
       addRole({ name: trimmed });
     }
     setValue("");
-    setIsAdding(false);
+    onDone();
   }
 
   function handleCancel() {
     setValue("");
-    setIsAdding(false);
+    onDone();
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -58,15 +74,14 @@ export function AddRoleButton() {
   if (isAdding) {
     return (
       <div
-        className="flex flex-col rounded-[8px] p-3"
+        className="flex flex-col rounded-[var(--ds-r-sm)] border border-[var(--ds-line-soft)] bg-card px-3 py-2.5"
         style={{
-          backgroundColor: getRoleColorStyleWithOpacity(previewColor, 0.10),
-          borderLeft: `4px solid ${getRoleColorStyle(previewColor)}`,
+          borderLeft: `2px solid ${getRoleColorStyle(previewColor)}`,
         }}
       >
-        <div className="flex items-start gap-2">
-          <div
-            className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-[5px]"
+        <div className="flex items-center gap-2">
+          <span
+            className="h-2 w-2 shrink-0 rounded-full"
             style={{ backgroundColor: getRoleColorStyle(previewColor) }}
             aria-hidden="true"
           />
@@ -77,8 +92,8 @@ export function AddRoleButton() {
             onChange={(e) => setValue(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            placeholder="Role name..."
-            className="flex-1 text-sm font-bold text-foreground"
+            placeholder="New role…"
+            className="flex-1 text-[13px] font-semibold text-foreground"
             aria-label="New role name"
           />
         </div>
@@ -88,10 +103,10 @@ export function AddRoleButton() {
 
   return (
     <button
-      onClick={() => setIsAdding(true)}
-      className="w-full py-2.5 rounded-lg border-2 border-dashed border-muted-foreground/25 text-sm text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground/60 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+      onClick={onStartAdding}
+      className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-[var(--ds-r-sm)] border border-dashed border-[var(--ds-line)] py-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:border-[var(--ds-line-strong)] hover:bg-[var(--ds-hover-tint)] hover:text-foreground"
     >
-      <Plus size={14} />
+      <Plus size={12} strokeWidth={1.6} />
       Add role
     </button>
   );

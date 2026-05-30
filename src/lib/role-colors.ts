@@ -1,24 +1,21 @@
 /**
  * Role Color Utilities
  *
- * Maps RoleColor type values to CSS custom properties.
- * Colors are defined as hex values in globals.css with RGB component
- * variants (--role-N-rgb) for opacity modifiers.
+ * Maps RoleColor type values to CSS custom properties. Colors are defined as
+ * oklch values in globals.css (--role-1..8); opacity modifiers are built with
+ * color-mix() since oklch can't be expressed as rgb triplets (ADR-0002).
  */
 
 import type { RoleColor } from "@/types";
 
 /**
- * Mapping from RoleColor type to CSS variable number.
- * Based on the color palette in globals.css:
- * - role-1: teal
- * - role-2: violet
- * - role-3: amber
- * - role-4: sky
- * - role-5: rose
- * - role-6: emerald
- * - role-7: orange
- * - role-8: slate (maps from "fuchsia" - fallback)
+ * Maps each RoleColor name to a stable, arbitrary slot index (1-8).
+ *
+ * The index is just a slot — the rendered HUE is owned entirely by `--role-N`
+ * in globals.css and is intentionally decoupled from the stored name (ADR-0002):
+ * a role persisted as "teal" may render as a different hue. Do not infer the
+ * hue from the name here; globals.css is the single source for what each slot
+ * looks like. This map must stay stable to avoid re-hueing persisted weeks.
  */
 const COLOR_TO_INDEX: Record<RoleColor, number> = {
   teal: 1,
@@ -67,14 +64,15 @@ export function getRoleColorStyle(color: RoleColor): string {
 }
 
 /**
- * Get a CSS variable string with opacity for inline background styles.
- * Uses the RGB component CSS variables for rgba() construction.
+ * Get a CSS color string with opacity for inline background styles.
+ * Mixes the role's oklch color with transparent (oklch has no rgb triplet).
  *
  * @param color - The RoleColor value
  * @param opacity - Opacity value between 0 and 1 (e.g., 0.2)
- * @returns CSS color value string with opacity (e.g., "rgba(var(--role-1-rgb), 0.2)")
+ * @returns CSS color value string (e.g., "color-mix(in oklab, var(--role-1), transparent 80%)")
  */
 export function getRoleColorStyleWithOpacity(color: RoleColor, opacity: number): string {
   const index = COLOR_TO_INDEX[color];
-  return `rgba(var(--role-${index}-rgb), ${opacity})`;
+  const transparentPct = Math.round((1 - opacity) * 100);
+  return `color-mix(in oklab, var(--role-${index}), transparent ${transparentPct}%)`;
 }

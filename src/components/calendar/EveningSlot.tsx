@@ -41,21 +41,25 @@ export function EveningSlot({ dayIndex }: EveningSlotProps) {
     <div
       ref={setNodeRef}
       className={cn(
-        "p-1 bg-muted",
+        "px-2 py-2.5 flex flex-col",
         showDropHint && "border border-dashed border-primary bg-primary-soft",
         isOver && "bg-primary-soft"
       )}
       style={{
         height: `${EVENING_SECTION_HEIGHT}px`,
-        borderTop: '1px solid var(--border-emphasis)',
+        borderTop: '1px solid var(--ds-line)',
+        background: (isOver || showDropHint) ? undefined : 'var(--ds-sunk-tint)',
         ...(isOver && !showDropHint && {
-          outline: '1px dashed var(--primary)',
+          outline: '1px dashed var(--ds-accent)',
           outlineOffset: '-1px',
         }),
       }}
       data-day={dayIndex}
       data-section="evening"
     >
+      <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-secondary-foreground mb-1.5">
+        Evening
+      </span>
       {eveningBlock && (
         <DraggableEveningBlock
           eveningBlock={eveningBlock}

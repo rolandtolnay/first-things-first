@@ -13,7 +13,7 @@ import { useMemo } from "react";
 import type { TimeSlotIndex, DayOfWeek } from "@/types";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockDraw } from "@/hooks/useBlockDraw";
-import { TOTAL_SLOTS, slotToPixels, durationToPixels } from "@/lib/time-model";
+import { TOTAL_SLOTS, SLOT_HEIGHT, slotToPixels, durationToPixels } from "@/lib/time-model";
 import { TimeSlot } from "./TimeSlot";
 import { TimeBlock } from "./TimeBlock";
 import { CurrentTimeIndicator } from "./CurrentTimeIndicator";
@@ -23,10 +23,10 @@ interface TimeGridProps {
   isToday?: boolean;
 }
 
-export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
-  // Generate 24 slots: 0-23 representing 8:00-19:30
-  const slots = Array.from({ length: TOTAL_SLOTS }, (_, i) => i as TimeSlotIndex);
+// 24 slots: 0-23 representing 8:00-19:30. Constant — hoisted out of render.
+const SLOTS = Array.from({ length: TOTAL_SLOTS }, (_, i) => i as TimeSlotIndex);
 
+export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
   // Get raw time blocks from store (stable reference)
   const timeBlocks = useWeekStore((state) => state.currentWeek?.timeBlocks);
 
@@ -45,19 +45,23 @@ export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
     clearNewBlockId,
   } = useBlockDraw(dayIndex, blocks);
 
+  // Hairline every hour (2 slots): transparent for the first slot, a soft line
+  // on the hour boundary. Derived from SLOT_HEIGHT so it tracks the density.
+  const hourPx = SLOT_HEIGHT * 2;
+  const gridBackground = `repeating-linear-gradient(to bottom, transparent 0 calc(${hourPx}px - 1px), var(--ds-line-soft) calc(${hourPx}px - 1px) ${hourPx}px)`;
+
   return (
     <div
-      className="relative"
+      className="relative h-full"
       data-slots-column
       {...containerProps}
-      style={
-        isDrawing
-          ? { touchAction: "none", userSelect: "none" }
-          : undefined
-      }
+      style={{
+        background: gridBackground,
+        ...(isDrawing ? { touchAction: "none", userSelect: "none" } : {}),
+      }}
     >
       {/* Grid of slots */}
-      {slots.map((slotIndex) => (
+      {SLOTS.map((slotIndex) => (
         <TimeSlot key={slotIndex} slotIndex={slotIndex} dayIndex={dayIndex} />
       ))}
 
@@ -78,14 +82,15 @@ export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
       {/* Draw preview during click-drag-draw */}
       {isDrawing && previewBlock && (
         <div
-          className="absolute left-0 right-0 z-20 pointer-events-none"
+          className="absolute z-20 pointer-events-none"
           style={{
             top: `${slotToPixels(previewBlock.startSlot)}px`,
+            left: 4,
+            right: 4,
             height: `${durationToPixels(previewBlock.duration)}px`,
-            borderRadius: 'var(--radius-md)',
-            border: '2px dashed var(--primary)',
-            backgroundColor: 'rgba(20, 184, 166, 0.1)',
-            opacity: 0.5,
+            borderRadius: 'var(--ds-r-sm)',
+            border: '1px dashed var(--ds-accent)',
+            backgroundColor: 'var(--ds-accent-soft)',
           }}
         />
       )}

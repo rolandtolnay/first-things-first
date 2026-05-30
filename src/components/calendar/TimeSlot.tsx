@@ -11,7 +11,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import type { TimeSlotIndex, DayOfWeek } from "@/types";
 import type { DropZoneData } from "@/types/dnd";
-import { slotIsHourStart } from "@/lib/time-model";
+import { SLOT_HEIGHT } from "@/lib/time-model";
 
 interface TimeSlotProps {
   slotIndex: TimeSlotIndex;
@@ -19,10 +19,8 @@ interface TimeSlotProps {
 }
 
 export function TimeSlot({ slotIndex, dayIndex }: TimeSlotProps) {
-  // Hour boundaries have different border for visual hierarchy
-  const isHourStart = slotIsHourStart(slotIndex);
-
-  // Make this slot a drop target
+  // Make this slot a drop target. Hour hairlines are painted by the TimeGrid
+  // background gradient, so slots themselves are borderless at this density.
   const dropData: DropZoneData = {
     zone: "timegrid",
     dayIndex,
@@ -37,14 +35,12 @@ export function TimeSlot({ slotIndex, dayIndex }: TimeSlotProps) {
   return (
     <div
       ref={setNodeRef}
-      className="h-7 relative"
+      className="relative"
       style={{
-        borderBottom: !isHourStart
-          ? '1px solid var(--grid-line)'
-          : undefined,
+        height: `${SLOT_HEIGHT}px`,
         ...(isOver && {
-          backgroundColor: 'rgba(20, 184, 166, 0.2)',
-          boxShadow: 'inset 0 0 0 1px var(--primary)',
+          backgroundColor: 'var(--ds-accent-soft)',
+          boxShadow: 'inset 0 0 0 1px var(--ds-accent)',
         }),
       }}
       data-slot={slotIndex}

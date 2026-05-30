@@ -1,12 +1,12 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
 import { useWeekStore } from "@/stores/weekStore";
-import { formatWeekId, getCurrentWeekId } from "@/lib/utils";
+import { formatWeekId, getCurrentWeekId, getWeekNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { TabPill } from "@/components/ui/TabPill";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import type { WeekId } from "@/types";
 
@@ -49,67 +49,84 @@ export function WeekNavigation({ onNewWeek }: WeekNavigationProps) {
 
   const showBanner = weekIds.length > 0 && !currentCalendarWeekExists;
 
+  const weekLabel = selectedWeekId
+    ? `Wk ${getWeekNumber(selectedWeekId)} · ${formatWeekId(selectedWeekId)}`
+    : "Loading…";
+
   return (
     <div className="shrink-0">
       <div
-        className="flex items-center gap-3 px-5 py-2 border-b border-border"
+        className="grid grid-cols-[1fr_auto_1fr] items-center border-b border-border"
+        style={{ padding: "16px 20px" }}
       >
-        {/* Arrow buttons */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handlePrev}
-              disabled={!canGoPrev}
-              aria-label="Previous week"
-            >
-              <ChevronLeft className="size-4" />
+        {/* Left: active-week tab pill */}
+        <div className="flex items-center gap-2.5">
+          <TabPill
+            active
+            icon={<Calendar strokeWidth={1.4} />}
+            onAdd={onNewWeek}
+          >
+            {weekLabel}
+          </TabPill>
+          {showBanner && (
+            <Button variant="link" className="h-auto p-0 text-caption" onClick={onNewWeek}>
+              Plan this week?
             </Button>
-          </TooltipTrigger>
-          <TooltipContent>Previous week</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNext}
-              disabled={!canGoNext}
-              aria-label="Next week"
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Next week</TooltipContent>
-        </Tooltip>
-
-        {/* Date range label */}
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          {selectedWeekId ? formatWeekId(selectedWeekId) : "Loading..."}
-          {isCurrentCalendarWeek && (
-            <Badge className="bg-primary-soft text-primary text-caption font-semibold border-0">
-              This week
-            </Badge>
           )}
-        </h2>
+        </div>
 
-        <div className="flex-1" />
+        {/* Center: prev / TODAY / next */}
+        <div className="flex items-center gap-1 justify-self-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={handlePrev}
+                disabled={!canGoPrev}
+                aria-label="Previous week"
+              >
+                <ChevronLeft className="size-3.5" strokeWidth={1.4} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Previous week</TooltipContent>
+          </Tooltip>
 
-        {/* Today / Plan this week? */}
-        {showBanner ? (
-          <Button variant="link" onClick={onNewWeek}>
-            Plan this week?
-          </Button>
-        ) : !isCurrentCalendarWeek ? (
-          <Button variant="outline" onClick={handleToday}>
+          <button
+            type="button"
+            onClick={handleToday}
+            className="rounded-md border border-border px-2.5 py-1 font-mono text-label uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:border-border-emphasis hover:bg-card-hover hover:text-foreground"
+          >
             Today
-          </Button>
-        ) : null}
+          </button>
 
-        {/* +New button */}
-        <Button onClick={onNewWeek}>+ New</Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={handleNext}
+                disabled={!canGoNext}
+                aria-label="Next week"
+              >
+                <ChevronRight className="size-3.5" strokeWidth={1.4} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Next week</TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Right: month/year micro-label + new-week action */}
+        <div className="flex items-center gap-2 justify-self-end">
+          {!isCurrentCalendarWeek && !showBanner && (
+            <span className="font-mono text-label uppercase tracking-[0.12em] text-muted-foreground tabular-nums">
+              {selectedWeekId ? formatWeekId(selectedWeekId) : ""}
+            </span>
+          )}
+          <Button variant="outline" size="sm" onClick={onNewWeek}>
+            + New
+          </Button>
+        </div>
       </div>
     </div>
   );

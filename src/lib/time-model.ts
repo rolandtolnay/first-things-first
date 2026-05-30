@@ -39,7 +39,7 @@ export const MIN_BLOCK_SLOTS = 2;
 export const DEFAULT_BLOCK_SLOTS = 2;
 
 /** Height of one slot row in pixels on the grid. */
-export const SLOT_HEIGHT = 28;
+export const SLOT_HEIGHT = 16;
 
 // ============================================================================
 // Slot ↔ Clock conversions

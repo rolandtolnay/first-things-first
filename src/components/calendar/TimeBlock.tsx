@@ -69,12 +69,14 @@ export function TimeBlock({
       {...attributes}
       data-block
       className={cn(
-        "absolute left-1 right-1 z-10 group bg-card rounded-[6px]",
+        "absolute z-10 group",
         "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-90",
         isResizing && "z-20"
       )}
       style={{
+        left: 3,
+        right: 3,
         top: `${top}px`,
         height: `${height}px`,
         ...(isResizing && { touchAction: "none", userSelect: "none" }),

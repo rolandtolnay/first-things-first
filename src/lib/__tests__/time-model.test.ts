@@ -41,7 +41,7 @@ describe("constants", () => {
     expect(MAX_BLOCK_SLOTS).toBe(16);
     expect(MIN_BLOCK_SLOTS).toBe(2);
     expect(DEFAULT_BLOCK_SLOTS).toBe(2);
-    expect(SLOT_HEIGHT).toBe(28);
+    expect(SLOT_HEIGHT).toBe(16);
   });
 
   it("keeps MAX_SLOT_INDEX === TOTAL_SLOTS - 1 (no off-by-one)", () => {
@@ -136,19 +136,19 @@ describe("slotsToHours", () => {
 describe("pixelToSlotFloor (draw start)", () => {
   it("returns the slot the Y falls inside, not the nearest boundary", () => {
     expect(pixelToSlotFloor(0)).toBe(0);
-    expect(pixelToSlotFloor(27)).toBe(0); // still inside slot 0
-    expect(pixelToSlotFloor(28)).toBe(1);
-    expect(pixelToSlotFloor(55)).toBe(1); // still inside slot 1
-    expect(pixelToSlotFloor(56)).toBe(2);
+    expect(pixelToSlotFloor(15)).toBe(0); // still inside slot 0
+    expect(pixelToSlotFloor(16)).toBe(1);
+    expect(pixelToSlotFloor(31)).toBe(1); // still inside slot 1
+    expect(pixelToSlotFloor(32)).toBe(2);
   });
 });
 
 describe("pixelToSlotRound (resize / draw-move)", () => {
   it("snaps to the nearest slot boundary", () => {
-    expect(pixelToSlotRound(13)).toBe(0);
-    expect(pixelToSlotRound(14)).toBe(1); // 0.5 rounds up
-    expect(pixelToSlotRound(28)).toBe(1);
-    expect(pixelToSlotRound(42)).toBe(2); // 1.5 rounds up
+    expect(pixelToSlotRound(7)).toBe(0);
+    expect(pixelToSlotRound(8)).toBe(1); // 0.5 rounds up
+    expect(pixelToSlotRound(16)).toBe(1);
+    expect(pixelToSlotRound(24)).toBe(2); // 1.5 rounds up
   });
 });
 
@@ -159,12 +159,12 @@ describe("pixelToSlotRound (resize / draw-move)", () => {
 describe("slotToPixels / durationToPixels", () => {
   it("multiplies slot index by SLOT_HEIGHT for the top offset", () => {
     expect(slotToPixels(0)).toBe(0);
-    expect(slotToPixels(3)).toBe(84);
+    expect(slotToPixels(3)).toBe(48);
   });
 
   it("multiplies duration by SLOT_HEIGHT for the height", () => {
-    expect(durationToPixels(1)).toBe(28);
-    expect(durationToPixels(4)).toBe(112);
+    expect(durationToPixels(1)).toBe(16);
+    expect(durationToPixels(4)).toBe(64);
   });
 });
 
@@ -178,13 +178,13 @@ describe("timeToPixels", () => {
   });
 
   it("matches the original float formula at 8:30", () => {
-    // ((8-8)*60 + 30) / 30 * 28 = 28
-    expect(timeToPixels(8, 30)).toBe(28);
+    // ((8-8)*60 + 30) / 30 * 16 = 16
+    expect(timeToPixels(8, 30)).toBe(16);
   });
 
   it("matches the original float formula at 12:15", () => {
-    // ((12-8)*60 + 15) / 30 * 28 = 255 / 30 * 28 = 238
-    expect(timeToPixels(12, 15)).toBe(238);
+    // ((12-8)*60 + 15) / 30 * 16 = 255 / 30 * 16 = 136
+    expect(timeToPixels(12, 15)).toBe(136);
   });
 });
 

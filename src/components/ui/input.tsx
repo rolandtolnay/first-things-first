@@ -8,16 +8,15 @@ function Input({ className, type, style, ...props }: React.ComponentProps<"input
       type={type}
       data-slot="input"
       className={cn(
-        "w-full min-w-0 rounded-none outline-none focus-visible:outline-none px-1 py-0.5 text-sm placeholder:text-muted-foreground disabled:pointer-events-none disabled:opacity-50",
+        // Bare by default; lights up on focus (hairline underline → accent).
+        "w-full min-w-0 rounded-[var(--ds-r-xs)] bg-transparent px-1.5 py-1 text-sm outline-none",
+        "border-0 border-b-[1.5px] border-border/0 transition-colors",
+        "placeholder:text-muted-foreground",
+        "focus:bg-foreground/5 focus:border-border focus-visible:outline-none",
+        "disabled:pointer-events-none disabled:opacity-50",
         className
       )}
-      style={{
-        backgroundColor: "color-mix(in srgb, var(--foreground) 8%, transparent)",
-        border: "none",
-        borderBottom: "1.5px solid var(--muted-foreground)",
-        outline: "none",
-        ...style,
-      }}
+      style={style}
       {...props}
     />
   )

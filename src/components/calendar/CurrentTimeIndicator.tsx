@@ -24,8 +24,20 @@ export function CurrentTimeIndicator() {
       className="absolute left-0 right-0 z-30 pointer-events-none flex items-center"
       style={{ top: `${top}px` }}
     >
-      <div className="w-2 h-2 rounded-full bg-red-500 -ml-1 flex-shrink-0" />
-      <div className="flex-1 h-[2px] bg-red-500" />
+      <span
+        className="flex-shrink-0 rounded-full"
+        style={{
+          width: 7,
+          height: 7,
+          marginLeft: -3,
+          background: "var(--ds-accent)",
+          boxShadow: "0 0 8px var(--ds-accent)",
+        }}
+      />
+      <span
+        className="flex-1"
+        style={{ height: 1, background: "var(--ds-accent)", opacity: 0.7 }}
+      />
     </div>
   );
 }

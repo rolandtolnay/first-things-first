@@ -5,7 +5,7 @@ import { MoreVertical, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
 import { slotsToHours, EVENING_BLOCK_HOURS } from "@/lib/time-model";
-import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
+import { getRoleColorStyle } from "@/lib/role-colors";
 import { useEditableText } from "@/hooks/useEditableText";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,16 +83,13 @@ export function RoleSection({ role }: RoleSectionProps) {
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
-          className="flex flex-col rounded-[8px] p-3 mb-2"
-          style={{
-            backgroundColor: getRoleColorStyleWithOpacity(role.color, 0.10),
-            borderLeft: `4px solid ${getRoleColorStyle(role.color)}`,
-          }}
+          className="group/role flex flex-col rounded-[var(--ds-r-sm)] border border-[var(--ds-line-soft)] bg-card px-3 py-2.5 transition-colors hover:border-[var(--ds-line)]"
+          style={{ borderLeft: `2px solid ${getRoleColorStyle(role.color)}` }}
         >
           {/* Role header */}
-          <div className="group relative flex items-start gap-2">
-            <div
-              className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-[5px]"
+          <div className="relative flex items-center gap-2">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: getRoleColorStyle(role.color) }}
               aria-hidden="true"
             />
@@ -105,17 +102,12 @@ export function RoleSection({ role }: RoleSectionProps) {
                 onChange={(e) => setEditValue(e.target.value)}
                 onBlur={save}
                 onKeyDown={handleKeyDown}
-                className="flex-1 text-sm font-bold text-foreground"
+                className="flex-1 text-[13px] font-semibold text-foreground"
                 aria-label="Edit role name"
               />
             ) : (
               <span
-                className="flex-1 min-w-0 cursor-pointer text-sm font-bold text-foreground overflow-hidden"
-                style={{
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                }}
+                className="min-w-0 flex-1 cursor-text truncate text-[13px] font-semibold text-foreground"
                 onDoubleClick={startEdit}
                 title={role.name}
               >
@@ -123,44 +115,57 @@ export function RoleSection({ role }: RoleSectionProps) {
               </span>
             )}
 
-            {roleHours > 0 && !isEditing && (
-              <span className="text-caption text-muted-foreground ml-auto mt-0.5 shrink-0 group-hover:opacity-0 transition-opacity">{roleHours}h planned</span>
-            )}
-
-            {/* Absolute-positioned menu button */}
             {!isEditing && (
-              <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    className={`absolute top-0 right-0 rounded-sm border-0 bg-transparent text-foreground/60 hover:bg-foreground/10 hover:text-foreground/80 transition-opacity ${
-                      menuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                    }`}
-                    aria-label={`Menu for ${role.name}`}
-                  >
-                    <MoreVertical className="size-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => { setAddingGoal(true); setMenuOpen(false); }}>
-                    <Plus className="size-3.5 mr-2" />
-                    Add goal
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={() => { setDeleteDialogOpen(true); setMenuOpen(false); }}
-                  >
-                    <Trash2 className="size-3.5 mr-2" />
-                    Delete role
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <>
+                {roleHours > 0 && (
+                  <span className="shrink-0 font-mono text-[10px] tracking-[0.04em] text-secondary-foreground tabular-nums group-hover/role:opacity-0 transition-opacity">
+                    {roleHours}h
+                  </span>
+                )}
+
+                {/* Add-goal — reveals on hover */}
+                <button
+                  onClick={() => setAddingGoal(true)}
+                  aria-label="Add goal"
+                  className="flex size-[18px] shrink-0 items-center justify-center rounded-[4px] text-muted-foreground opacity-0 transition-[opacity,background-color,color] hover:bg-[var(--ds-line)] hover:text-foreground group-hover/role:opacity-100"
+                >
+                  <Plus size={12} strokeWidth={1.6} />
+                </button>
+
+                {/* Overflow menu — top-right, reveals on hover */}
+                <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      className={`absolute -top-1 right-0 rounded-[4px] border-0 bg-transparent text-muted-foreground hover:bg-[var(--ds-line)] hover:text-foreground transition-opacity ${
+                        menuOpen ? "opacity-100" : "opacity-0 group-hover/role:opacity-100"
+                      }`}
+                      aria-label={`Menu for ${role.name}`}
+                    >
+                      <MoreVertical className="size-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => { setAddingGoal(true); setMenuOpen(false); }}>
+                      <Plus className="size-3.5 mr-2" />
+                      Add goal
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => { setDeleteDialogOpen(true); setMenuOpen(false); }}
+                    >
+                      <Trash2 className="size-3.5 mr-2" />
+                      Delete role
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             )}
           </div>
 
-          <div className="mt-1.5">
-            <GoalList roleId={role.id} roleColor={role.color} addingGoal={addingGoal} onAddingGoalDone={() => setAddingGoal(false)} />
+          <div className="mt-2 pl-0.5">
+            <GoalList roleId={role.id} addingGoal={addingGoal} onAddingGoalDone={() => setAddingGoal(false)} />
           </div>
         </div>
       </ContextMenuTrigger>

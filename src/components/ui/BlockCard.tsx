@@ -81,7 +81,11 @@ export function BlockCard({
     if (!isEditing) setEditValue(text);
   }, [text, isEditing]);
 
-  const lineClamp = height !== undefined && height < 56 ? 1 : 2;
+  // At the dense (16px slot) grid a 1h block is ~32px tall: blocks at or below
+  // ~1h collapse to a single line and hide their meta/subtitle.
+  const SHORT_BLOCK_PX = 40;
+  const isShort = height !== undefined && height < SHORT_BLOCK_PX;
+  const lineClamp = isShort ? 1 : 2;
   const fontSize = compact ? "text-[11px]" : "text-[13px]";
   const padding = compact ? "px-2 py-1" : "px-2.5 py-2.5";
 
@@ -236,7 +240,7 @@ export function BlockCard({
           >
             {text}
           </span>
-          {subtitle && (height === undefined || height >= 56) && (
+          {subtitle && !isShort && (
             <span className="text-label text-muted-foreground truncate block mt-0.5">
               {subtitle}
             </span>

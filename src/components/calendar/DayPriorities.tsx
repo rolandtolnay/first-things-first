@@ -55,22 +55,24 @@ export function DayPriorities({ dayIndex }: DayPrioritiesProps) {
     <div
       ref={setNodeRef}
       className={cn(
-        "px-1 py-2 flex flex-col gap-2",
+        "px-2.5 py-2.5 flex flex-col gap-1",
         showDropHint && "border border-dashed border-primary bg-primary-soft",
         isOver && "bg-primary-soft"
       )}
       style={{
         height: `${PRIORITIES_SECTION_HEIGHT}px`,
-        background: (isOver || showDropHint) ? undefined : 'linear-gradient(180deg, color-mix(in srgb, var(--primary) 6%, var(--muted)), color-mix(in srgb, var(--primary) 2%, var(--muted)))',
-        borderBottom: '1px solid var(--border-emphasis)',
+        borderBottom: '1px solid var(--ds-line)',
         ...(isOver && !showDropHint && {
-          outline: '1px dashed var(--primary)',
+          outline: '1px dashed var(--ds-accent)',
           outlineOffset: '-1px',
         }),
       }}
       data-day={dayIndex}
       data-section="priorities"
     >
+      <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-secondary-foreground mb-1">
+        Priorities
+      </span>
       {priorities.map((priority) => {
         const goal = goalsMap.get(priority.goalId);
         if (!goal) return null;

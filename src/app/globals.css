@@ -7,203 +7,299 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * First Things First - Design System Tokens (shadcn-unified)
- * Calm, warm, professional. Single source of truth — shadcn token names.
+ * First Things First — Dark Workspace tokens.
+ * Strategy (ADR-0001, Option C): the Dark Workspace Kit `--ds-*` tokens are the
+ * SINGLE SOURCE OF TRUTH; shadcn/app names are thin aliases that point at them,
+ * and `@theme inline` bridges the Tailwind utility layer to `--ds-*` as well.
+ * Dark is the default (`:root`); light is opt-in via `.ds-light` on <html>.
  */
 
 :root {
-  /* Backgrounds */
-  --background: #F7FAF9;
-  --card: #FFFFFF;
-  --card-foreground: #0F172A;
-  --muted: #F5F7FA;
-  --muted-foreground: #94A3B8;
+  /* ── Surfaces ────────────────────────────────────────────── */
+  --ds-stage:        oklch(0.13 0.005 70);      /* outermost canvas (body) */
+  --ds-window:       oklch(0.165 0.006 70);     /* the app window */
+  --ds-panel:        oklch(0.185 0.006 70);     /* nested cards/inputs */
+  --ds-panel-2:      oklch(0.21 0.007 70);      /* hover / raised */
+  --ds-overlay:      oklch(0.22 0.008 70);      /* dropdowns, popovers */
 
-  /* Text */
-  --foreground: #0F172A;
-  --secondary-foreground: #475569;
+  /* ── Borders / hairlines ─────────────────────────────────── */
+  --ds-line:         oklch(0.255 0.008 70);
+  --ds-line-soft:    oklch(0.225 0.007 70);
+  --ds-line-strong:  oklch(0.32 0.01 70);
 
-  /* Primary (Teal) */
-  --primary: #14B8A6;
-  --primary-foreground: #FFFFFF;
+  /* ── Text (tuned for WCAG AA on --ds-window) ─────────────── */
+  --ds-fg:           oklch(0.95 0.008 80);
+  --ds-fg-muted:     oklch(0.76 0.012 75);
+  --ds-fg-dim:       oklch(0.62 0.014 75);
+  --ds-fg-faint:     oklch(0.52 0.014 75);
 
-  /* Custom primary variants (no shadcn equivalent) */
-  --primary-hover: #0D9488;
-  --primary-soft: #CCFBF1;
-  --primary-muted: #99F6E4;
+  /* ── Accent (amber) ───────────────────────────────────────── */
+  --ds-accent-h:     78;
+  --ds-accent:       oklch(0.78 0.14 var(--ds-accent-h));
+  --ds-accent-soft:  oklch(0.78 0.14 var(--ds-accent-h) / 0.18);
+  --ds-accent-faint: oklch(0.78 0.14 var(--ds-accent-h) / 0.08);
+  --ds-accent-ink:   oklch(0.16 0.01 var(--ds-accent-h));
 
-  /* Semantic */
-  --secondary: #F5F7FA;
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-  --success: #10B981;
-  --success-foreground: #FFFFFF;
-  --warning: #F59E0B;
-  --warning-soft: #FEF3C7;
+  /* secondary accent palette (kit) */
+  --ds-c-amber:  oklch(0.78 0.14 78);
+  --ds-c-rose:   oklch(0.72 0.12 25);
+  --ds-c-violet: oklch(0.72 0.11 295);
+  --ds-c-sky:    oklch(0.74 0.10 230);
+  --ds-c-mint:   oklch(0.78 0.10 160);
+  --ds-c-sand:   oklch(0.74 0.06 60);
 
-  /* Borders */
-  --border: #E2E8F0;
-  --border-emphasis: #CBD5E1;
-  --input: #E2E8F0;
-  --ring: rgba(20, 184, 166, 0.5);
+  /* ── Status ───────────────────────────────────────────────── */
+  --ds-success:    oklch(0.78 0.13 150);
+  --ds-warning:    oklch(0.80 0.14 80);
+  --ds-danger:     oklch(0.72 0.16 25);
 
-  /* Accent (hover backgrounds) */
-  --accent: #F0FDFA;
-  --accent-foreground: #0F172A;
+  /* ── Glow (the signature) ─────────────────────────────────── */
+  --ds-glow-color: oklch(0.78 0.14 var(--ds-accent-h) / 0.55);
+  --ds-glow-size:  520px;
 
-  /* Completion */
-  --completed-opacity: 0.75;
-  --completed-bg: rgba(0, 0, 0, 0.02);
+  /* ── Radii ────────────────────────────────────────────────── */
+  --ds-r-xs: 4px;
+  --ds-r-sm: 6px;
+  --ds-r-md: 10px;
+  --ds-r-lg: 14px;
+  --ds-r-xl: 20px;
+  --ds-r-pill: 999px;
 
-  /* Sidebar */
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #0F172A;
+  /* ── Spacing scale (4px base) ─────────────────────────────── */
+  --ds-s-1: 4px;
+  --ds-s-2: 8px;
+  --ds-s-3: 12px;
+  --ds-s-4: 16px;
+  --ds-s-5: 20px;
+  --ds-s-6: 24px;
+  --ds-s-7: 32px;
+  --ds-s-8: 48px;
 
-  /* Today */
-  --today: rgba(20, 184, 166, 0.08);
+  /* ── Shadows ──────────────────────────────────────────────── */
+  --ds-shadow-sm:  0 1px 2px rgba(0,0,0,0.35);
+  --ds-shadow-md:  0 6px 24px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.4);
+  --ds-shadow-lg:  0 16px 48px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.5);
+  --ds-window-shadow: 0 30px 90px rgba(0,0,0,0.55);
 
-  /* Popover */
-  --popover: #FFFFFF;
-  --popover-foreground: #0F172A;
+  /* ── Type ─────────────────────────────────────────────────── */
+  /* Geist / Geist Mono are loaded by next/font into --font-geist-*. */
+  --ds-font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ds-font-mono: var(--font-geist-mono), ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-drag: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
-  --shadow-dialog: 0 8px 32px rgba(0, 0, 0, 0.10), 0 4px 8px rgba(0, 0, 0, 0.04);
+  --ds-t-micro:   10px;
+  --ds-t-label:   11px;
+  --ds-t-caption: 12px;
+  --ds-t-body:    13px;
+  --ds-t-body-l:  14px;
+  --ds-t-h6:      15px;
+  --ds-t-h5:      17px;
+  --ds-t-h4:      20px;
+  --ds-t-h3:      24px;
+  --ds-t-h2:      28px;
+  --ds-t-h1:      36px;
 
-  /* Radii */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-  --radius-full: 9999px;
+  --ds-tracking-wide:   0.12em;
+  --ds-tracking-wider:  0.18em;
 
-  /* Grid aesthetics */
-  --grid-line: color-mix(in srgb, var(--border) 50%, transparent);
-  --grid-line-subtle: color-mix(in srgb, var(--border) 30%, transparent);
+  /* ── Density / motion ─────────────────────────────────────── */
+  --ds-density: 1;
+  --ds-ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+  --ds-dur-fast: 120ms;
+  --ds-dur:      180ms;
+  --ds-dur-slow: 300ms;
 
-  /* Durations */
-  --duration-fast: 150ms;
-  --duration-normal: 200ms;
-  --duration-slow: 300ms;
+  /* ── Hover / sunk tints (theme-aware) ────────────────────── */
+  --ds-hover-tint: oklch(1 0 0 / 0.03);
+  --ds-sunk-tint:  oklch(0 0 0 / 0.15);
 
-  /* Role colors — vibrant (light mode) */
-  --role-1: #14B8A6;
-  --role-2: #8B5CF6;
-  --role-3: #F59E0B;
-  --role-4: #0EA5E9;
-  --role-5: #F43F5E;
-  --role-6: #10B981;
-  --role-7: #F97316;
-  --role-8: #64748B;
+  /* ════════════════════════════════════════════════════════════
+   * shadcn / app aliases → --ds-* (so existing `var(--name)`
+   * consumers keep resolving; values track the theme via --ds-*).
+   * ════════════════════════════════════════════════════════════ */
+  --background: var(--ds-window);
+  --foreground: var(--ds-fg);
+  --foreground-faint: var(--ds-fg-faint);
 
-  /* Role colors — RGB components for rgba() usage */
-  --role-1-rgb: 20, 184, 166;
-  --role-2-rgb: 139, 92, 246;
-  --role-3-rgb: 245, 158, 11;
-  --role-4-rgb: 14, 165, 233;
-  --role-5-rgb: 244, 63, 94;
-  --role-6-rgb: 16, 185, 129;
-  --role-7-rgb: 249, 115, 22;
-  --role-8-rgb: 100, 116, 139;
+  --card: var(--ds-panel);
+  --card-foreground: var(--ds-fg);
+  --card-hover: var(--ds-panel-2);
+
+  --muted: var(--ds-panel);
+  --muted-foreground: var(--ds-fg-dim);
+
+  --secondary: var(--ds-panel);
+  --secondary-foreground: var(--ds-fg-muted);
+
+  --primary: var(--ds-accent);
+  --primary-foreground: var(--ds-accent-ink);
+  --primary-hover: oklch(0.82 0.14 var(--ds-accent-h));
+  --primary-soft: var(--ds-accent-soft);
+  --primary-muted: var(--ds-accent-faint);
+
+  --accent: var(--ds-panel-2);
+  --accent-foreground: var(--ds-fg);
+
+  --destructive: var(--ds-danger);
+  --destructive-foreground: var(--ds-fg);
+  --success: var(--ds-success);
+  --success-foreground: var(--ds-accent-ink);
+  --warning: var(--ds-warning);
+  --warning-soft: var(--ds-accent-faint);
+
+  --border: var(--ds-line);
+  --border-soft: var(--ds-line-soft);
+  --border-emphasis: var(--ds-line-strong);
+  --input: var(--ds-panel);
+  --ring: var(--ds-accent);
+
+  --sidebar: var(--ds-window);
+  --sidebar-foreground: var(--ds-fg);
+  --popover: var(--ds-overlay);
+  --popover-foreground: var(--ds-fg);
+
+  --today: var(--ds-accent-faint);
+  --completed-opacity: 0.6;
+  --completed-bg: var(--ds-sunk-tint);
+  --grid-line: var(--ds-line-soft);
+  --grid-line-subtle: var(--ds-line-soft);
+
+  /* ── Role palette — hue varies, L/C shared (ADR-0002) ──────── */
+  --role-1: oklch(0.78 0.14 78);    /* amber */
+  --role-2: oklch(0.72 0.11 295);   /* violet */
+  --role-3: oklch(0.72 0.12 25);    /* rose */
+  --role-4: oklch(0.74 0.10 230);   /* sky */
+  --role-5: oklch(0.78 0.10 160);   /* mint */
+  --role-6: oklch(0.74 0.06 60);    /* sand */
+  --role-7: oklch(0.74 0.10 195);   /* teal */
+  --role-8: oklch(0.74 0.10 330);   /* magenta */
+
+  /* ── Radii (raw aliases for var() consumers) ──────────────── */
+  --radius-sm: var(--ds-r-sm);
+  --radius-md: var(--ds-r-md);
+  --radius-lg: var(--ds-r-lg);
+  --radius-xl: var(--ds-r-xl);
+  --radius-full: var(--ds-r-pill);
+
+  /* ── Durations (kept names) ───────────────────────────────── */
+  --duration-fast: var(--ds-dur-fast);
+  --duration-normal: var(--ds-dur);
+  --duration-slow: var(--ds-dur-slow);
+
+  /* ── Shadows (kept names → kit shadows) ───────────────────── */
+  --shadow-sm: var(--ds-shadow-sm);
+  --shadow-card: var(--ds-shadow-md);
+  --shadow-md: var(--ds-shadow-md);
+  --shadow-drag: var(--ds-shadow-lg);
+  --shadow-dialog: var(--ds-shadow-lg);
+  --shadow-window: var(--ds-window-shadow);
 }
 
-.dark {
-  --background: #0F1419;
-  --card: #1A2332;
-  --card-foreground: #F1F5F9;
-  --muted: #1E2A3A;
-  --muted-foreground: #64748B;
-  --foreground: #F1F5F9;
-  --secondary-foreground: #94A3B8;
-  --primary: #2DD4BF;
-  --primary-foreground: #0F172A;
-  --primary-hover: #14B8A6;
-  --primary-soft: hsl(173 80% 15%);
-  --primary-muted: hsl(173 60% 20%);
-  --secondary: #1E2A3A;
-  --destructive: #F87171;
-  --destructive-foreground: #FFFFFF;
-  --success: #34D399;
-  --warning: #FBBF24;
-  --warning-soft: hsl(45 60% 12%);
-  --border: #1E293B;
-  --border-emphasis: #334155;
-  --input: #1E293B;
-  --ring: rgba(45, 212, 191, 0.5);
-  --accent: hsl(173 30% 12%);
-  --accent-foreground: #F1F5F9;
-  --completed-bg: rgba(255, 255, 255, 0.02);
-  --sidebar: #141D2B;
-  --sidebar-foreground: #F1F5F9;
-  --today: rgba(45, 212, 191, 0.08);
-  --popover: #1A2332;
-  --popover-foreground: #F1F5F9;
+/* ────────────────────────────────────────────────────────────────
+ * Light theme — opt-in via `.ds-light` on <html>.
+ * Only the `--ds-*` source tokens + role palette are overridden; the
+ * shadcn/app aliases above point at --ds-* and follow automatically.
+ * ──────────────────────────────────────────────────────────────── */
+.ds-light {
+  --ds-stage:        oklch(0.96 0.006 80);
+  --ds-window:       oklch(0.985 0.003 80);
+  --ds-panel:        oklch(0.97 0.005 80);
+  --ds-panel-2:      oklch(0.94 0.007 80);
+  --ds-overlay:      oklch(0.99 0.003 80);
 
-  --grid-line: color-mix(in srgb, var(--border) 50%, transparent);
-  --grid-line-subtle: color-mix(in srgb, var(--border) 30%, transparent);
+  --ds-line:         oklch(0.88 0.008 75);
+  --ds-line-soft:    oklch(0.93 0.006 75);
+  --ds-line-strong:  oklch(0.78 0.012 75);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-drag: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --shadow-dialog: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --ds-fg:           oklch(0.22 0.012 70);
+  --ds-fg-muted:     oklch(0.40 0.014 70);
+  --ds-fg-dim:       oklch(0.52 0.014 70);
+  --ds-fg-faint:     oklch(0.62 0.012 70);
 
-  /* Role colors — brighter for dark mode */
-  --role-1: #2DD4BF;
-  --role-2: #A78BFA;
-  --role-3: #FBBF24;
-  --role-4: #38BDF8;
-  --role-5: #FB7185;
-  --role-6: #34D399;
-  --role-7: #FB923C;
-  --role-8: #94A3B8;
+  --ds-accent:       oklch(0.66 0.16 var(--ds-accent-h));
+  --ds-accent-soft:  oklch(0.66 0.16 var(--ds-accent-h) / 0.18);
+  --ds-accent-faint: oklch(0.66 0.16 var(--ds-accent-h) / 0.08);
+  --ds-accent-ink:   oklch(0.99 0.003 80);
 
-  /* Role colors — RGB components (dark mode) */
-  --role-1-rgb: 45, 212, 191;
-  --role-2-rgb: 167, 139, 250;
-  --role-3-rgb: 251, 191, 36;
-  --role-4-rgb: 56, 189, 248;
-  --role-5-rgb: 251, 113, 133;
-  --role-6-rgb: 52, 211, 153;
-  --role-7-rgb: 251, 146, 60;
-  --role-8-rgb: 148, 163, 184;
+  --ds-c-amber:  oklch(0.66 0.16 78);
+  --ds-c-rose:   oklch(0.60 0.16 25);
+  --ds-c-violet: oklch(0.58 0.16 295);
+  --ds-c-sky:    oklch(0.60 0.13 230);
+  --ds-c-mint:   oklch(0.62 0.13 160);
+  --ds-c-sand:   oklch(0.60 0.07 60);
+
+  --ds-success:    oklch(0.60 0.15 150);
+  --ds-warning:    oklch(0.68 0.16 80);
+  --ds-danger:     oklch(0.58 0.18 25);
+
+  --ds-glow-color: oklch(0.78 0.14 var(--ds-accent-h) / 0.30);
+  --ds-glow-size:  420px;
+
+  --ds-shadow-sm:  0 1px 2px rgba(60, 45, 20, 0.06);
+  --ds-shadow-md:  0 6px 24px rgba(60, 45, 20, 0.08), 0 1px 2px rgba(60, 45, 20, 0.05);
+  --ds-shadow-lg:  0 16px 48px rgba(60, 45, 20, 0.12), 0 2px 6px rgba(60, 45, 20, 0.08);
+  --ds-window-shadow: 0 30px 90px rgba(60, 45, 20, 0.14);
+
+  --ds-hover-tint: oklch(0 0 0 / 0.04);
+  --ds-sunk-tint:  oklch(0 0 0 / 0.04);
+
+  /* brighter accent for light-bg hover */
+  --primary-hover: oklch(0.58 0.16 var(--ds-accent-h));
+
+  /* Role palette — darkened for light bg, hue preserved */
+  --role-1: oklch(0.66 0.16 78);    /* amber */
+  --role-2: oklch(0.58 0.16 295);   /* violet */
+  --role-3: oklch(0.60 0.16 25);    /* rose */
+  --role-4: oklch(0.60 0.13 230);   /* sky */
+  --role-5: oklch(0.62 0.13 160);   /* mint */
+  --role-6: oklch(0.60 0.07 60);    /* sand */
+  --role-7: oklch(0.60 0.13 195);   /* teal */
+  --role-8: oklch(0.58 0.16 330);   /* magenta */
 }
 
-/* Tailwind theme configuration - CSS-first approach for v4 */
+/* Tailwind theme bridge — CSS-first (v4). Utility names → --ds-* tokens.
+ * NOTE: a renamed/removed --ds-* token silently breaks its utility here
+ * (Tailwind v4 ignores unknown tokens with no error) — verify compiled CSS. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
+  --color-background: var(--ds-window);
+  --color-foreground: var(--ds-fg);
+  --color-foreground-faint: var(--ds-fg-faint);
 
-  /* Custom tokens exposed to Tailwind */
+  --color-card: var(--ds-panel);
+  --color-card-foreground: var(--ds-fg);
+  --color-card-hover: var(--ds-panel-2);
+
+  --color-primary: var(--ds-accent);
+  --color-primary-foreground: var(--ds-accent-ink);
   --color-primary-hover: var(--primary-hover);
-  --color-primary-soft: var(--primary-soft);
-  --color-primary-muted: var(--primary-muted);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-border-emphasis: var(--border-emphasis);
-  --color-today: var(--today);
+  --color-primary-soft: var(--ds-accent-soft);
+  --color-primary-muted: var(--ds-accent-faint);
+
+  --color-secondary: var(--ds-panel);
+  --color-secondary-foreground: var(--ds-fg-muted);
+
+  --color-muted: var(--ds-panel);
+  --color-muted-foreground: var(--ds-fg-dim);
+
+  --color-accent: var(--ds-panel-2);
+  --color-accent-foreground: var(--ds-fg);
+
+  --color-destructive: var(--ds-danger);
+  --color-destructive-foreground: var(--ds-fg);
+  --color-success: var(--ds-success);
+  --color-warning: var(--ds-warning);
+  --color-warning-soft: var(--ds-accent-faint);
+
+  --color-border: var(--ds-line);
+  --color-border-soft: var(--ds-line-soft);
+  --color-border-emphasis: var(--ds-line-strong);
+  --color-input: var(--ds-panel);
+  --color-ring: var(--ds-accent);
+
+  --color-sidebar: var(--ds-window);
+  --color-sidebar-foreground: var(--ds-fg);
+  --color-popover: var(--ds-overlay);
+  --color-popover-foreground: var(--ds-fg);
+  --color-today: var(--ds-accent-faint);
 
   /* Role colors */
   --color-role-1: var(--role-1);
@@ -216,21 +312,24 @@
   --color-role-8: var(--role-8);
 
   /* Radii */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-xs: var(--ds-r-xs);
+  --radius-sm: var(--ds-r-sm);
+  --radius-md: var(--ds-r-md);
+  --radius-lg: var(--ds-r-lg);
+  --radius-xl: var(--ds-r-xl);
+  --radius-full: var(--ds-r-pill);
 
   /* Typography scale (app-specific) */
   --text-label: 10px;   /* section labels, timestamps, day names */
-  --text-caption: 11px; /* secondary info, role hours, pie labels */
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --text-caption: 11px; /* secondary info, role hours, donut labels */
+  --font-sans: var(--ds-font-sans);
+  --font-mono: var(--ds-font-mono);
 
   /* Shadows */
-  --shadow-sm: var(--shadow-sm);
-  --shadow-md: var(--shadow-md);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
-  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.10), 0 4px 8px rgba(0, 0, 0, 0.04);
+  --shadow-sm: var(--ds-shadow-sm);
+  --shadow-md: var(--ds-shadow-md);
+  --shadow-lg: var(--ds-shadow-lg);
+  --shadow-xl: var(--ds-window-shadow);
 }
 
 /* Base styles */
@@ -239,9 +338,28 @@
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
+  /* The window floats on the darker stage; the glow bleeds up behind it. */
+  background-color: var(--ds-stage);
+  color: var(--ds-fg);
+  font-family: var(--ds-font-sans);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── Signature amber glow (fixed, behind the window) ──────────── */
+body::before {
+  content: "";
+  position: fixed;
+  left: 50%;
+  bottom: -180px;
+  transform: translateX(-50%);
+  width: min(1400px, 95vw);
+  height: var(--ds-glow-size);
+  background: radial-gradient(50% 60% at 50% 100%, var(--ds-glow-color) 0%, transparent 75%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* Focus visible styles for accessibility */
@@ -262,8 +380,8 @@ body {
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -271,12 +389,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--muted-foreground);
+  background: var(--ds-line);
   border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--secondary-foreground);
+  background: var(--ds-line-strong);
 }
 
 /* Reduced motion */
@@ -291,7 +409,7 @@ body {
 
 /* Dialog backdrop */
 dialog::backdrop {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(4px);
 }
 /*
@@ -301,10 +419,10 @@ dialog::backdrop {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
+  }
+  body {
+    @apply text-foreground;
   }
 }

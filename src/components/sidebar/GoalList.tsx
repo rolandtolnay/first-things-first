@@ -4,16 +4,14 @@ import { useMemo, useRef, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
 import { GoalItem } from "./GoalItem";
-import type { RoleColor } from "@/types";
 
 interface GoalListProps {
   roleId: string;
-  roleColor: RoleColor;
   addingGoal?: boolean;
   onAddingGoalDone?: () => void;
 }
 
-export function GoalList({ roleId, roleColor, addingGoal, onAddingGoalDone }: GoalListProps) {
+export function GoalList({ roleId, addingGoal, onAddingGoalDone }: GoalListProps) {
   const currentWeek = useWeekStore((state) => state.currentWeek);
   const addGoal = useWeekStore((state) => state.addGoal);
   const [inputValue, setInputValue] = useState("");
@@ -55,9 +53,9 @@ export function GoalList({ roleId, roleColor, addingGoal, onAddingGoalDone }: Go
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-0.5">
       {goals.map((goal) => (
-        <GoalItem key={goal.id} goal={goal} roleColor={roleColor} />
+        <GoalItem key={goal.id} goal={goal} />
       ))}
 
       {addingGoal && (
@@ -68,8 +66,8 @@ export function GoalList({ roleId, roleColor, addingGoal, onAddingGoalDone }: Go
           onChange={(e) => setInputValue(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          placeholder="Goal text..."
-          className="font-medium text-foreground"
+          placeholder="New goal…"
+          className="text-[12px] text-foreground"
           aria-label="New goal text"
         />
       )}

@@ -1,48 +1,76 @@
 "use client";
 
-import { EVENING_SECTION_HEIGHT, PRIORITIES_SECTION_HEIGHT, TIME_LABELS_WIDTH } from "@/lib/constants";
-import { TOTAL_SLOTS, slotIsHourStart, slotToHourLabel } from "@/lib/time-model";
+import {
+  EVENING_SECTION_HEIGHT,
+  HEADER_HEIGHT,
+  PRIORITIES_SECTION_HEIGHT,
+  TIME_LABELS_WIDTH,
+} from "@/lib/constants";
+import {
+  TOTAL_SLOTS,
+  SLOT_HEIGHT,
+  slotIsHourStart,
+  slotToHourLabel,
+  slotToPixels,
+} from "@/lib/time-model";
 
 export function TimeLabelsColumn() {
-  const slots = Array.from({ length: TOTAL_SLOTS }, (_, i) => i);
+  // Only hour-start slots carry a label; positioned absolutely against the grid
+  // so they stay in lockstep with the day-column hour lines at 16px density.
+  const hourSlots = Array.from({ length: TOTAL_SLOTS }, (_, i) => i).filter(
+    slotIsHourStart
+  );
 
   return (
-    <div className="flex-shrink-0 flex flex-col" style={{ width: `${TIME_LABELS_WIDTH}px` }}>
-      {/* Header spacer */}
-      <div className="sticky top-0 z-10 bg-card h-[56px]" />
-
-      {/* TOP label */}
+    <div
+      className="flex-shrink-0 sticky left-0 z-20 flex flex-col"
+      style={{
+        width: `${TIME_LABELS_WIDTH}px`,
+        backgroundColor: "var(--ds-window)",
+        borderRight: "1px solid var(--ds-line)",
+      }}
+    >
+      {/* Header spacer — matches the day-column header height */}
       <div
-        className="flex items-start justify-end pr-2 pt-2 text-label font-bold tracking-[0.06em] text-muted-foreground uppercase"
+        className="border-b border-border"
+        style={{ height: `${HEADER_HEIGHT}px` }}
+      />
+
+      {/* Priorities spacer */}
+      <div
+        className="border-b border-border"
         style={{ height: `${PRIORITIES_SECTION_HEIGHT}px` }}
+      />
+
+      {/* Time labels — absolutely positioned over a slot-height grid */}
+      <div
+        className="relative flex-1"
+        style={{ minHeight: `${TOTAL_SLOTS * SLOT_HEIGHT}px` }}
       >
-        TOP
-      </div>
-
-      {/* Time labels */}
-      <div className="flex-1">
-        {slots.map((slotIndex) => {
-          const isHourStart = slotIsHourStart(slotIndex);
+        {hourSlots.map((slotIndex) => {
           const hour = slotToHourLabel(slotIndex);
-
           return (
             <div
               key={slotIndex}
-              className="h-7 flex items-start justify-end pr-2 text-label font-medium text-muted-foreground tabular-nums"
+              className="absolute flex items-baseline gap-px font-mono text-[10px] tabular-nums"
+              style={{ top: `${slotToPixels(slotIndex) - 6}px`, right: 6 }}
             >
-              {isHourStart && `${hour}:00`}
+              <span className="text-muted-foreground">
+                {String(hour).padStart(2, "0")}
+              </span>
+              <span style={{ color: "var(--ds-fg-dim)" }}>:00</span>
             </div>
           );
         })}
       </div>
 
-      {/* EVE label */}
+      {/* Evening spacer */}
       <div
-        className="flex items-start justify-end pr-2 pt-2 text-label font-semibold tracking-[0.04em] text-muted-foreground uppercase"
-        style={{ height: `${EVENING_SECTION_HEIGHT}px` }}
-      >
-        EVE
-      </div>
+        style={{
+          height: `${EVENING_SECTION_HEIGHT}px`,
+          borderTop: "1px solid var(--ds-line)",
+        }}
+      />
     </div>
   );
 }
