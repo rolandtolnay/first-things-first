@@ -67,3 +67,50 @@ The one shared aggregation of planned/completed hours per role:
 totalCompleted }`. Time blocks weigh `slotsToHours(duration)`; evening blocks weigh
 `EVENING_BLOCK_HOURS`. Consumed by `useRoleHours` (sidebar Weekly Balance) and the
 per-role "Xh planned" figure in `RoleSection`.
+
+## UI Vocabulary — Dark Workspace redesign
+
+The redesign re-skins the app onto the **Dark Workspace Kit** aesthetic. The kit's
+HTML/React prototype lives in `design/` and is the executable reference; it uses its
+own term set (`ds-*` / `ftf-*`) that does **not** ship to production. These are the
+canonical production names; the prototype aliases are listed so future agents don't
+introduce duplicates.
+
+**Donut**:
+The SVG progress ring showing completed-of-total (day header completion, Weekly
+Balance total). The existing `PieChart` component IS the Donut — restyled, not
+replaced.
+_Avoid_: PieChart (legacy name, kept only as the filename until renamed), ProgressRing.
+
+**Section Label**:
+A monospaced UPPERCASE micro-label that separates sections by whitespace and a single
+hairline ("WEEK METRICS", "ROLES & GOALS"). The signature type rhythm of the kit.
+_Avoid_: heading, title, header (those imply a heavier visual treatment).
+
+**Window Chrome**:
+The top bar of the app window (menu/settings left, decorative traffic-light buttons
+right). Purely presentational framing; the traffic lights do nothing.
+
+**Rail**:
+The right column (304px) holding Week Metrics and Daily Streak. Distinct from the
+**Sidebar** (left, 296px, Weekly Balance + Roles & Goals).
+_Avoid_: panel, aside (ambiguous — both columns are asides).
+
+**Free block**:
+A time block with no linked goal (`type: "freestyle"`, `goalId` undefined). Rendered
+with a dashed border. The codebase term is **freestyle**; the prototype calls the same
+thing "free". Use **freestyle** in code, "free" only in user-facing labels if needed.
+_Avoid_: manual block, custom block.
+
+**Accent**:
+The single brand color (amber by default), driven by the `--ds-accent-h` hue token so
+it can be re-themed wholesale. Only the accent is ever a filled color; everything else
+is hairline-bordered.
+
+## Flagged ambiguities
+
+- "Donut" vs "PieChart" — same component; **Donut** is canonical, `PieChart` is the
+  current filename pending rename.
+- "free" vs "freestyle" block — same concept; **freestyle** is canonical in code.
+- "Daily Streak" counts a day complete only when **all** its day-priorities are done
+  and the day has ≥1 priority; the grid is current-week only (no cross-week rolling).
