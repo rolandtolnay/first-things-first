@@ -68,6 +68,19 @@ totalCompleted }`. Time blocks weigh `slotsToHours(duration)`; evening blocks we
 `EVENING_BLOCK_HOURS`. Consumed by `useRoleHours` (sidebar Weekly Balance) and the
 per-role "Xh planned" figure in `RoleSection`.
 
+## Identity & Ownership — Supabase auth
+
+Planning data is no longer global to a browser; it belongs to a person.
+
+- **User** — an authenticated person who owns their planning data. Identified by
+  email; one User per account.
+- **Session** — the authenticated state proving who the current User is. It
+  persists across visits, so a User signs in rarely, not every visit.
+
+A **User** owns many **Weeks**; every Week — and the Roles, Goals, Day Priorities,
+and blocks nested in it — is private to exactly one User. There is no sharing or
+collaboration: ownership is exclusive.
+
 ## UI Vocabulary — Dark Workspace redesign
 
 The redesign re-skins the app onto the **Dark Workspace Kit** aesthetic. The kit's
