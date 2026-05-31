@@ -24,10 +24,10 @@ type DbWeekInsert = Database["public"]["Tables"]["weeks"]["Insert"];
 export type WeekRow = Omit<DbWeekRow, "data"> & { data: Week };
 
 /** Insert/upsert payload. `user_id` is supplied by the authenticated client when writing. */
-export type WeekInsert = Omit<DbWeekInsert, "data"> & { data: Json };
+export type WeekInsert = Omit<DbWeekInsert, "data" | "user_id"> & { data: Json; user_id: string };
 
-/** Project a Week onto a `weeks` upsert payload. */
-export function weekToRow(week: Week, userId?: string): WeekInsert {
+/** Project a Week and its authenticated owner onto a `weeks` upsert payload. */
+export function weekToRow(week: Week, userId: string): WeekInsert {
   return {
     id: week.id,
     user_id: userId,

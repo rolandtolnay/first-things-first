@@ -51,7 +51,7 @@ function makeWeek(): Week {
 }
 
 describe("weekToRow", () => {
-  it("promotes id, optional owner, and timestamps verbatim", () => {
+  it("promotes id, required owner, and timestamps verbatim", () => {
     const week = makeWeek();
     const row = weekToRow(week, USER_ID);
 
@@ -61,18 +61,14 @@ describe("weekToRow", () => {
     expect(row.updated_at).toBe(week.updatedAt);
   });
 
-  it("omits ownership when no user id is supplied", () => {
-    expect(weekToRow(makeWeek()).user_id).toBeUndefined();
-  });
-
   it("promotes start_date as a plain date (drops the time component)", () => {
-    const row = weekToRow(makeWeek());
+    const row = weekToRow(makeWeek(), USER_ID);
     expect(row.start_date).toBe("2026-05-18");
   });
 
   it("carries the whole snapshot into data untouched", () => {
     const week = makeWeek();
-    const row = weekToRow(week);
+    const row = weekToRow(week, USER_ID);
     expect(row.data).toEqual(week);
   });
 });
@@ -80,7 +76,7 @@ describe("weekToRow", () => {
 describe("rowToWeek", () => {
   it("reconstructs the Week from the snapshot, keeping the id from the column", () => {
     const week = makeWeek();
-    const row: WeekRow = { ...weekToRow(week), user_id: USER_ID, data: week };
+    const row: WeekRow = { ...weekToRow(week, USER_ID), data: week };
     expect(rowToWeek(row)).toEqual(week);
   });
 });
@@ -88,7 +84,7 @@ describe("rowToWeek", () => {
 describe("round-trip fidelity", () => {
   it("rowToWeek(weekToRow(w)) reconstructs w exactly with an owner", () => {
     const week = makeWeek();
-    expect(rowToWeek({ ...weekToRow(week), user_id: USER_ID, data: week })).toEqual(week);
+    expect(rowToWeek({ ...weekToRow(week, USER_ID), data: week })).toEqual(week);
   });
 
   it("preserves an empty Week (no roles/goals/blocks)", () => {
@@ -100,6 +96,6 @@ describe("round-trip fidelity", () => {
       timeBlocks: [],
       eveningBlocks: [],
     };
-    expect(rowToWeek({ ...weekToRow(empty), user_id: USER_ID, data: empty })).toEqual(empty);
+    expect(rowToWeek({ ...weekToRow(empty, USER_ID), data: empty })).toEqual(empty);
   });
 });
