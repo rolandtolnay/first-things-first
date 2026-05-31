@@ -6,6 +6,7 @@ import { MailCheck } from "lucide-react";
 import { AppWindow } from "@/components/layout/AppWindow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TextActionButton } from "@/components/ui/TextActionButton";
 import { parseReturnPath } from "@/lib/auth-redirects";
 import { createClient } from "@/lib/supabase/client";
 
@@ -94,16 +95,15 @@ export default function LoginPage() {
                 <span className="text-secondary-foreground">{email.trim()}</span>.
                 Click it to sign in.
               </p>
-              <Button
-                variant="link"
-                className="h-auto p-0 text-caption"
+              <TextActionButton
+                className="mt-1"
                 onClick={() => {
                   setStatus("entry");
                   setErrorMessage(null);
                 }}
               >
                 Use a different email
-              </Button>
+              </TextActionButton>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
