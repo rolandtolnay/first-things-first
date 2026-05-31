@@ -3,8 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/providers/AuthProvider";
-import { DndProvider } from "@/components/dnd";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -45,11 +43,7 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased">
         <ThemeProvider>
-          <TooltipProvider>
-            <DndProvider>
-              <AuthProvider>{children}</AuthProvider>
-            </DndProvider>
-          </TooltipProvider>
+          <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
       </body>
     </html>
