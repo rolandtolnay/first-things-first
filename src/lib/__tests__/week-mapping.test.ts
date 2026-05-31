@@ -51,14 +51,18 @@ function makeWeek(): Week {
 }
 
 describe("weekToRow", () => {
-  it("promotes id and timestamps verbatim while leaving ownership to the database", () => {
+  it("promotes id, optional owner, and timestamps verbatim", () => {
     const week = makeWeek();
-    const row = weekToRow(week);
+    const row = weekToRow(week, USER_ID);
 
     expect(row.id).toBe("2026-W21");
-    expect(row.user_id).toBeUndefined();
+    expect(row.user_id).toBe(USER_ID);
     expect(row.created_at).toBe(week.createdAt);
     expect(row.updated_at).toBe(week.updatedAt);
+  });
+
+  it("omits ownership when no user id is supplied", () => {
+    expect(weekToRow(makeWeek()).user_id).toBeUndefined();
   });
 
   it("promotes start_date as a plain date (drops the time component)", () => {
@@ -82,7 +86,7 @@ describe("rowToWeek", () => {
 });
 
 describe("round-trip fidelity", () => {
-  it("rowToWeek(weekToRow(w)) reconstructs w exactly once the database stamps owner", () => {
+  it("rowToWeek(weekToRow(w)) reconstructs w exactly with an owner", () => {
     const week = makeWeek();
     expect(rowToWeek({ ...weekToRow(week), user_id: USER_ID, data: week })).toEqual(week);
   });

@@ -2,11 +2,13 @@
  * Pure mapping between a `weeks` row and a `Week`.
  *
  * The row promotes only the columns needed for ownership, filtering, and sorting
- * (`id`, `user_id`, `start_date`, `created_at`, `updated_at`); insert payloads
- * omit `user_id` so the database stamps ownership from `auth.uid()`. The whole Week
+ * (`id`, `user_id`, `start_date`, `created_at`, `updated_at`); write payloads
+ * include `user_id` from the authenticated Session. The whole Week
  * snapshot is carried verbatim in `data` (ADR-0004). Because `data` IS the
  * snapshot, the reverse mapping reads straight from it — the promoted columns
- * are derived projections, never a second source of truth.
+ * are derived projections, never a second source of truth. Writes may include
+ * `user_id` as the authenticated owner hint required for PostgREST composite-key
+ * upserts; RLS still enforces that it matches `auth.uid()`.
  *
  * No Supabase imports here on purpose: this is the isolation-testable core, and
  * the adapter in `db.ts` is the thin I/O around it.
@@ -21,13 +23,14 @@ type DbWeekInsert = Database["public"]["Tables"]["weeks"]["Insert"];
 /** App-facing interpretation of a `public.weeks` row. */
 export type WeekRow = Omit<DbWeekRow, "data"> & { data: Week };
 
-/** Insert/upsert payload. `user_id` is defaulted by Postgres from `auth.uid()`. */
+/** Insert/upsert payload. `user_id` is supplied by the authenticated client when writing. */
 export type WeekInsert = Omit<DbWeekInsert, "data"> & { data: Json };
 
-/** Project a Week onto a `weeks` upsert payload; ownership is stamped by the DB. */
-export function weekToRow(week: Week): WeekInsert {
+/** Project a Week onto a `weeks` upsert payload. */
+export function weekToRow(week: Week, userId?: string): WeekInsert {
   return {
     id: week.id,
+    user_id: userId,
     // `startDate` is an ISO datetime at UTC midnight; the column is a plain date.
     start_date: week.startDate.slice(0, 10),
     data: week as unknown as Json,

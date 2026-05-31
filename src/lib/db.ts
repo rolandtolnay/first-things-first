@@ -3,7 +3,8 @@
  *
  * The browser talks to Supabase directly; Row Level Security (`auth.uid() =
  * user_id`) is the access boundary, so reads are auto-scoped to the signed-in
- * user and writes let Postgres default `user_id` from `auth.uid()` (ADR-0003).
+ * user and writes include the authenticated `user_id` so PostgREST can target
+ * the per-user composite key while RLS still verifies ownership (ADR-0003).
  * Each Week is a JSONB document — the row mapping lives in `week-mapping.ts`
  * (ADR-0004).
  *
@@ -24,6 +25,18 @@ interface DbRequestOptions {
 /** The shared browser client (createBrowserClient memoizes per env). */
 function client() {
   return createClient();
+}
+
+async function currentUserId(): Promise<string> {
+  const supabase = client();
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+
+  if (error) throw error;
+  if (!session?.user.id) throw new Error("You are not signed in");
+  return session.user.id;
 }
 
 /**
@@ -49,9 +62,10 @@ export async function saveWeek(
   week: Week,
   options: DbRequestOptions = {},
 ): Promise<WeekId> {
+  const userId = await currentUserId();
   const baseQuery = client()
     .from(TABLE)
-    .upsert(weekToRow(week), { onConflict: "user_id,id" });
+    .upsert(weekToRow(week, userId), { onConflict: "user_id,id" });
   const query = options.signal
     ? baseQuery.abortSignal(options.signal)
     : baseQuery;
