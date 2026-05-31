@@ -62,6 +62,10 @@ describe("clampStartToFitDuration", () => {
     expect(clampStartToFitDuration(23, 2)).toBe(22);
     expect(clampStartToFitDuration(23, 6)).toBe(18);
   });
+
+  it("uses the canonical maximum block duration when fitting starts", () => {
+    expect(clampStartToFitDuration(23, 24)).toBe(8);
+  });
 });
 
 // ============================================================================
@@ -128,6 +132,14 @@ describe("resolveNewPlacement", () => {
       duration: 3,
     });
   });
+
+  it("clamps oversized requested durations with the canonical block maximum", () => {
+    expect(resolveNewPlacement(23, [], 24)).toEqual({
+      ok: true,
+      startSlot: 8,
+      duration: 16,
+    });
+  });
 });
 
 // ============================================================================
@@ -168,6 +180,13 @@ describe("resolveMovePlacement", () => {
       ok: true,
       startSlot: 18,
       duration: 6,
+    });
+  });
+
+  it("rejects invalid existing durations instead of silently normalizing them", () => {
+    expect(resolveMovePlacement(0, 24, [], "self")).toEqual({
+      ok: false,
+      reason: "out-of-range",
     });
   });
 });

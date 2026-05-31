@@ -25,12 +25,17 @@ import type {
   TimeSlotIndex,
   DayPriority,
   EveningBlock,
+  TimeBlock,
+  Role,
+  RoleColor,
   CreateDayPriorityInput,
   CreateTimeBlockInput,
   CreateEveningBlockInput,
 } from "@/types";
 import type { DragData, DropZoneData } from "@/types/dnd";
 import { MAX_PRIORITIES_PER_DAY } from "@/lib/constants";
+import { DEFAULT_BLOCK_SLOTS } from "@/lib/time-model";
+import { resolveMovePlacement, resolveNewPlacement } from "@/lib/scheduling";
 
 // ============================================================================
 // Intent — a resolved drop expressed as plain data
@@ -57,6 +62,17 @@ export type DropIntent =
 interface DropSnapshot {
   dayPriorities: DayPriority[];
   eveningBlocks: EveningBlock[];
+}
+
+export interface TimeGridDropPreview {
+  startSlot: number;
+  duration: number;
+  roleColor?: RoleColor;
+}
+
+interface TimeGridDropPreviewSnapshot {
+  timeBlocks: TimeBlock[];
+  roles: Role[];
 }
 
 // ============================================================================
@@ -169,6 +185,80 @@ export function resolveDrop(
       }
       return null;
     }
+  }
+
+  return null;
+}
+
+function roleColorForId(roles: Role[], roleId: string | undefined): RoleColor | undefined {
+  return roleId ? roles.find((role) => role.id === roleId)?.color : undefined;
+}
+
+function previewRoleId(intent: DropIntent, dragData: DragData): string | undefined {
+  if (intent.action === "moveTimeBlock") return undefined;
+  if (intent.action === "placeTimeBlockAt") return intent.input.roleId;
+  if (dragData.type === "priority" || dragData.type === "evening") return dragData.roleId;
+  return undefined;
+}
+
+/**
+ * Resolve the visual placement preview for a drop over a TimeGrid by reusing the
+ * canonical drop intent and scheduling placement rules. Returns `null` when the
+ * current drag/drop pair would not commit a time-grid placement.
+ */
+export function resolveTimeGridDropPreview(
+  dragData: DragData | undefined,
+  dropData: DropZoneData | undefined,
+  dayIndex: DayOfWeek,
+  snapshot: TimeGridDropPreviewSnapshot
+): TimeGridDropPreview | null {
+  if (!dragData || !dropData) return null;
+  if (dropData.zone !== "timegrid" || dropData.dayIndex !== dayIndex) return null;
+
+  const intent = resolveDrop(dragData, dropData, {
+    dayPriorities: [],
+    eveningBlocks: [],
+  });
+  if (!intent) return null;
+
+  const dayBlocks = snapshot.timeBlocks.filter((block) => block.dayIndex === dayIndex);
+
+  if (intent.action === "moveTimeBlock") {
+    const block = snapshot.timeBlocks.find((candidate) => candidate.id === intent.blockId);
+    if (!block) return null;
+
+    const placement = resolveMovePlacement(
+      intent.slotIndex,
+      block.duration,
+      dayBlocks,
+      block.id
+    );
+    return placement.ok
+      ? {
+          startSlot: placement.startSlot,
+          duration: placement.duration,
+          roleColor: roleColorForId(snapshot.roles, block.roleId),
+        }
+      : null;
+  }
+
+  if (
+    intent.action === "placeTimeBlockAt" ||
+    intent.action === "convertPriorityToBlock" ||
+    intent.action === "moveEveningToBlock"
+  ) {
+    const placement = resolveNewPlacement(
+      intent.slotIndex,
+      dayBlocks,
+      DEFAULT_BLOCK_SLOTS
+    );
+    return placement.ok
+      ? {
+          startSlot: placement.startSlot,
+          duration: placement.duration,
+          roleColor: roleColorForId(snapshot.roles, previewRoleId(intent, dragData)),
+        }
+      : null;
   }
 
   return null;

@@ -11,13 +11,13 @@
 
 import { useMemo } from "react";
 import { useDndContext } from "@dnd-kit/core";
-import type { Role, RoleColor, TimeBlock as TimeBlockType, TimeSlotIndex, DayOfWeek } from "@/types";
+import type { TimeSlotIndex, DayOfWeek } from "@/types";
 import type { DragData, DropZoneData } from "@/types/dnd";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockDraw } from "@/hooks/useBlockDraw";
-import { DEFAULT_BLOCK_SLOTS, TOTAL_SLOTS, TIME_GRID_HEIGHT, slotToPixels, durationToPixels } from "@/lib/time-model";
+import { TOTAL_SLOTS, TIME_GRID_HEIGHT, slotToPixels, durationToPixels } from "@/lib/time-model";
 import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
-import { resolveMovePlacement, resolveNewPlacement } from "@/lib/scheduling";
+import { resolveTimeGridDropPreview } from "@/lib/drop-routing";
 import { TimeSlot } from "./TimeSlot";
 import { TimeBlock } from "./TimeBlock";
 import { CurrentTimeIndicator } from "./CurrentTimeIndicator";
@@ -29,65 +29,6 @@ interface TimeGridProps {
 
 // 24 slots: 0-23 representing 8:00-19:30. Constant — hoisted out of render.
 const SLOTS = Array.from({ length: TOTAL_SLOTS }, (_, i) => i as TimeSlotIndex);
-
-interface TimeGridDropPreview {
-  startSlot: number;
-  duration: number;
-  roleColor?: RoleColor;
-}
-
-function roleColorForId(roles: Role[], roleId: string | undefined): RoleColor | undefined {
-  return roleId ? roles.find((role) => role.id === roleId)?.color : undefined;
-}
-
-function resolveTimeGridDropPreview(
-  dragData: DragData | undefined,
-  dropData: DropZoneData | undefined,
-  dayIndex: DayOfWeek,
-  dayBlocks: TimeBlockType[],
-  allBlocks: TimeBlockType[],
-  roles: Role[]
-): TimeGridDropPreview | null {
-  if (!dragData || !dropData) return null;
-  if (dropData.zone !== "timegrid" || dropData.dayIndex !== dayIndex) return null;
-  if (dropData.slotIndex === undefined) return null;
-
-  if (dragData.type === "block") {
-    const block = allBlocks.find((candidate) => candidate.id === dragData.blockId);
-    if (!block) return null;
-
-    const placement = resolveMovePlacement(
-      dropData.slotIndex,
-      block.duration,
-      dayBlocks,
-      block.id
-    );
-    return placement.ok
-      ? {
-          startSlot: placement.startSlot,
-          duration: placement.duration,
-          roleColor: roleColorForId(roles, block.roleId),
-        }
-      : null;
-  }
-
-  if (dragData.type === "goal" || dragData.type === "priority" || dragData.type === "evening") {
-    const placement = resolveNewPlacement(
-      dropData.slotIndex,
-      dayBlocks,
-      DEFAULT_BLOCK_SLOTS
-    );
-    return placement.ok
-      ? {
-          startSlot: placement.startSlot,
-          duration: placement.duration,
-          roleColor: roleColorForId(roles, dragData.roleId),
-        }
-      : null;
-  }
-
-  return null;
-}
 
 export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
   // Get raw time blocks from store (stable reference)
@@ -107,11 +48,9 @@ export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
         active?.data.current as DragData | undefined,
         over?.data.current as DropZoneData | undefined,
         dayIndex,
-        blocks,
-        timeBlocks ?? [],
-        roles ?? []
+        { timeBlocks: timeBlocks ?? [], roles: roles ?? [] }
       ),
-    [active, over, dayIndex, blocks, timeBlocks, roles]
+    [active, over, dayIndex, timeBlocks, roles]
   );
 
   // Click-drag-draw hook for freestyle block creation

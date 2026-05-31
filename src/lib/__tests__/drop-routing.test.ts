@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
-import { resolveDrop, dispatchDropIntent, type DropActions } from "@/lib/drop-routing";
+import {
+  resolveDrop,
+  resolveTimeGridDropPreview,
+  dispatchDropIntent,
+  type DropActions,
+} from "@/lib/drop-routing";
 import { MAX_PRIORITIES_PER_DAY } from "@/lib/constants";
 import type {
   GoalDragData,
@@ -8,7 +13,7 @@ import type {
   EveningDragData,
   DropZoneData,
 } from "@/types/dnd";
-import type { DayPriority, EveningBlock } from "@/types";
+import type { DayPriority, EveningBlock, Role, TimeBlock } from "@/types";
 
 // ============================================================================
 // Fixtures
@@ -51,6 +56,22 @@ function fullPriorities(dayIndex: number): DayPriority[] {
     completed: false,
   }));
 }
+
+function timeBlock(id: string, startSlot: number, duration: number, roleId = "role-1"): TimeBlock {
+  return {
+    id,
+    type: "goal",
+    goalId: "goal-1",
+    roleId,
+    dayIndex: TARGET_DAY,
+    startSlot: startSlot as TimeBlock["startSlot"],
+    duration,
+    title: "Ship",
+    completed: false,
+  };
+}
+
+const roles: Role[] = [{ id: "role-1", name: "Work", color: "teal", order: 0 }];
 
 // ============================================================================
 // The 12-route table on a free snapshot (object equality)
@@ -236,6 +257,39 @@ describe("resolveDrop — timegrid slot guard", () => {
     expect(resolveDrop(priorityDrag, noSlot, free)).toBeNull();
     expect(resolveDrop(eveningDrag, noSlot, free)).toBeNull();
     expect(resolveDrop(goalDrag, noSlot, free)).toBeNull();
+  });
+});
+
+// ============================================================================
+// resolveTimeGridDropPreview — canonical intent + scheduling preview
+// ============================================================================
+
+describe("resolveTimeGridDropPreview", () => {
+  it("previews a goal drop using the canonical new-placement policy", () => {
+    expect(
+      resolveTimeGridDropPreview(goalDrag, { ...timegridZone, slotIndex: 23 }, TARGET_DAY, {
+        timeBlocks: [],
+        roles,
+      })
+    ).toEqual({ startSlot: 22, duration: 2, roleColor: "teal" });
+  });
+
+  it("previews a block move using the existing block duration and role color", () => {
+    expect(
+      resolveTimeGridDropPreview(blockDrag, { ...timegridZone, slotIndex: 23 }, TARGET_DAY, {
+        timeBlocks: [timeBlock("block-1", 0, 6)],
+        roles,
+      })
+    ).toEqual({ startSlot: 18, duration: 6, roleColor: "teal" });
+  });
+
+  it("returns null when the canonical drop route is not a time-grid placement", () => {
+    expect(
+      resolveTimeGridDropPreview(goalDrag, prioritiesZone, TARGET_DAY, {
+        timeBlocks: [],
+        roles,
+      })
+    ).toBeNull();
   });
 });
 

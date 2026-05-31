@@ -11,7 +11,13 @@
 
 import type { TimeBlock } from "@/types";
 import { hasOverlap, getClampedDuration } from "./overlap";
-import { DEFAULT_BLOCK_SLOTS, MIN_BLOCK_SLOTS, MAX_SLOT_INDEX, TOTAL_SLOTS } from "./time-model";
+import {
+  DEFAULT_BLOCK_SLOTS,
+  MAX_BLOCK_SLOTS,
+  MIN_BLOCK_SLOTS,
+  MAX_SLOT_INDEX,
+  TOTAL_SLOTS,
+} from "./time-model";
 
 /** Outcome of a placement decision for a new block or a move. */
 export type PlacementResult =
@@ -30,9 +36,13 @@ export function canStartAt(
   return !hasOverlap(startSlot, startSlot + 1, dayBlocks, excludeId);
 }
 
+function clampPlacementDuration(duration: number): number {
+  return Math.max(1, Math.min(duration, MAX_BLOCK_SLOTS));
+}
+
 /** Clamp a requested start upward when needed so the full duration fits in the Day. */
 export function clampStartToFitDuration(startSlot: number, duration: number): number {
-  const fittedDuration = Math.max(1, Math.min(duration, TOTAL_SLOTS));
+  const fittedDuration = clampPlacementDuration(duration);
   const maxStart = TOTAL_SLOTS - fittedDuration;
   return Math.min(startSlot, maxStart);
 }
@@ -52,7 +62,7 @@ export function resolveNewPlacement(
     return { ok: false, reason: "out-of-range" };
   }
 
-  const requestedDuration = Math.max(1, Math.min(requested, TOTAL_SLOTS));
+  const requestedDuration = clampPlacementDuration(requested);
   const fittedStart = clampStartToFitDuration(startSlot, requestedDuration);
 
   if (!canStartAt(fittedStart, dayBlocks)) {
@@ -80,13 +90,16 @@ export function resolveMovePlacement(
     return { ok: false, reason: "out-of-range" };
   }
 
-  const fittedDuration = Math.max(1, Math.min(duration, TOTAL_SLOTS));
-  const fittedStart = clampStartToFitDuration(startSlot, fittedDuration);
+  if (duration < 1 || duration > MAX_BLOCK_SLOTS) {
+    return { ok: false, reason: "out-of-range" };
+  }
 
-  if (hasOverlap(fittedStart, fittedStart + fittedDuration, dayBlocks, excludeId)) {
+  const fittedStart = clampStartToFitDuration(startSlot, duration);
+
+  if (hasOverlap(fittedStart, fittedStart + duration, dayBlocks, excludeId)) {
     return { ok: false, reason: "occupied" };
   }
-  return { ok: true, startSlot: fittedStart, duration: fittedDuration };
+  return { ok: true, startSlot: fittedStart, duration };
 }
 
 /** Clamp a resize request to free space (excluding self). Always succeeds. */
