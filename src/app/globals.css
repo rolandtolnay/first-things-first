@@ -397,6 +397,24 @@ body::before {
   background: var(--ds-line-strong);
 }
 
+@keyframes goal-complete-flash {
+  0%,
+  45% {
+    background-color: color-mix(in oklab, var(--goal-role-color), transparent 74%);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--goal-role-color), transparent 62%);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .goal-complete-reward {
+    animation: goal-complete-flash 650ms var(--ds-ease);
+  }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,

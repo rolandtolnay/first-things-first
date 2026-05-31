@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { TextActionButton } from "@/components/ui/TextActionButton";
 import { useWeekStore } from "@/stores/weekStore";
 import { getNextRoleColor } from "@/stores/weekStore";
-import { getRoleColorStyle } from "@/lib/role-colors";
+import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 
 interface AddRoleButtonProps {
   /** Controlled "currently adding" state, owned by RoleList. */
@@ -75,9 +75,10 @@ export function AddRoleButton({
   if (isAdding) {
     return (
       <div
-        className="flex flex-col rounded-[var(--ds-r-sm)] border border-[var(--ds-line-soft)] bg-card px-3 py-2.5"
+        className="flex flex-col rounded-[var(--ds-r-sm)] border border-[var(--ds-line-soft)] px-3 py-3"
         style={{
-          borderLeft: `2px solid ${getRoleColorStyle(previewColor)}`,
+          background: `linear-gradient(180deg, ${getRoleColorStyleWithOpacity(previewColor, 0.055)}, transparent 52px), var(--card)`,
+          boxShadow: `inset 0 1px 0 ${getRoleColorStyleWithOpacity(previewColor, 0.12)}`,
         }}
       >
         <div className="flex items-center gap-2">

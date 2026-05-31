@@ -35,6 +35,7 @@ Hover-revealed card menus are fragile across Chrome/Safari and easy to regress. 
 - Keep touch targets larger than the visible icon. A `32px` trigger worked well for the role-card menu while preserving the compact visual design.
 - For Radix dropdowns whose trigger is hover-revealed, handle `onCloseAutoFocus`: prevent default focus restoration and blur the trigger after pointer/touch dismissal. Otherwise Safari/Chrome can leave a visible focus ring around the hidden trigger or the duration slot after the menu closes.
 - Verify the full loop, not just the open state: rest → hover/tap → open menu → dismiss with Escape/outside click → move pointer away. Also check Safari when this interaction changes.
+- Avoid hover-revealed in-flow rows inside cards, such as showing `+ ADD GOAL` only while hovering a non-empty role. Safari can keep these visible after pointer exit. Prefer always-visible empty-state actions, menu actions, or fixed/absolute hover controls that do not change the card's layout.
 
 ## Tailwind v4 Custom Theme Tokens
 

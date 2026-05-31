@@ -5,7 +5,7 @@ import { MoreVertical, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
 import { slotsToHours, EVENING_BLOCK_HOURS } from "@/lib/time-model";
-import { getRoleColorStyle } from "@/lib/role-colors";
+import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import { useEditableText } from "@/hooks/useEditableText";
 import { Button } from "@/components/ui/button";
 import {
@@ -105,8 +105,11 @@ export function RoleSection({ role }: RoleSectionProps) {
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
-          className="group/role flex flex-col rounded-[var(--ds-r-sm)] border border-[var(--ds-line-soft)] bg-card px-3 py-2.5 transition-colors hover:border-[var(--ds-line)]"
-          style={{ borderLeft: `2px solid ${getRoleColorStyle(role.color)}` }}
+          className="group/role flex flex-col rounded-[var(--ds-r-sm)] border border-[var(--ds-line-soft)] px-3 py-3 transition-colors hover:border-[var(--ds-line)]"
+          style={{
+            background: `linear-gradient(180deg, ${getRoleColorStyleWithOpacity(role.color, 0.055)}, transparent 52px), var(--card)`,
+            boxShadow: `inset 0 1px 0 ${getRoleColorStyleWithOpacity(role.color, 0.12)}`,
+          }}
         >
           {/* Role header */}
           <div className="flex items-center gap-2">
@@ -141,7 +144,7 @@ export function RoleSection({ role }: RoleSectionProps) {
               <div className="relative h-5 w-8 shrink-0">
                 {roleHours > 0 && (
                   <span
-                    className={`absolute right-0 top-1/2 -translate-y-1/2 font-mono text-[10px] tracking-[0.04em] text-secondary-foreground tabular-nums transition-opacity ${
+                    className={`absolute right-0 top-1/2 -translate-y-1/2 rounded-[var(--ds-r-pill)] border border-[var(--ds-line-soft)] bg-[var(--ds-panel)] px-1.5 py-0.5 font-mono text-[10px] leading-none tracking-[0.04em] text-secondary-foreground tabular-nums transition-opacity ${
                       menuOpen ? "opacity-0" : "group-hover/role:opacity-0"
                     }`}
                   >
@@ -182,9 +185,10 @@ export function RoleSection({ role }: RoleSectionProps) {
             )}
           </div>
 
-          <div className="mt-2 pl-0.5">
+          <div className="mt-2.5">
             <GoalList
               roleId={role.id}
+              roleColor={role.color}
               addingGoal={addingGoal}
               onStartAddingGoal={handleStartAddingGoal}
               onAddingGoalDone={() => setAddingGoal(false)}

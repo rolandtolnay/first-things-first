@@ -5,15 +5,23 @@ import { Input } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
 import { AddGoalButton } from "./AddGoalButton";
 import { GoalItem } from "./GoalItem";
+import type { RoleColor } from "@/types";
 
 interface GoalListProps {
   roleId: string;
+  roleColor: RoleColor;
   addingGoal?: boolean;
   onStartAddingGoal?: () => void;
   onAddingGoalDone?: () => void;
 }
 
-export function GoalList({ roleId, addingGoal, onStartAddingGoal, onAddingGoalDone }: GoalListProps) {
+export function GoalList({
+  roleId,
+  roleColor,
+  addingGoal,
+  onStartAddingGoal,
+  onAddingGoalDone,
+}: GoalListProps) {
   const currentWeek = useWeekStore((state) => state.currentWeek);
   const addGoal = useWeekStore((state) => state.addGoal);
   const allGoals = currentWeek?.goals;
@@ -59,10 +67,12 @@ export function GoalList({ roleId, addingGoal, onStartAddingGoal, onAddingGoalDo
     handleSubmit();
   }
 
+  const hasGoals = goals.length > 0;
+
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col gap-1">
       {goals.map((goal) => (
-        <GoalItem key={goal.id} goal={goal} />
+        <GoalItem key={goal.id} goal={goal} roleColor={roleColor} />
       ))}
 
       {addingGoal ? (
@@ -74,11 +84,14 @@ export function GoalList({ roleId, addingGoal, onStartAddingGoal, onAddingGoalDo
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder="New goal…"
-          className="text-[12px] text-foreground"
+          className="h-7 text-[12px] text-foreground"
           aria-label="New goal text"
         />
-      ) : goals.length === 0 ? (
-        <AddGoalButton onClick={() => onStartAddingGoal?.()} />
+      ) : !hasGoals ? (
+        <AddGoalButton
+          onClick={() => onStartAddingGoal?.()}
+          className="h-6 justify-start self-stretch"
+        />
       ) : null}
     </div>
   );

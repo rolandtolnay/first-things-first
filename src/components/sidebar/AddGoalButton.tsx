@@ -1,9 +1,11 @@
 "use client";
 
+import type { ComponentProps } from "react";
 import { Plus } from "lucide-react";
 import { TextActionButton } from "@/components/ui/TextActionButton";
+import { cn } from "@/lib/utils";
 
-interface AddGoalButtonProps {
+interface AddGoalButtonProps extends ComponentProps<"button"> {
   onClick: () => void;
 }
 
@@ -12,9 +14,9 @@ interface AddGoalButtonProps {
  * lighter than AddRoleButton: adding a goal is an in-card action, not a new
  * card-level drop target.
  */
-export function AddGoalButton({ onClick }: AddGoalButtonProps) {
+export function AddGoalButton({ onClick, className, ...props }: AddGoalButtonProps) {
   return (
-    <TextActionButton className="self-start" onClick={onClick}>
+    <TextActionButton className={cn("self-start", className)} onClick={onClick} {...props}>
       <Plus strokeWidth={1.6} />
       Add goal
     </TextActionButton>
