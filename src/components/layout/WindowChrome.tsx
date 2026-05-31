@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Settings } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/providers/AuthProvider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,6 +24,7 @@ import {
  */
 export function WindowChrome() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   return (
     <header className="flex shrink-0 items-center justify-between px-4 py-3">
@@ -53,14 +55,22 @@ export function WindowChrome() {
           <DialogHeader>
             <DialogTitle>Settings</DialogTitle>
             <DialogDescription>
-              Workspace preferences will live here.
+              You&apos;re signed in. Manage your session below.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col items-center justify-center gap-2 rounded-[var(--ds-r-md)] border border-dashed border-border px-6 py-10 text-center">
-            <Settings className="size-5 text-muted-foreground" strokeWidth={1.4} />
-            <p className="text-caption text-muted-foreground">
-              There&apos;s nothing to configure here yet.
-            </p>
+          <div className="flex items-center justify-between gap-3 rounded-[var(--ds-r-md)] border border-border px-4 py-3">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="font-mono text-label uppercase tracking-[0.12em] text-muted-foreground">
+                Signed in as
+              </span>
+              <span className="truncate text-sm text-foreground">
+                {user?.email ?? "—"}
+              </span>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => void signOut()}>
+              <LogOut className="size-3.5" strokeWidth={1.4} />
+              Sign out
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

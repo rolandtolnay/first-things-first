@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { DatabaseProvider } from "@/providers/DatabaseProvider";
+import { AuthProvider } from "@/providers/AuthProvider";
 import { DndProvider } from "@/components/dnd";
 import "./globals.css";
 
@@ -47,7 +47,7 @@ export default function RootLayout({
         <ThemeProvider>
           <TooltipProvider>
             <DndProvider>
-              <DatabaseProvider>{children}</DatabaseProvider>
+              <AuthProvider>{children}</AuthProvider>
             </DndProvider>
           </TooltipProvider>
         </ThemeProvider>

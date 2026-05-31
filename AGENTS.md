@@ -36,3 +36,16 @@ Tailwind v4 silently ignores unknown class names — the build won't warn you. I
 ## Known Interaction Gotcha
 
 Radix `DropdownMenuItem` and `ContextMenuItem` actions should use `onSelect`, not `onClick`, when the menu is layered over the calendar grid. `onClick` can miss touch/pointer selection timing and let the underlying draw handler create an accidental freestyle block.
+
+## Request gating lives in `src/proxy.ts` (Next 16, not `middleware.ts`)
+
+Next.js 16 renamed the `middleware` file convention to **`proxy`** (function `proxy`, Node.js runtime). Two traps bit us here:
+
+- The convention file must sit **next to `app/`** — since this is a `src/` project, that means **`src/proxy.ts`**, not the repo root. A root-level `middleware.ts`/`proxy.ts` is silently ignored in dev (no gating, no error), so always verify with a real request: an unauthenticated `curl -i http://localhost:3000/` must return a 307 to `/login`.
+- `middleware.ts` still "works" enough to appear in `next build` output (`ƒ Proxy (Middleware)`) while doing nothing at request time. Don't trust the build label — test the redirect.
+
+`src/proxy.ts` is the thin entry; the session-refresh + route-gating logic lives in `src/lib/supabase/middleware.ts` (`updateSession`). After moving/renaming a proxy file, `rm -rf .next` before restarting `next dev` — Turbopack caches a stale module path and 500s otherwise.
+
+## Auth & persistence (Supabase)
+
+Auth is passwordless magic link via `@supabase/ssr`; Weeks persist to Supabase Postgres (`public.weeks`, one JSONB document per week, RLS-scoped to `auth.uid()`). The browser talks to Supabase directly — RLS is the security boundary, there is no API layer. The persistence seam is `src/lib/db.ts` (+ the pure `src/lib/week-mapping.ts`); the store's `bootstrap()` / `reset()` are driven by `AuthProvider`. See `etc/prd/supabase-auth-cloud-persistence.md` and ADR-0003 / ADR-0004.
