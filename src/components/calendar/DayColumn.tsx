@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { DayOfWeek } from "@/types";
-import { isSameDay, DAY_NAMES_SHORT } from "@/lib/utils";
+import { cn, isSameDay, DAY_NAMES_SHORT } from "@/lib/utils";
 import { useWeekStore } from "@/stores/weekStore";
 import { HEADER_HEIGHT } from "@/lib/constants";
 import { DayPriorities } from "./DayPriorities";
@@ -75,18 +75,20 @@ export function DayColumn({ dayIndex, date }: DayColumnProps) {
           <span className="font-mono text-label uppercase tracking-[0.12em] text-secondary-foreground">
             {dayName}
           </span>
-          {isToday ? (
-            <span
-              className="bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[13px] font-bold tabular-nums mt-0.5"
-              style={{ width: 26, height: 26 }}
-            >
-              {dateNum}
-            </span>
-          ) : (
-            <span className="text-[20px] font-semibold text-foreground tabular-nums tracking-[-0.02em]">
-              {dateNum}
-            </span>
-          )}
+          <span
+            className={cn(
+              "relative text-[20px] font-semibold tabular-nums tracking-[-0.02em]",
+              isToday ? "text-primary" : "text-foreground"
+            )}
+          >
+            {isToday && (
+              <span
+                aria-hidden={true}
+                className="absolute -inset-x-1.5 -inset-y-0.5 rounded-[var(--ds-r-xs)] bg-[var(--ds-accent-faint)] ring-1 ring-[var(--ds-accent-soft)]"
+              />
+            )}
+            <span className="relative">{dateNum}</span>
+          </span>
         </div>
 
         {/* Right: completion Donut */}

@@ -42,6 +42,10 @@ _Avoid_: night slot, evening task, after-hours event.
 A Time Block or Evening Block with no linked Goal (`type: "freestyle"`, no `goalId`).
 _Avoid_: free block, manual block, custom block.
 
+**Weekly Handoff**:
+The flow for starting a new Week by choosing the target Week and deciding which unfinished Goals continue forward.
+_Avoid_: reset wizard, migration, rollover.
+
 ### Progress and summaries
 
 **Weekly Balance**:
@@ -103,6 +107,7 @@ _Avoid_: primary color palette, highlight color.
 - A **Freestyle Block** has no **Goal**, but may still carry a **Role** for color and hour accounting.
 - **Weekly Balance** and **Week Metrics** count Time Blocks by slot duration and Evening Blocks as one fixed planned hour.
 - A **Daily Streak** Day is complete only when it has at least one Day Priority and all of that Day’s Day Priorities are complete.
+- A **Weekly Handoff** creates or replaces a target **Week** snapshot; it does not move Goals out of the source Week.
 - The **Sidebar** and expanded **Rail** frame the calendar; the collapsed **Rail** remains as a metrics dock.
 
 ## Example dialogue
