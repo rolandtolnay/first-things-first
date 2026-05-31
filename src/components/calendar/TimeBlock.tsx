@@ -90,6 +90,7 @@ export function TimeBlock({
         editable={isFreestyle}
         freestyle={isFreestyle}
         unassigned={!block.roleId}
+        roleTint="strong"
         height={height}
         autoEdit={isNewFreestyle}
         subtitle={formatBlockMeta(block.startSlot, displayDuration)}

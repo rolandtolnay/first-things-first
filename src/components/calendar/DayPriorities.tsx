@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useDroppable, useDndContext } from "@dnd-kit/core";
 import { useWeekStore } from "@/stores/weekStore";
 import { cn } from "@/lib/utils";
-import { PRIORITIES_SECTION_HEIGHT } from "@/lib/constants";
+import { MAX_PRIORITIES_PER_DAY, PRIORITIES_SECTION_HEIGHT } from "@/lib/constants";
 import { PriorityItem } from "./PriorityItem";
 import type { DayOfWeek } from "@/types";
 import type { DropZoneData } from "@/types/dnd";
@@ -12,6 +12,9 @@ import type { DropZoneData } from "@/types/dnd";
 interface DayPrioritiesProps {
   dayIndex: DayOfWeek;
 }
+
+const PRIORITIES_Y_PADDING = 12;
+const PRIORITIES_GAP = 4;
 
 export function DayPriorities({ dayIndex }: DayPrioritiesProps) {
   const dayPriorities = useWeekStore((state) => state.currentWeek?.dayPriorities);
@@ -50,12 +53,15 @@ export function DayPriorities({ dayIndex }: DayPrioritiesProps) {
   const isDragging = active !== null;
   const isEmpty = priorities.length === 0;
   const showDropHint = isEmpty && isDragging;
+  const priorityCardHeight =
+    (PRIORITIES_SECTION_HEIGHT - PRIORITIES_Y_PADDING - PRIORITIES_GAP * (MAX_PRIORITIES_PER_DAY - 1)) /
+    MAX_PRIORITIES_PER_DAY;
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "px-2.5 py-2.5 flex flex-col gap-1",
+        "px-1.5 py-1.5 flex flex-col gap-1",
         showDropHint && "border border-dashed border-primary bg-primary-soft",
         isOver && "bg-primary-soft"
       )}
@@ -84,6 +90,7 @@ export function DayPriorities({ dayIndex }: DayPrioritiesProps) {
             goal={goal}
             roleColor={role.color}
             dayIndex={dayIndex}
+            height={priorityCardHeight}
           />
         );
       })}

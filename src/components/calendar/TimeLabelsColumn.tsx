@@ -62,7 +62,7 @@ export function TimeLabelsColumn() {
             <div
               key={slotIndex}
               className="absolute flex items-baseline gap-px font-mono text-[10px] tabular-nums"
-              style={{ top: `${slotToPixels(slotIndex) - 6}px`, right: 6 }}
+              style={{ top: `${slotToPixels(slotIndex) + 1}px`, right: 6 }}
             >
               <span className="text-muted-foreground">
                 {String(hour).padStart(2, "0")}

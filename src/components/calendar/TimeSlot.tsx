@@ -39,7 +39,9 @@ export function TimeSlot({ slotIndex, dayIndex }: TimeSlotProps) {
       className="relative border-t"
       style={{
         height: `${SLOT_HEIGHT}px`,
-        borderColor: slotIndex % 2 === 0 ? "var(--ds-line)" : "var(--ds-line-soft)",
+        borderColor: slotIndex % 2 === 0
+          ? "var(--ds-line)"
+          : "color-mix(in oklab, var(--ds-line-soft), transparent 45%)",
       }}
       data-slot={slotIndex}
       data-day={dayIndex}

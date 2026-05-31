@@ -33,6 +33,7 @@ interface BlockCardProps {
   /** Calendar block with no role assignment; renders as transparent + dotted. */
   unassigned?: boolean;
   variant?: "default" | "card";
+  roleTint?: "default" | "strong";
   subtitle?: string;
   className?: string;
   style?: React.CSSProperties;
@@ -52,6 +53,7 @@ export function BlockCard({
   freestyle,
   unassigned,
   variant = "default",
+  roleTint = "default",
   subtitle,
   className,
   style,
@@ -96,6 +98,10 @@ export function BlockCard({
   const isCard = variant === "card";
   const isUnassignedCalendarBlock = unassigned && !isCard;
 
+  const roleTintOpacity = roleTint === "strong"
+    ? { rest: 0.16, hover: 0.2 }
+    : { rest: 0.12, hover: 0.16 };
+
   const bgColor = isUnassignedCalendarBlock
     ? isHovered
       ? "color-mix(in oklab, var(--ds-panel-2), transparent 8%)"
@@ -103,7 +109,10 @@ export function BlockCard({
     : isCard
       ? "var(--card)"
       : roleColor
-        ? getRoleColorStyleWithOpacity(roleColor, isHovered ? 0.16 : 0.12)
+        ? getRoleColorStyleWithOpacity(
+            roleColor,
+            isHovered ? roleTintOpacity.hover : roleTintOpacity.rest
+          )
         : completed
           ? "var(--completed-bg)"
           : "var(--muted)";
