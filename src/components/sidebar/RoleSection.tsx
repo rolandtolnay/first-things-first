@@ -60,6 +60,7 @@ export function RoleSection({ role }: RoleSectionProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const shouldOpenGoalInputAfterMenuCloseRef = useRef(false);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
 
   const { isEditing, editValue, setEditValue, inputRef, startEdit, save, handleKeyDown } =
     useEditableText(role.name, handleSaveRole);
@@ -70,11 +71,18 @@ export function RoleSection({ role }: RoleSectionProps) {
   }, []);
 
   const handleDropdownCloseAutoFocus = useCallback((event: Event) => {
-    if (!shouldOpenGoalInputAfterMenuCloseRef.current) return;
-
-    shouldOpenGoalInputAfterMenuCloseRef.current = false;
+    // Radix restores focus to the trigger after close. Here the trigger is a
+    // hover-revealed control that swaps with the duration label, so restored
+    // focus leaves a visible ring around the duration after pointer/touch use.
     event.preventDefault();
-    setAddingGoal(true);
+
+    if (shouldOpenGoalInputAfterMenuCloseRef.current) {
+      shouldOpenGoalInputAfterMenuCloseRef.current = false;
+      setAddingGoal(true);
+      return;
+    }
+
+    requestAnimationFrame(() => menuTriggerRef.current?.blur());
   }, []);
 
   const menuItems = (
@@ -101,7 +109,7 @@ export function RoleSection({ role }: RoleSectionProps) {
           style={{ borderLeft: `2px solid ${getRoleColorStyle(role.color)}` }}
         >
           {/* Role header */}
-          <div className="relative flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <span
               className="h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: getRoleColorStyle(role.color) }}
@@ -130,20 +138,25 @@ export function RoleSection({ role }: RoleSectionProps) {
             )}
 
             {!isEditing && (
-              <>
+              <div className="relative h-5 w-8 shrink-0">
                 {roleHours > 0 && (
-                  <span className="shrink-0 font-mono text-[10px] tracking-[0.04em] text-secondary-foreground tabular-nums group-hover/role:opacity-0 transition-opacity">
+                  <span
+                    className={`absolute right-0 top-1/2 -translate-y-1/2 font-mono text-[10px] tracking-[0.04em] text-secondary-foreground tabular-nums transition-opacity ${
+                      menuOpen ? "opacity-0" : "group-hover/role:opacity-0"
+                    }`}
+                  >
                     {roleHours}h
                   </span>
                 )}
 
-                {/* Overflow menu — top-right, reveals on hover */}
+                {/* Overflow menu — same visual slot, larger tap target. */}
                 <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button
+                      ref={menuTriggerRef}
                       variant="ghost"
-                      size="icon-xs"
-                      className={`absolute -top-1 right-0 rounded-[4px] border-0 bg-transparent text-muted-foreground hover:bg-[var(--ds-line)] hover:text-foreground transition-opacity ${
+                      size="icon"
+                      className={`absolute -right-1 top-1/2 -translate-y-1/2 rounded-[6px] border-0 bg-transparent text-muted-foreground transition-opacity hover:bg-[var(--ds-line)] hover:text-foreground focus-visible:opacity-100 ${
                         menuOpen ? "opacity-100" : "opacity-0 group-hover/role:opacity-100"
                       }`}
                       aria-label={`Menu for ${role.name}`}
@@ -165,7 +178,7 @@ export function RoleSection({ role }: RoleSectionProps) {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </>
+              </div>
             )}
           </div>
 

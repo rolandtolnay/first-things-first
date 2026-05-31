@@ -1,6 +1,10 @@
 # First Things First
 
-If something in the project surprises you, flag it to the user and note it in AGENTS.md to help future agents.
+## Maintaining this file
+
+Keep `AGENTS.md` focused on guidance that prevents future regressions or preserves hard-won project context. Update it autonomously when you discover a load-bearing convention, non-obvious gotcha, cross-browser interaction trap, validation requirement, or shared-component rule that a future agent is likely to miss.
+
+Good updates are concise and outcome-oriented: state the invariant to preserve, when it applies, and the failure it prevents. Prefer documenting durable lessons over session history, easy-to-spot mistakes, or one-off implementation details. If a lesson is surprising but not clearly durable, flag it to the user instead of expanding this file.
 
 ## Browser Verification
 
@@ -21,6 +25,16 @@ Always check `src/components/ui/` first to see what's already installed before a
 If no component exists but the pattern is likely to repeat, define a new shared component in the right `src/components/` area and compose it from lower-level primitives. Keep genuinely one-off UI local, but still build it from existing primitives instead of raw styled elements. When adding or changing a shared component API, update this section so future agents know to reuse it.
 
 If an existing component is close but missing an option, prefer extending that shared component and migrating relevant call sites in the same change. If extending it could cause regressions, flag it and ask — we may make a local exception or create a new shared variant. The goal is consistency: all UI flows through shared components so the app looks and behaves uniformly.
+
+### Load-bearing dropdown/menu interaction notes
+
+Hover-revealed card menus are fragile across Chrome/Safari and easy to regress. When working on role/goal/block card overflow menus:
+
+- Prefer a simple fixed trailing slot (`relative` container + positioned trigger) over clever grid overlays or absolute controls that overlap other content. Safari exposed layout/focus bugs in the grid-overlay approach.
+- Do not let menu triggers overlap labels such as role duration. Swap duration/menu within one reserved slot instead.
+- Keep touch targets larger than the visible icon. A `32px` trigger worked well for the role-card menu while preserving the compact visual design.
+- For Radix dropdowns whose trigger is hover-revealed, handle `onCloseAutoFocus`: prevent default focus restoration and blur the trigger after pointer/touch dismissal. Otherwise Safari/Chrome can leave a visible focus ring around the hidden trigger or the duration slot after the menu closes.
+- Verify the full loop, not just the open state: rest → hover/tap → open menu → dismiss with Escape/outside click → move pointer away. Also check Safari when this interaction changes.
 
 ## Tailwind v4 Custom Theme Tokens
 
