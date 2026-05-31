@@ -680,7 +680,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     const moved: TimeBlock = {
       ...block,
       dayIndex,
-      startSlot: startSlot as TimeSlotIndex,
+      startSlot: placement.startSlot as TimeSlotIndex,
     };
     await withWeek(get, set, (w) => ({
       timeBlocks: w.timeBlocks.map((b) => (b.id === blockId ? moved : b)),

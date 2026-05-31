@@ -28,7 +28,7 @@ export function TimeSlot({ slotIndex, dayIndex }: TimeSlotProps) {
     slotIndex,
   };
 
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: `slot-${dayIndex}-${slotIndex}`,
     data: dropData,
   });
@@ -40,10 +40,6 @@ export function TimeSlot({ slotIndex, dayIndex }: TimeSlotProps) {
       style={{
         height: `${SLOT_HEIGHT}px`,
         borderColor: slotIndex % 2 === 0 ? "var(--ds-line)" : "var(--ds-line-soft)",
-        ...(isOver && {
-          backgroundColor: 'var(--ds-accent-soft)',
-          boxShadow: 'inset 0 0 0 1px var(--ds-accent)',
-        }),
       }}
       data-slot={slotIndex}
       data-day={dayIndex}

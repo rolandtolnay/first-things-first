@@ -11,7 +11,7 @@
 
 import type { TimeBlock } from "@/types";
 import { hasOverlap, getClampedDuration } from "./overlap";
-import { DEFAULT_BLOCK_SLOTS, MIN_BLOCK_SLOTS, MAX_SLOT_INDEX } from "./time-model";
+import { DEFAULT_BLOCK_SLOTS, MIN_BLOCK_SLOTS, MAX_SLOT_INDEX, TOTAL_SLOTS } from "./time-model";
 
 /** Outcome of a placement decision for a new block or a move. */
 export type PlacementResult =
@@ -30,9 +30,18 @@ export function canStartAt(
   return !hasOverlap(startSlot, startSlot + 1, dayBlocks, excludeId);
 }
 
+/** Clamp a requested start upward when needed so the full duration fits in the Day. */
+export function clampStartToFitDuration(startSlot: number, duration: number): number {
+  const fittedDuration = Math.max(1, Math.min(duration, TOTAL_SLOTS));
+  const maxStart = TOTAL_SLOTS - fittedDuration;
+  return Math.min(startSlot, maxStart);
+}
+
 /**
- * Decide placement for a NEW block at startSlot: reject if out of range or the
- * start slot is occupied, otherwise clamp the requested duration to free space.
+ * Decide placement for a NEW block near startSlot: reject if out of range or the
+ * fitted start slot is occupied, otherwise clamp duration only to occupied space
+ * ahead. End-of-day overflow snaps the start upward so the requested duration
+ * can fit instead of truncating to the final 30-minute Slot.
  */
 export function resolveNewPlacement(
   startSlot: number,
@@ -42,20 +51,24 @@ export function resolveNewPlacement(
   if (startSlot < 0 || startSlot > MAX_SLOT_INDEX) {
     return { ok: false, reason: "out-of-range" };
   }
-  if (!canStartAt(startSlot, dayBlocks)) {
+
+  const requestedDuration = Math.max(1, Math.min(requested, TOTAL_SLOTS));
+  const fittedStart = clampStartToFitDuration(startSlot, requestedDuration);
+
+  if (!canStartAt(fittedStart, dayBlocks)) {
     return { ok: false, reason: "occupied" };
   }
   return {
     ok: true,
-    startSlot,
-    duration: getClampedDuration(requested, startSlot, dayBlocks),
+    startSlot: fittedStart,
+    duration: getClampedDuration(requestedDuration, fittedStart, dayBlocks),
   };
 }
 
 /**
- * Decide placement for MOVING an existing block (it keeps its duration): reject
- * if the FULL duration would overlap another block; self is excluded. No clamp —
- * a move either fits as-is or snaps back.
+ * Decide placement for MOVING an existing block (it keeps its duration): snap
+ * upward at the end of the Day if needed, then reject if the full duration would
+ * overlap another block; self is excluded.
  */
 export function resolveMovePlacement(
   startSlot: number,
@@ -63,10 +76,17 @@ export function resolveMovePlacement(
   dayBlocks: TimeBlock[],
   excludeId: string
 ): PlacementResult {
-  if (hasOverlap(startSlot, startSlot + duration, dayBlocks, excludeId)) {
+  if (startSlot < 0 || startSlot > MAX_SLOT_INDEX) {
+    return { ok: false, reason: "out-of-range" };
+  }
+
+  const fittedDuration = Math.max(1, Math.min(duration, TOTAL_SLOTS));
+  const fittedStart = clampStartToFitDuration(startSlot, fittedDuration);
+
+  if (hasOverlap(fittedStart, fittedStart + fittedDuration, dayBlocks, excludeId)) {
     return { ok: false, reason: "occupied" };
   }
-  return { ok: true, startSlot, duration };
+  return { ok: true, startSlot: fittedStart, duration: fittedDuration };
 }
 
 /** Clamp a resize request to free space (excluding self). Always succeeds. */

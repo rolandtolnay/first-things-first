@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   canStartAt,
+  clampStartToFitDuration,
   resolveNewPlacement,
   resolveMovePlacement,
   resolveResize,
@@ -49,6 +50,21 @@ describe("canStartAt", () => {
 });
 
 // ============================================================================
+// clampStartToFitDuration
+// ============================================================================
+
+describe("clampStartToFitDuration", () => {
+  it("keeps a start when the duration already fits", () => {
+    expect(clampStartToFitDuration(10, 4)).toBe(10);
+  });
+
+  it("snaps the start upward so the duration fits before end of day", () => {
+    expect(clampStartToFitDuration(23, 2)).toBe(22);
+    expect(clampStartToFitDuration(23, 6)).toBe(18);
+  });
+});
+
+// ============================================================================
 // resolveNewPlacement
 // ============================================================================
 
@@ -88,12 +104,20 @@ describe("resolveNewPlacement", () => {
     expect(result).toEqual({ ok: true, startSlot: 0, duration: 4 });
   });
 
-  it("clamps to remaining day at the last slot", () => {
-    // slot 23 -> only 1 slot to end of day, default 2 clamps to 1
+  it("snaps upward at the last slot so the default duration fits", () => {
+    // slot 23 with the default 2-slot duration previews/drops as 19:00-20:00.
     expect(resolveNewPlacement(23, [])).toEqual({
       ok: true,
-      startSlot: 23,
-      duration: 1,
+      startSlot: 22,
+      duration: 2,
+    });
+  });
+
+  it("snaps upward so a requested duration fits before end of day", () => {
+    expect(resolveNewPlacement(23, [], 6)).toEqual({
+      ok: true,
+      startSlot: 18,
+      duration: 6,
     });
   });
 
@@ -107,7 +131,7 @@ describe("resolveNewPlacement", () => {
 });
 
 // ============================================================================
-// resolveMovePlacement — full duration must fit; no clamp; excludes self
+// resolveMovePlacement — full duration must fit; end-of-day snaps upward; excludes self
 // ============================================================================
 
 describe("resolveMovePlacement", () => {
@@ -136,6 +160,14 @@ describe("resolveMovePlacement", () => {
       ok: true,
       startSlot: 3,
       duration: 4,
+    });
+  });
+
+  it("snaps upward at the last slot so the full moved duration fits", () => {
+    expect(resolveMovePlacement(23, 6, [], "self")).toEqual({
+      ok: true,
+      startSlot: 18,
+      duration: 6,
     });
   });
 });
