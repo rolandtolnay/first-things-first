@@ -6,6 +6,8 @@ If something in the project surprises you, flag it to the user and note it in AG
 
 You have access to the `agent-browser` skill. Load it (via the Skill tool) whenever you need to visually verify UI changes, test interactions, or confirm that functionality works correctly in the browser. Don't rely solely on reading code to judge whether something looks or behaves right — launch the browser and check. This is especially important after layout, styling, or interaction changes.
 
+For localhost auth debugging, reuse the canonical project-local browser state at `.agents/browser-state/ftf-debug-auth.json` when it exists: `agent-browser --session ftf-debug --state .agents/browser-state/ftf-debug-auth.json open http://localhost:3000`. If sign-in is needed, the user may complete magic-link auth in a headed browser; if `agent-browser --headed` is ignored because a daemon is already running, close that session first, then reopen with `agent-browser --session ftf-debug --headed open http://localhost:3000`. After sign-in, refresh the canonical state with `agent-browser --session ftf-debug state save .agents/browser-state/ftf-debug-auth.json`. This path is gitignored; never commit saved auth state.
+
 ## UI Components (shadcn/ui)
 
 This project uses **shadcn/ui** components (style: `radix-nova`, base color: `neutral`). Existing components live in `src/components/ui/`. The project is configured via `components.json`.
