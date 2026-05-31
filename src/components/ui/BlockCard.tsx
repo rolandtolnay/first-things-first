@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { MoreVertical, Check, CheckCircle, Circle, Trash2 } from "lucide-react";
 import {
   ContextMenu,
@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { BlockMeta } from "@/components/ui/BlockMeta";
-import { Input } from "@/components/ui/input";
+import { InlineInput } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { suppressBlockDraw } from "@/hooks/useBlockDraw";
 import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
@@ -34,9 +34,12 @@ interface BlockCardProps {
   unassigned?: boolean;
   variant?: "default" | "card";
   roleTint?: "default" | "strong";
-  subtitle?: string;
+  metaItems?: ReactNode[];
+  leading?: ReactNode;
+  hideCompletedIndicator?: boolean;
+  menuLabel?: string;
   className?: string;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
   onToggle?: () => void;
   onDelete?: () => void;
   onEdit?: (newText: string) => void;
@@ -54,7 +57,10 @@ export function BlockCard({
   unassigned,
   variant = "default",
   roleTint = "default",
-  subtitle,
+  metaItems,
+  leading,
+  hideCompletedIndicator = false,
+  menuLabel = "Open block menu",
   className,
   style,
   onToggle,
@@ -88,7 +94,7 @@ export function BlockCard({
   }, [text, isEditing]);
 
   // Blocks shorter than the meta-friendly height collapse to a single line and
-  // hide their meta/subtitle.
+  // hide their metadata.
   const SHORT_BLOCK_PX = 40;
   const isShort = height !== undefined && height < SHORT_BLOCK_PX;
   const lineClamp = isShort ? 1 : 2;
@@ -125,7 +131,6 @@ export function BlockCard({
   const unassignedBorderColor = "var(--ds-fg-faint)";
 
   const hasMenu = (onToggle || onDelete) && !isEditing;
-  const subtitleItems = subtitle?.split(" · ");
 
   function handleMenuInteraction() {
     suppressBlockDraw();
@@ -156,7 +161,7 @@ export function BlockCard({
     setIsEditing(false);
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     e.stopPropagation();
     if (e.key === "Enter") {
       e.preventDefault();
@@ -254,9 +259,11 @@ export function BlockCard({
       onMouseLeave={() => setIsHovered(false)}
       onDoubleClick={handleDoubleClick}
     >
+      {leading && !isEditing && leading}
+
       {/* Text or editing input */}
       {isEditing ? (
-        <Input
+        <InlineInput
           ref={inputRef}
           type="text"
           value={editValue}
@@ -282,14 +289,14 @@ export function BlockCard({
           >
             {text}
           </span>
-          {subtitleItems && !isShort && (
-            <BlockMeta items={subtitleItems} className="mt-1" />
+          {metaItems && !isShort && (
+            <BlockMeta items={metaItems} className="mt-1" />
           )}
         </div>
       )}
 
       {/* Completed indicator — top-right, aligned with text */}
-      {completed && !isEditing && (
+      {completed && !isEditing && !hideCompletedIndicator && (
         <Check
           className="absolute right-2 text-primary group-hover:opacity-0 transition-opacity"
           style={{ top: compact ? "0.35rem" : "0.75rem" }}
@@ -317,7 +324,7 @@ export function BlockCard({
                 handleMenuInteraction();
               }}
               onDoubleClick={(e) => e.stopPropagation()}
-              aria-label="Open block menu"
+              aria-label={menuLabel}
             >
               <MoreVertical className="size-4 text-muted-foreground" />
             </button>

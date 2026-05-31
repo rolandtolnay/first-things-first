@@ -23,6 +23,7 @@ import {
   timeToPixels,
   slotIsHourStart,
   slotToHourLabel,
+  formatBlockMetaParts,
   formatBlockMeta,
 } from "@/lib/time-model";
 
@@ -210,6 +211,13 @@ describe("slotToHourLabel", () => {
     expect(slotToHourLabel(2)).toBe(9);
     expect(slotToHourLabel(22)).toBe(19);
     expect(slotToHourLabel(23)).toBe(19); // half-hour shares the hour label
+  });
+});
+
+describe("formatBlockMetaParts", () => {
+  it("returns structured block start and duration metadata", () => {
+    expect(formatBlockMetaParts(2, 4)).toEqual(["9:00", "2h"]);
+    expect(formatBlockMetaParts(5, 3)).toEqual(["10:30", "1.5h"]);
   });
 });
 

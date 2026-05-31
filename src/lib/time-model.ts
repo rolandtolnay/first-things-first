@@ -145,7 +145,12 @@ export function slotToHourLabel(slot: number): number {
   return DAY_START_HOUR + Math.floor(slot / SLOTS_PER_HOUR);
 }
 
+/** Structured block metadata parts, e.g. ["10:30", "2h"]. */
+export function formatBlockMetaParts(startSlot: number, duration: number): string[] {
+  return [slotToTime(startSlot), `${slotsToHours(duration)}h`];
+}
+
 /** Human-readable block metadata, e.g. "10:30 · 2h". */
 export function formatBlockMeta(startSlot: number, duration: number): string {
-  return `${slotToTime(startSlot)} · ${slotsToHours(duration)}h`;
+  return formatBlockMetaParts(startSlot, duration).join(" · ");
 }
