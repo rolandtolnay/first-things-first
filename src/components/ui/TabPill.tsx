@@ -30,7 +30,7 @@ export function TabPill({
     <span
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border bg-card py-[5px] pl-3 pr-2.5 text-caption text-foreground transition-colors",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border bg-card py-[5px] pl-3 pr-2.5 [font-size:var(--ds-t-caption)] leading-none text-foreground transition-colors",
         active ? "border-border-emphasis" : "border-border",
         onClick && "cursor-pointer hover:border-border-emphasis hover:bg-card-hover",
         className

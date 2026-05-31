@@ -100,9 +100,11 @@ A monospaced UPPERCASE micro-label that separates sections by whitespace and a s
 hairline ("WEEK METRICS", "ROLES & GOALS"). The signature type rhythm of the kit.
 _Avoid_: heading, title, header (those imply a heavier visual treatment).
 
-**Window Chrome**:
-The top bar of the app window (menu/settings left, decorative traffic-light buttons
-right). Purely presentational framing; the traffic lights do nothing.
+**App Actions**:
+Compact global controls (theme + settings/session) mounted in the week toolbar.
+The previous standalone Window Chrome row was removed so the planner gets more
+usable vertical space; do not reintroduce decorative title-bar controls unless
+they carry functional value.
 
 **Rail**:
 The right column (304px) holding Week Metrics and Daily Streak. Distinct from the

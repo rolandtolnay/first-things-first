@@ -17,10 +17,6 @@ interface PriorityItemProps {
 export function PriorityItem({ priority, goal, roleColor, dayIndex }: PriorityItemProps) {
   const removeDayPriority = useWeekStore((state) => state.removeDayPriority);
   const toggleDayPriorityCompleted = useWeekStore((state) => state.toggleDayPriorityCompleted);
-  const roleName = useWeekStore((state) =>
-    state.currentWeek?.roles.find((r) => r.id === goal.roleId)?.name
-  );
-
   const dragData = {
     type: "priority",
     priorityId: priority.id,
@@ -51,8 +47,7 @@ export function PriorityItem({ priority, goal, roleColor, dayIndex }: PriorityIt
         completed={priority.completed}
         compact
         variant="card"
-        subtitle={roleName}
-        height={56}
+        height={32}
         onToggle={() => toggleDayPriorityCompleted(priority.id)}
         onDelete={() => removeDayPriority(priority.id)}
       />

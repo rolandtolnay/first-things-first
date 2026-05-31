@@ -7,8 +7,8 @@ import { WeeklyBalance } from './WeeklyBalance';
 /**
  * Sidebar — the left workspace column (Weekly Balance + Roles & Goals).
  *
- * The app title and theme toggle now live in the Window Chrome (added during
- * integration), so the Sidebar starts directly with the Weekly Balance.
+ * Global controls live in the week toolbar, so the Sidebar starts directly
+ * with the Weekly Balance.
  */
 export function Sidebar() {
   return (

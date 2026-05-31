@@ -9,8 +9,8 @@ import { useWeekStore } from "@/stores/weekStore";
  *
  * Saves now cross the network, so they can fail; load/bootstrap can fail too.
  * Rather than add a toast library (ADR-aligned), failures reuse the store's
- * `error` field and show here as a thin, dismissible hairline bar under the
- * Window Chrome. Renders nothing when there's no error.
+ * `error` field and show here as a thin, dismissible hairline bar above the
+ * workspace grid. Renders nothing when there's no error.
  */
 export function StoreErrorBanner() {
   const error = useWeekStore((s) => s.error);

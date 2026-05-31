@@ -2,10 +2,12 @@
 
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useWeekStore } from "@/stores/weekStore";
-import { formatWeekId, getCurrentWeekId, getWeekNumber } from "@/lib/utils";
+import { formatWeekId, getCurrentWeekId, getWeekDates } from "@/lib/utils";
+import { AppActions } from "@/components/layout/AppActions";
 import { Button } from "@/components/ui/button";
 import { TabPill } from "@/components/ui/TabPill";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import type { WeekId } from "@/types";
 
 interface WeekNavigationProps {
   onNewWeek: () => void;
@@ -46,15 +48,12 @@ export function WeekNavigation({ onNewWeek }: WeekNavigationProps) {
   const showBanner = weekIds.length > 0 && !currentCalendarWeekExists;
 
   const weekLabel = selectedWeekId
-    ? `Wk ${getWeekNumber(selectedWeekId)} · ${formatWeekId(selectedWeekId)}`
+    ? formatWeekTabLabel(selectedWeekId)
     : "Loading…";
 
   return (
     <div className="shrink-0">
-      <div
-        className="grid grid-cols-[1fr_auto_1fr] items-center border-b border-border"
-        style={{ padding: "16px 20px" }}
-      >
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center border-b border-border px-4 py-3">
         {/* Left: active-week tab pill */}
         <div className="flex items-center gap-2.5">
           <TabPill
@@ -112,18 +111,40 @@ export function WeekNavigation({ onNewWeek }: WeekNavigationProps) {
           </Tooltip>
         </div>
 
-        {/* Right: month/year micro-label + new-week action */}
+        {/* Right: new-week action + compact global controls */}
         <div className="flex items-center gap-2 justify-self-end">
           {!isCurrentCalendarWeek && !showBanner && (
-            <span className="font-mono text-label uppercase tracking-[0.12em] text-muted-foreground tabular-nums">
+            <span className="font-mono text-label uppercase tracking-[0.12em] text-muted-foreground tabular-nums max-[1180px]:hidden">
               {selectedWeekId ? formatWeekId(selectedWeekId) : ""}
             </span>
           )}
           <Button variant="outline" size="sm" onClick={onNewWeek}>
             + New
           </Button>
+          <div className="h-5 w-px bg-border" aria-hidden="true" />
+          <AppActions />
         </div>
       </div>
     </div>
   );
+}
+
+const MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
+function formatWeekTabLabel(weekId: WeekId): string {
+  const [monday] = getWeekDates(weekId);
+  return `Week of ${MONTH_NAMES[monday.getUTCMonth()]} ${monday.getUTCDate()}`;
 }
