@@ -6,7 +6,7 @@
 
 create table public.weeks (
   id          text not null,                                   -- WeekId, e.g. "2026-W21"
-  user_id     uuid not null references auth.users (id) on delete cascade,
+  user_id     uuid not null default (auth.uid()) references auth.users (id) on delete cascade,
   start_date  date not null,
   data        jsonb not null,                                  -- whole Week snapshot
   created_at  timestamptz not null default now(),
