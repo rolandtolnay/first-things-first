@@ -16,10 +16,11 @@ When working with UI components — adding new ones, debugging styling, composin
 
 Always check `src/components/ui/` first to see what's already installed before adding a new component. When a feature needs a UI primitive not already present, add it with `npx shadcn@latest add <component-name>`. Prefer composing existing shadcn primitives over building custom components from scratch.
 
-**Shared components over inline styling**: Never create one-off styled elements (e.g. raw `<input>` with inline classes) when a shared component exists in `src/components/ui/`. Instead:
-1. Modify the existing shared component so the change is reflected app-wide.
-2. If modifying would cause regressions elsewhere, flag it and ask — we may make a local exception or create a new shared variant.
-The goal is consistency: all UI flows through shared components so the app looks and behaves uniformly.
+**Shared components over inline styling**: Never create one-off styled elements (e.g. raw `<input>` with inline classes) when a shared component exists in `src/components/ui/` or elsewhere under `src/components/`. Before writing or editing JSX/Tailwind markup, scan for an existing primitive or composed component that fits the need, including `Button`, `TextActionButton`, `Input`, `Dialog`, `AlertDialog`, `DropdownMenu`, `ContextMenu`, `SectionLabel`, `BlockCard`, and existing sidebar/calendar/layout components. If one exists, use it.
+
+If no component exists but the pattern is likely to repeat, define a new shared component in the right `src/components/` area and compose it from lower-level primitives. Keep genuinely one-off UI local, but still build it from existing primitives instead of raw styled elements. When adding or changing a shared component API, update this section so future agents know to reuse it.
+
+If an existing component is close but missing an option, prefer extending that shared component and migrating relevant call sites in the same change. If extending it could cause regressions, flag it and ask — we may make a local exception or create a new shared variant. The goal is consistency: all UI flows through shared components so the app looks and behaves uniformly.
 
 ## Tailwind v4 Custom Theme Tokens
 

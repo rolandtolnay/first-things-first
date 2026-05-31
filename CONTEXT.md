@@ -1,131 +1,126 @@
-# Context — Domain Language
+# First Things First Context
 
-First Things First is a weekly planner: a grid of seven days, each split into
-30-minute **slots** from 8:00 to 20:00, plus an evening slot and a per-day
-priorities list. This document names the shared vocabulary so plans, reviews,
-and refactors talk about the same things.
+First Things First is a single-user weekly planner. This context fixes the product language around weeks, roles, goals, calendar slots, progress summaries, and the workspace UI so implementation work uses the same terms as the app.
 
-## Time Model — `src/lib/time-model.ts`
+## Language
 
-The single owner of the time domain: how the abstract **slot** coordinate (a
-30-minute interval, slot 0 = 8:00 … slot 23 = 19:30) maps onto every other
-representation the UI needs.
+### Planning model
 
-- **Slot** — integer index `0…23` (`TOTAL_SLOTS = 24`, `MAX_SLOT_INDEX = 23`).
-  A block's `startSlot` + `duration` (in slots) describes its placement.
-- **Clock conversions** — `slotToTime` / `timeToSlot` (the `-1` sentinel marks a
-  time outside the grid window).
-- **Duration weighting** — `slotsToHours` (2 slots = 1 hour); evening blocks have
-  no duration and weigh a fixed `EVENING_BLOCK_HOURS`.
-- **Pixel conversions** — `pixelToSlotFloor` ("which slot is this Y inside",
-  draw start) vs. `pixelToSlotRound` ("nearest boundary", resize / draw-move):
-  two named functions so floor/round can't be swapped by accident. Plus
-  `slotToPixels` / `durationToPixels` / `timeToPixels` for layout.
+**Week**:
+A self-contained Monday-through-Sunday planning snapshot persisted as one document.
+_Avoid_: board, calendar file, project.
 
-`overlap.ts` re-exports `MAX_BLOCK_SLOTS` / `TOTAL_SLOTS` from here; constants
-live in time-model, not `constants.ts` (which keeps only layout pixels).
+**Day**:
+One weekday column inside a Week, indexed Monday `0` through Sunday `6`.
+_Avoid_: date cell, column.
 
-## Scheduling — `src/lib/scheduling.ts` (decisions) + store actions
+**Slot**:
+A 30-minute interval on a Day’s time grid from 8:00 to 20:00, where slot `0` is 8:00 and slot `23` is 19:30.
+_Avoid_: row, cell, timeslot.
 
-The **placement decision** layer: the "put / move a block at (day, slot) only if
-it fits, clamping to free space" rule, expressed as pure functions that return a
-`PlacementResult` and never mutate. Built on the `overlap.ts` interval helpers.
+**Role**:
+A weekly life area or responsibility that groups Goals and carries the color used for its scheduled work.
+_Avoid_: category, project, label.
 
-- `canStartAt` — single-slot entry gate.
-- `resolveNewPlacement` — a *new* block: range-check, reject if occupied, else
-  clamp duration to free space.
-- `resolveMovePlacement` — *moving* an existing block: the **full** duration must
-  fit (no clamp); excludes self.
-- `resolveResize` — clamp a resize to free space (always succeeds).
-- `resolveDrawCommit` / `resolveDrawPreview` — the floor-then-clamp logic for
-  click-drag-draw (drawing in a 1-slot gap commits 1 slot, not an overlapping 2).
+**Goal**:
+A weekly objective belonging to exactly one Role.
+_Avoid_: task, todo, item.
 
-**Placement / move operations** are the store actions that apply these decisions
-through `withWeek` (one transition → one persist). **Cross-zone moves**
-(block↔evening, priority↔timegrid, evening↔timegrid, priority/evening→priorities)
-are **atomic**: a single updater touches both arrays, so there is no half-state.
-Rejection is silent (`return null`), preserving drag-and-drop snap-back. The
-explicit verb-per-transition names (`moveBlockToEvening`, `convertPriorityToBlock`,
-…) are each individually testable.
+**Day Priority**:
+A Goal instance placed in a Day’s priorities list.
+_Avoid_: priority task, top task, todo.
 
-The **DnD dispatch policy** now lives in `src/lib/drop-routing.ts` (pure — no
-React/dnd-kit/store imports). `resolveDrop(dragData, dropData, snapshot)` is the
-`(dragData.type, dropData.zone)` routing matrix: it returns a plain `DropIntent`
-(a data object naming one store action + its args) or `null` when the drop is a
-no-op. Only two guards live there — the `MAX_PRIORITIES_PER_DAY` capacity gate
-(no store action checks it) and the goal→evening "already occupied" pre-check
-(`addEveningBlock` *throws* on a duplicate, so this keeps snap-back silent); every
-other rejection already returns `null` from the store action. `dispatchDropIntent`
-is the thin intent → action mapping. `DndProvider` is reduced to **snapshot →
-resolve → dispatch**: it keeps the `over == null` guard and reads fresh state via
-`getState()` at drop time (drops must see the current week, not a stale render).
+**Time Block**:
+A scheduled block placed on a Day’s Slot grid.
+_Avoid_: event, appointment, calendar item.
 
-## Role Balance — `src/lib/role-balance.ts`
+**Evening Block**:
+A single after-hours block attached to a Day outside the Slot grid.
+_Avoid_: night slot, evening task, after-hours event.
 
-The one shared aggregation of planned/completed hours per role:
-`computeRoleBalance({ timeBlocks, eveningBlocks }) → { roleHoursMap, totalPlanned,
-totalCompleted }`. Time blocks weigh `slotsToHours(duration)`; evening blocks weigh
-`EVENING_BLOCK_HOURS`. Consumed by `useRoleHours` (sidebar Weekly Balance) and the
-per-role "Xh planned" figure in `RoleSection`.
+**Freestyle Block**:
+A Time Block or Evening Block with no linked Goal (`type: "freestyle"`, no `goalId`).
+_Avoid_: free block, manual block, custom block.
 
-## Identity & Ownership — Supabase auth
+### Progress and summaries
 
-Planning data is no longer global to a browser; it belongs to a person.
+**Weekly Balance**:
+The Sidebar summary of planned hours by Role against the 40-hour weekly target.
+_Avoid_: workload chart, capacity panel.
 
-- **User** — an authenticated person who owns their planning data. Identified by
-  email; one User per account.
-- **Session** — the authenticated state proving who the current User is. It
-  persists across visits, so a User signs in rarely, not every visit.
+**Week Metrics**:
+The Rail summary of planned hours, unfilled hours, and completed planning items for the current Week.
+_Avoid_: stats, analytics, dashboard.
 
-A **User** owns many **Weeks**; every Week — and the Roles, Goals, Day Priorities,
-and blocks nested in it — is private to exactly one User. There is no sharing or
-collaboration: ownership is exclusive.
-
-## UI Vocabulary — Dark Workspace redesign
-
-The redesign re-skins the app onto the **Dark Workspace Kit** aesthetic. The kit's
-HTML/React prototype lives in `design/` and is the executable reference; it uses its
-own term set (`ds-*` / `ftf-*`) that does **not** ship to production. These are the
-canonical production names; the prototype aliases are listed so future agents don't
-introduce duplicates.
+**Daily Streak**:
+The Rail indicator for consecutive complete Days within the viewed Week.
+_Avoid_: habit streak, rolling streak.
 
 **Donut**:
-The SVG progress ring showing completed-of-total (day header completion, Weekly
-Balance total). The existing `PieChart` component IS the Donut — restyled, not
-replaced.
-_Avoid_: PieChart (legacy name, kept only as the filename until renamed), ProgressRing.
+The SVG progress ring showing completed-of-total progress.
+_Avoid_: PieChart, progress ring.
 
-**Section Label**:
-A monospaced UPPERCASE micro-label that separates sections by whitespace and a single
-hairline ("WEEK METRICS", "ROLES & GOALS"). The signature type rhythm of the kit.
-_Avoid_: heading, title, header (those imply a heavier visual treatment).
+### Ownership and persistence
 
-**App Actions**:
-Compact global controls (theme + settings/session) mounted in the week toolbar.
-The previous standalone Window Chrome row was removed so the planner gets more
-usable vertical space; do not reintroduce decorative title-bar controls unless
-they carry functional value.
+**User**:
+An authenticated person who exclusively owns their Weeks.
+_Avoid_: account, profile, tenant.
+
+**Session**:
+The authenticated browser state that proves the current User.
+_Avoid_: login, token.
+
+### Workspace UI
+
+**Sidebar**:
+The left workspace column containing Weekly Balance and Roles & Goals.
+_Avoid_: left panel, nav, drawer.
 
 **Rail**:
-The right column (304px) holding Week Metrics and Daily Streak. Distinct from the
-**Sidebar** (left, 296px, Weekly Balance + Roles & Goals).
-_Avoid_: panel, aside (ambiguous — both columns are asides).
+The right workspace column containing Week Metrics and Daily Streak, collapsed by default to a 44px metrics dock and expandable to 304px.
+_Avoid_: right sidebar, panel, aside.
 
-**Free block**:
-A time block with no linked goal (`type: "freestyle"`, `goalId` undefined). Rendered
-with a dashed border. The codebase term is **freestyle**; the prototype calls the same
-thing "free". Use **freestyle** in code, "free" only in user-facing labels if needed.
-_Avoid_: manual block, custom block.
+**Section Label**:
+A monospaced uppercase micro-label that names a workspace section.
+_Avoid_: heading, title, header.
+
+**App Actions**:
+The compact global controls for theme and settings/session mounted in the week toolbar.
+_Avoid_: window chrome, title bar controls.
 
 **Accent**:
-The single brand color (amber by default), driven by the `--ds-accent-h` hue token so
-it can be re-themed wholesale. Only the accent is ever a filled color; everything else
-is hairline-bordered.
+The single brand color used for filled emphasis, currently amber and driven by `--ds-accent-h`.
+_Avoid_: primary color palette, highlight color.
+
+## Relationships
+
+- A **User** owns many **Weeks**; a **Week** belongs to exactly one **User**.
+- A **Week** contains seven **Days**, many **Roles**, many **Goals**, many **Day Priorities**, many **Time Blocks**, and up to seven **Evening Blocks**.
+- A **Goal** belongs to exactly one **Role**.
+- A **Day Priority**, **Time Block**, or **Evening Block** may reference one **Goal**; each instance has completion independent from the Goal and from other instances.
+- A **Time Block** occupies one or more contiguous **Slots** on exactly one **Day**.
+- A **Day** has at most one **Evening Block**.
+- A **Freestyle Block** has no **Goal**, but may still carry a **Role** for color and hour accounting.
+- **Weekly Balance** and **Week Metrics** count Time Blocks by slot duration and Evening Blocks as one fixed planned hour.
+- A **Daily Streak** Day is complete only when it has at least one Day Priority and all of that Day’s Day Priorities are complete.
+- The **Sidebar** and expanded **Rail** frame the calendar; the collapsed **Rail** remains as a metrics dock.
+
+## Example dialogue
+
+> **Dev:** “If a User drags a Goal onto Tuesday at 10:30, are we moving the Goal?”
+> **Domain expert:** “No — the Goal stays under its Role, and we create a Time Block instance for Tuesday’s Slot grid.”
+>
+> **Dev:** “If they complete that Time Block, should the Goal and Day Priority complete too?”
+> **Domain expert:** “No — each Goal instance has independent completion; Daily Streak only looks at Day Priorities.”
+>
+> **Dev:** “Can Tuesday have two Evening Blocks?”
+> **Domain expert:** “No — a Day has at most one Evening Block, so a second drop should snap back.”
 
 ## Flagged ambiguities
 
-- "Donut" vs "PieChart" — same component; **Donut** is canonical, `PieChart` is the
-  current filename pending rename.
-- "free" vs "freestyle" block — same concept; **freestyle** is canonical in code.
-- "Daily Streak" counts a day complete only when **all** its day-priorities are done
-  and the day has ≥1 priority; the grid is current-week only (no cross-week rolling).
+- “free block” vs “freestyle block” — same concept; **Freestyle Block** is canonical, and code uses `type: "freestyle"`.
+- “Donut” vs “PieChart” — same component; **Donut** is canonical, while `PieChart` remains a legacy filename/import name.
+- “right sidebar” vs “Rail” — **Rail** is canonical; it is collapsed by default but still the same right-side surface.
+- “Slot height” vs “Slot duration” — a **Slot** is always 30 minutes; the current rendering scale is `SLOT_HEIGHT = 24` pixels.
+- “Time constants” vs “layout constants” — `src/lib/time-model.ts` owns time-domain constants and conversions; `src/lib/constants.ts` owns layout sizes plus non-time product limits/targets such as `MAX_PRIORITIES_PER_DAY` and `WEEKLY_TARGET_HOURS`.
+- “Daily Streak” is not a cross-week habit streak; it is scoped to the viewed Week only.
