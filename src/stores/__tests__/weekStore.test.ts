@@ -970,7 +970,7 @@ describe("createNewWeek", () => {
     };
   }
 
-  it("remaps carried-over goals onto the new week's role ids by role name, resets completion", async () => {
+  it("remaps carried-over goals onto the new week's role ids by source role id, resets completion", async () => {
     const source = sourceWeek();
     const carryOverGoals: Goal[] = [
       { id: "g-1", roleId: "s-1", text: "Ship", notes: "soon", completed: true },
@@ -991,6 +991,27 @@ describe("createNewWeek", () => {
     expect(work.roleId).not.toBe("s-1");
     expect(work.notes).toBe("soon"); // notes preserved
     expect(work.completed).toBe(false); // completion reset
+  });
+
+  it("does not confuse duplicate role names during carryover", async () => {
+    const source = sourceWeek();
+    source.roles = [
+      { id: "s-1", name: "Work", color: "teal", order: 0 },
+      { id: "s-2", name: "Work", color: "amber", order: 1 },
+    ];
+    const carryOverGoals: Goal[] = [
+      { id: "g-1", roleId: "s-1", text: "Ship", completed: false },
+      { id: "g-2", roleId: "s-2", text: "Budget", completed: false },
+    ];
+    vi.clearAllMocks();
+
+    const week = await useWeekStore
+      .getState()
+      .createNewWeek("2026-W05" as WeekId, { carryOverGoals, sourceWeek: source });
+
+    expect(week.roles.map((role) => role.name)).toEqual(["Work", "Work"]);
+    expect(week.goals.find((goal) => goal.text === "Ship")?.roleId).toBe(week.roles[0].id);
+    expect(week.goals.find((goal) => goal.text === "Budget")?.roleId).toBe(week.roles[1].id);
   });
 
   it("drops goals whose source role is gone", async () => {
