@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   resolveDrop,
+  resolveDropRoute,
   resolveTimeGridDropPreview,
   dispatchDropIntent,
   type DropActions,
@@ -44,9 +45,6 @@ const prioritiesZone: DropZoneData = { zone: "priorities", dayIndex: TARGET_DAY 
 const eveningZone: DropZoneData = { zone: "evening", dayIndex: TARGET_DAY };
 const timegridZone: DropZoneData = { zone: "timegrid", dayIndex: TARGET_DAY, slotIndex: 4 };
 
-/** Free snapshot: no priorities and no evening blocks anywhere. */
-const free = { dayPriorities: [] as DayPriority[], eveningBlocks: [] as EveningBlock[] };
-
 function fullPriorities(dayIndex: number): DayPriority[] {
   return Array.from({ length: MAX_PRIORITIES_PER_DAY }, (_, i) => ({
     id: `p${i}`,
@@ -74,12 +72,12 @@ function timeBlock(id: string, startSlot: number, duration: number, roleId = "ro
 const roles: Role[] = [{ id: "role-1", name: "Work", color: "teal", order: 0 }];
 
 // ============================================================================
-// The 12-route table on a free snapshot (object equality)
+// The 12-route table (object equality, no snapshot policy)
 // ============================================================================
 
-describe("resolveDrop — routing matrix (free snapshot)", () => {
+describe("resolveDropRoute — routing matrix", () => {
   it("block → priorities", () => {
-    expect(resolveDrop(blockDrag, prioritiesZone, free)).toEqual({
+    expect(resolveDropRoute(blockDrag, prioritiesZone)).toEqual({
       action: "convertBlockToPriority",
       blockId: "block-1",
       dayIndex: TARGET_DAY,
@@ -87,7 +85,7 @@ describe("resolveDrop — routing matrix (free snapshot)", () => {
   });
 
   it("block → evening", () => {
-    expect(resolveDrop(blockDrag, eveningZone, free)).toEqual({
+    expect(resolveDropRoute(blockDrag, eveningZone)).toEqual({
       action: "moveBlockToEvening",
       blockId: "block-1",
       dayIndex: TARGET_DAY,
@@ -95,7 +93,7 @@ describe("resolveDrop — routing matrix (free snapshot)", () => {
   });
 
   it("block → timegrid", () => {
-    expect(resolveDrop(blockDrag, timegridZone, free)).toEqual({
+    expect(resolveDropRoute(blockDrag, timegridZone)).toEqual({
       action: "moveTimeBlock",
       blockId: "block-1",
       dayIndex: TARGET_DAY,
@@ -104,7 +102,7 @@ describe("resolveDrop — routing matrix (free snapshot)", () => {
   });
 
   it("priority → timegrid", () => {
-    expect(resolveDrop(priorityDrag, timegridZone, free)).toEqual({
+    expect(resolveDropRoute(priorityDrag, timegridZone)).toEqual({
       action: "convertPriorityToBlock",
       priorityId: "prio-1",
       dayIndex: TARGET_DAY,
@@ -113,7 +111,7 @@ describe("resolveDrop — routing matrix (free snapshot)", () => {
   });
 
   it("priority → evening", () => {
-    expect(resolveDrop(priorityDrag, eveningZone, free)).toEqual({
+    expect(resolveDropRoute(priorityDrag, eveningZone)).toEqual({
       action: "convertPriorityToEvening",
       priorityId: "prio-1",
       dayIndex: TARGET_DAY,
@@ -121,7 +119,7 @@ describe("resolveDrop — routing matrix (free snapshot)", () => {
   });
 
   it("priority → priorities", () => {
-    expect(resolveDrop(priorityDrag, prioritiesZone, free)).toEqual({
+    expect(resolveDropRoute(priorityDrag, prioritiesZone)).toEqual({
       action: "movePriorityToDay",
       priorityId: "prio-1",
       dayIndex: TARGET_DAY,
@@ -129,7 +127,7 @@ describe("resolveDrop — routing matrix (free snapshot)", () => {
   });
 
   it("evening → priorities", () => {
-    expect(resolveDrop(eveningDrag, prioritiesZone, free)).toEqual({
+    expect(resolveDropRoute(eveningDrag, prioritiesZone)).toEqual({
       action: "convertEveningToPriority",
       eveningBlockId: "ev-1",
       dayIndex: TARGET_DAY,
@@ -137,7 +135,7 @@ describe("resolveDrop — routing matrix (free snapshot)", () => {
   });
 
   it("evening → timegrid", () => {
-    expect(resolveDrop(eveningDrag, timegridZone, free)).toEqual({
+    expect(resolveDropRoute(eveningDrag, timegridZone)).toEqual({
       action: "moveEveningToBlock",
       eveningBlockId: "ev-1",
       dayIndex: TARGET_DAY,
@@ -146,7 +144,7 @@ describe("resolveDrop — routing matrix (free snapshot)", () => {
   });
 
   it("evening → evening", () => {
-    expect(resolveDrop(eveningDrag, eveningZone, free)).toEqual({
+    expect(resolveDropRoute(eveningDrag, eveningZone)).toEqual({
       action: "moveEveningToDay",
       eveningBlockId: "ev-1",
       dayIndex: TARGET_DAY,
@@ -154,14 +152,14 @@ describe("resolveDrop — routing matrix (free snapshot)", () => {
   });
 
   it("goal → priorities", () => {
-    expect(resolveDrop(goalDrag, prioritiesZone, free)).toEqual({
+    expect(resolveDropRoute(goalDrag, prioritiesZone)).toEqual({
       action: "addDayPriority",
       input: { goalId: "goal-1", dayIndex: TARGET_DAY, completed: false },
     });
   });
 
   it("goal → timegrid", () => {
-    expect(resolveDrop(goalDrag, timegridZone, free)).toEqual({
+    expect(resolveDropRoute(goalDrag, timegridZone)).toEqual({
       action: "placeTimeBlockAt",
       input: {
         type: "goal",
@@ -176,7 +174,7 @@ describe("resolveDrop — routing matrix (free snapshot)", () => {
   });
 
   it("goal → evening", () => {
-    expect(resolveDrop(goalDrag, eveningZone, free)).toEqual({
+    expect(resolveDropRoute(goalDrag, eveningZone)).toEqual({
       action: "addEveningBlock",
       input: {
         type: "goal",
@@ -249,14 +247,14 @@ describe("resolveDrop — goal→evening occupied gate", () => {
 // timegrid slot guard — routes that need a slotIndex
 // ============================================================================
 
-describe("resolveDrop — timegrid slot guard", () => {
+describe("resolveDropRoute — timegrid slot guard", () => {
   const noSlot: DropZoneData = { zone: "timegrid", dayIndex: TARGET_DAY }; // slotIndex undefined
 
   it("returns null for every timegrid route when slotIndex is undefined", () => {
-    expect(resolveDrop(blockDrag, noSlot, free)).toBeNull();
-    expect(resolveDrop(priorityDrag, noSlot, free)).toBeNull();
-    expect(resolveDrop(eveningDrag, noSlot, free)).toBeNull();
-    expect(resolveDrop(goalDrag, noSlot, free)).toBeNull();
+    expect(resolveDropRoute(blockDrag, noSlot)).toBeNull();
+    expect(resolveDropRoute(priorityDrag, noSlot)).toBeNull();
+    expect(resolveDropRoute(eveningDrag, noSlot)).toBeNull();
+    expect(resolveDropRoute(goalDrag, noSlot)).toBeNull();
   });
 });
 
@@ -297,15 +295,15 @@ describe("resolveTimeGridDropPreview", () => {
 // Unmapped zone — fall-through returns null
 // ============================================================================
 
-describe("resolveDrop — unmapped zone", () => {
+describe("resolveDropRoute — unmapped zone", () => {
   // A zone value outside the known set exercises each case's final `return null`.
   const unknownZone = { zone: "sidebar", dayIndex: TARGET_DAY } as unknown as DropZoneData;
 
   it("returns null for every drag type on an unmapped zone", () => {
-    expect(resolveDrop(blockDrag, unknownZone, free)).toBeNull();
-    expect(resolveDrop(priorityDrag, unknownZone, free)).toBeNull();
-    expect(resolveDrop(eveningDrag, unknownZone, free)).toBeNull();
-    expect(resolveDrop(goalDrag, unknownZone, free)).toBeNull();
+    expect(resolveDropRoute(blockDrag, unknownZone)).toBeNull();
+    expect(resolveDropRoute(priorityDrag, unknownZone)).toBeNull();
+    expect(resolveDropRoute(eveningDrag, unknownZone)).toBeNull();
+    expect(resolveDropRoute(goalDrag, unknownZone)).toBeNull();
   });
 });
 

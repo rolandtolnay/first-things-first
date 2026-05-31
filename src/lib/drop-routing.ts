@@ -8,10 +8,10 @@
  * wiring is a plain function — testable by object equality, with no React,
  * dnd-kit, or store dependency.
  *
- * `resolveDrop` returns a plain data *intent* (not a bound thunk) so the routing
- * table is the artifact under test. `dispatchDropIntent` is the thin, mechanical
- * mapping from intent → store action, leaving the component holding only
- * `resolveDrop(...) → dispatchDropIntent(...)`.
+ * `resolveDropRoute` returns the route-only intent. `resolveDrop` applies the
+ * snapshot policy gates for commit-time dispatch. `dispatchDropIntent` is the
+ * thin, mechanical mapping from intent → store action, leaving the component
+ * holding only `resolveDrop(...) → dispatchDropIntent(...)`.
  *
  * Only two guards live here; the rest of the rejection policy already lives
  * silently in the store actions (which return `null`):
@@ -76,34 +76,25 @@ interface TimeGridDropPreviewSnapshot {
 }
 
 // ============================================================================
-// resolveDrop — the routing matrix + capacity policy
+// resolveDropRoute — route matrix, then resolveDrop policy gates
 // ============================================================================
 
 /**
- * Resolve a (drag, drop) pair to a single store-action intent, or `null` when the
- * drop is a no-op (full priorities, occupied evening, missing slot, or an
- * unmapped zone). Callers handle the `over == null` guard before reaching here.
+ * Resolve a (drag, drop) pair to a route intent without applying snapshot policy.
+ * Missing timegrid slots and unmapped zones still return `null` because they are
+ * not valid routes at all.
  */
-export function resolveDrop(
+export function resolveDropRoute(
   dragData: DragData,
   dropData: DropZoneData,
-  snapshot: DropSnapshot
 ): DropIntent | null {
   const day = dropData.dayIndex;
   const slot = dropData.slotIndex;
-
-  const isPrioritiesFull = (dayIdx: DayOfWeek): boolean =>
-    snapshot.dayPriorities.filter((p) => p.dayIndex === dayIdx).length >=
-    MAX_PRIORITIES_PER_DAY;
-
-  const isEveningOccupied = (dayIdx: DayOfWeek): boolean =>
-    snapshot.eveningBlocks.some((b) => b.dayIndex === dayIdx);
 
   switch (dragData.type) {
     case "block": {
       const { blockId } = dragData;
       if (dropData.zone === "priorities") {
-        if (isPrioritiesFull(day)) return null;
         return { action: "convertBlockToPriority", blockId, dayIndex: day };
       }
       if (dropData.zone === "evening") {
@@ -124,7 +115,6 @@ export function resolveDrop(
         return { action: "convertPriorityToEvening", priorityId, dayIndex: day };
       }
       if (dropData.zone === "priorities") {
-        if (isPrioritiesFull(day)) return null;
         return { action: "movePriorityToDay", priorityId, dayIndex: day };
       }
       return null;
@@ -133,7 +123,6 @@ export function resolveDrop(
     case "evening": {
       const { eveningBlockId } = dragData;
       if (dropData.zone === "priorities") {
-        if (isPrioritiesFull(day)) return null;
         return { action: "convertEveningToPriority", eveningBlockId, dayIndex: day };
       }
       if (dropData.zone === "timegrid" && slot !== undefined) {
@@ -147,7 +136,6 @@ export function resolveDrop(
 
     case "goal": {
       if (dropData.zone === "priorities") {
-        if (isPrioritiesFull(day)) return null;
         return {
           action: "addDayPriority",
           input: { goalId: dragData.goalId, dayIndex: day, completed: false },
@@ -168,9 +156,6 @@ export function resolveDrop(
         };
       }
       if (dropData.zone === "evening") {
-        // Single-array create — addEveningBlock throws on a duplicate, so pre-check
-        // here to keep snap-back silent.
-        if (isEveningOccupied(day)) return null;
         return {
           action: "addEveningBlock",
           input: {
@@ -188,6 +173,54 @@ export function resolveDrop(
   }
 
   return null;
+}
+
+function dropIntentDay(intent: DropIntent): DayOfWeek {
+  return "input" in intent ? intent.input.dayIndex : intent.dayIndex;
+}
+
+function targetsPriorities(intent: DropIntent): boolean {
+  return (
+    intent.action === "convertBlockToPriority" ||
+    intent.action === "movePriorityToDay" ||
+    intent.action === "convertEveningToPriority" ||
+    intent.action === "addDayPriority"
+  );
+}
+
+function applyDropPolicy(intent: DropIntent, snapshot: DropSnapshot): DropIntent | null {
+  const day = dropIntentDay(intent);
+
+  if (targetsPriorities(intent)) {
+    const prioritiesFull = snapshot.dayPriorities.filter((p) => p.dayIndex === day).length >=
+      MAX_PRIORITIES_PER_DAY;
+    if (prioritiesFull) return null;
+  }
+
+  // Single-array create — addEveningBlock throws on a duplicate, so pre-check
+  // here to keep snap-back silent.
+  if (
+    intent.action === "addEveningBlock" &&
+    snapshot.eveningBlocks.some((block) => block.dayIndex === day)
+  ) {
+    return null;
+  }
+
+  return intent;
+}
+
+/**
+ * Resolve a (drag, drop) pair to a single store-action intent, or `null` when the
+ * drop is a no-op (full priorities, occupied evening, missing slot, or an
+ * unmapped zone). Callers handle the `over == null` guard before reaching here.
+ */
+export function resolveDrop(
+  dragData: DragData,
+  dropData: DropZoneData,
+  snapshot: DropSnapshot
+): DropIntent | null {
+  const route = resolveDropRoute(dragData, dropData);
+  return route ? applyDropPolicy(route, snapshot) : null;
 }
 
 function roleColorForId(roles: Role[], roleId: string | undefined): RoleColor | undefined {
@@ -215,10 +248,7 @@ export function resolveTimeGridDropPreview(
   if (!dragData || !dropData) return null;
   if (dropData.zone !== "timegrid" || dropData.dayIndex !== dayIndex) return null;
 
-  const intent = resolveDrop(dragData, dropData, {
-    dayPriorities: [],
-    eveningBlocks: [],
-  });
+  const intent = resolveDropRoute(dragData, dropData);
   if (!intent) return null;
 
   const dayBlocks = snapshot.timeBlocks.filter((block) => block.dayIndex === dayIndex);
