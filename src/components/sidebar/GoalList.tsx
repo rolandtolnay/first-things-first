@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
 import { GoalItem } from "./GoalItem";
@@ -8,25 +9,31 @@ import { GoalItem } from "./GoalItem";
 interface GoalListProps {
   roleId: string;
   addingGoal?: boolean;
+  onStartAddingGoal?: () => void;
   onAddingGoalDone?: () => void;
 }
 
-export function GoalList({ roleId, addingGoal, onAddingGoalDone }: GoalListProps) {
+export function GoalList({ roleId, addingGoal, onStartAddingGoal, onAddingGoalDone }: GoalListProps) {
   const currentWeek = useWeekStore((state) => state.currentWeek);
   const addGoal = useWeekStore((state) => state.addGoal);
+  const allGoals = currentWeek?.goals;
   const [inputValue, setInputValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (addingGoal && inputRef.current) {
-      inputRef.current.focus();
-    }
+    if (!addingGoal) return;
+
+    const focusFrame = requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+
+    return () => cancelAnimationFrame(focusFrame);
   }, [addingGoal]);
 
   const goals = useMemo(() => {
-    if (!currentWeek?.goals) return [];
-    return currentWeek.goals.filter((g) => g.roleId === roleId);
-  }, [currentWeek?.goals, roleId]);
+    if (!allGoals) return [];
+    return allGoals.filter((g) => g.roleId === roleId);
+  }, [allGoals, roleId]);
 
   function handleSubmit() {
     const trimmed = inputValue.trim();
@@ -58,7 +65,7 @@ export function GoalList({ roleId, addingGoal, onAddingGoalDone }: GoalListProps
         <GoalItem key={goal.id} goal={goal} />
       ))}
 
-      {addingGoal && (
+      {addingGoal ? (
         <Input
           ref={inputRef}
           type="text"
@@ -70,7 +77,17 @@ export function GoalList({ roleId, addingGoal, onAddingGoalDone }: GoalListProps
           className="text-[12px] text-foreground"
           aria-label="New goal text"
         />
-      )}
+      ) : goals.length === 0 ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          className="h-6 justify-start rounded-[4px] px-2 text-[12px] font-normal text-muted-foreground hover:bg-[var(--ds-line)] hover:text-foreground"
+          onClick={onStartAddingGoal}
+        >
+          Add goal
+        </Button>
+      ) : null}
     </div>
   );
 }

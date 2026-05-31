@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { MoreVertical, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
@@ -59,19 +59,33 @@ export function RoleSection({ role }: RoleSectionProps) {
   const [addingGoal, setAddingGoal] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const shouldOpenGoalInputAfterMenuCloseRef = useRef(false);
 
   const { isEditing, editValue, setEditValue, inputRef, startEdit, save, handleKeyDown } =
     useEditableText(role.name, handleSaveRole);
 
+  const handleStartAddingGoal = useCallback(() => setAddingGoal(true), []);
+  const handleStartAddingGoalFromDropdownMenu = useCallback(() => {
+    shouldOpenGoalInputAfterMenuCloseRef.current = true;
+  }, []);
+
+  const handleDropdownCloseAutoFocus = useCallback((event: Event) => {
+    if (!shouldOpenGoalInputAfterMenuCloseRef.current) return;
+
+    shouldOpenGoalInputAfterMenuCloseRef.current = false;
+    event.preventDefault();
+    setAddingGoal(true);
+  }, []);
+
   const menuItems = (
     <>
-      <ContextMenuItem onClick={() => setAddingGoal(true)}>
+      <ContextMenuItem onSelect={handleStartAddingGoal}>
         <Plus className="size-3.5 mr-2" />
         Add goal
       </ContextMenuItem>
       <ContextMenuItem
         className="text-destructive"
-        onClick={() => setDeleteDialogOpen(true)}
+        onSelect={() => setDeleteDialogOpen(true)}
       >
         <Trash2 className="size-3.5 mr-2" />
         Delete role
@@ -123,15 +137,6 @@ export function RoleSection({ role }: RoleSectionProps) {
                   </span>
                 )}
 
-                {/* Add-goal — reveals on hover */}
-                <button
-                  onClick={() => setAddingGoal(true)}
-                  aria-label="Add goal"
-                  className="flex size-[18px] shrink-0 items-center justify-center rounded-[4px] text-muted-foreground opacity-0 transition-[opacity,background-color,color] hover:bg-[var(--ds-line)] hover:text-foreground group-hover/role:opacity-100"
-                >
-                  <Plus size={12} strokeWidth={1.6} />
-                </button>
-
                 {/* Overflow menu — top-right, reveals on hover */}
                 <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
                   <DropdownMenuTrigger asChild>
@@ -146,14 +151,14 @@ export function RoleSection({ role }: RoleSectionProps) {
                       <MoreVertical className="size-3.5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => { setAddingGoal(true); setMenuOpen(false); }}>
+                  <DropdownMenuContent align="end" onCloseAutoFocus={handleDropdownCloseAutoFocus}>
+                    <DropdownMenuItem onSelect={handleStartAddingGoalFromDropdownMenu}>
                       <Plus className="size-3.5 mr-2" />
                       Add goal
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-destructive"
-                      onClick={() => { setDeleteDialogOpen(true); setMenuOpen(false); }}
+                      onSelect={() => { setDeleteDialogOpen(true); setMenuOpen(false); }}
                     >
                       <Trash2 className="size-3.5 mr-2" />
                       Delete role
@@ -165,7 +170,12 @@ export function RoleSection({ role }: RoleSectionProps) {
           </div>
 
           <div className="mt-2 pl-0.5">
-            <GoalList roleId={role.id} addingGoal={addingGoal} onAddingGoalDone={() => setAddingGoal(false)} />
+            <GoalList
+              roleId={role.id}
+              addingGoal={addingGoal}
+              onStartAddingGoal={handleStartAddingGoal}
+              onAddingGoalDone={() => setAddingGoal(false)}
+            />
           </div>
         </div>
       </ContextMenuTrigger>
