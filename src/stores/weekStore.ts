@@ -9,14 +9,13 @@ import { create } from "zustand";
 import {
   generateId,
   getCurrentWeekId,
-  getWeekStartDate,
-  parseWeekId,
 } from "@/lib/utils";
 import {
   resolveNewPlacement,
   resolveMovePlacement,
   resolveResize,
 } from "@/lib/scheduling";
+import { buildEmptyWeek, buildTargetWeek } from "@/lib/weekly-handoff";
 import { weekPersistence } from "@/stores/weekPersistence";
 import type {
   Week,
@@ -150,77 +149,6 @@ interface WeekStore {
   moveEveningToBlock: (eveningBlockId: string, dayIndex: DayOfWeek, startSlot: number) => Promise<TimeBlock | null>;
   convertEveningToPriority: (eveningBlockId: string, dayIndex: DayOfWeek) => Promise<DayPriority | null>;
   moveEveningToDay: (eveningBlockId: string, dayIndex: DayOfWeek) => Promise<EveningBlock | null>;
-}
-
-// ============================================================================
-// Helper: Create Empty Week
-// ============================================================================
-
-function buildWeekShell(
-  weekId: WeekId,
-  carryOverRoles?: Role[]
-): { week: Week; roleIdMap: Map<string, string> } {
-  const monday = parseWeekId(weekId);
-  const now = new Date().toISOString();
-  const roleIdMap = new Map<string, string>();
-
-  // If carrying over roles, reset their IDs and keep order/colors.
-  const roles: Role[] = carryOverRoles
-    ? carryOverRoles.map((role, index) => {
-        const clonedRole = {
-          id: generateId(),
-          name: role.name,
-          color: role.color,
-          order: index,
-        };
-        roleIdMap.set(role.id, clonedRole.id);
-        return clonedRole;
-      })
-    : [];
-
-  return {
-    week: {
-      id: weekId,
-      startDate: getWeekStartDate(monday).toISOString(),
-      roles,
-      goals: [],
-      dayPriorities: [],
-      timeBlocks: [],
-      eveningBlocks: [],
-      createdAt: now,
-      updatedAt: now,
-    },
-    roleIdMap,
-  };
-}
-
-function createEmptyWeek(weekId: WeekId, carryOverRoles?: Role[]): Week {
-  return buildWeekShell(weekId, carryOverRoles).week;
-}
-
-function buildCarriedWeek(
-  weekId: WeekId,
-  sourceWeek: Week | undefined,
-  carryOverGoals: Goal[] | undefined
-): Week {
-  const { week, roleIdMap } = buildWeekShell(weekId, sourceWeek?.roles);
-
-  if (!carryOverGoals || carryOverGoals.length === 0) return week;
-
-  week.goals = carryOverGoals.flatMap((goal) => {
-    const newRoleId = roleIdMap.get(goal.roleId);
-    if (!newRoleId) return [];
-
-    return [{
-      id: generateId(),
-      roleId: newRoleId,
-      text: goal.text,
-      notes: goal.notes,
-      completed: false,
-    } satisfies Goal];
-  });
-
-  return week;
 }
 
 // ============================================================================
@@ -408,7 +336,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   createWeek: async (weekId: WeekId, carryOverRoles?: Role[]) => {
-    const week = createEmptyWeek(weekId, carryOverRoles);
+    const week = buildEmptyWeek({ weekId, carryOverRoles });
     await persistCreatedWeek(get, set, week);
     return week;
   },
@@ -417,11 +345,11 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     weekId: WeekId,
     options: { carryOverGoals?: Goal[]; sourceWeek?: Week }
   ) => {
-    const week = buildCarriedWeek(
-      weekId,
-      options.sourceWeek,
-      options.carryOverGoals
-    );
+    const week = buildTargetWeek({
+      targetWeekId: weekId,
+      sourceWeek: options.sourceWeek,
+      carryOverGoals: options.carryOverGoals,
+    });
 
     await persistCreatedWeek(get, set, week);
     return week;

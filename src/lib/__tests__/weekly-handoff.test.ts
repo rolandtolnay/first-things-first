@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildWeeklyHandoffModel } from "@/lib/weekly-handoff";
+import { buildEmptyWeek, buildTargetWeek, buildWeeklyHandoffModel } from "@/lib/weekly-handoff";
 import type { Goal, Role, Week, WeekId } from "@/types";
 
 const sourceWeekId = "2026-W10" as WeekId;
@@ -58,6 +58,112 @@ function buildModel({
     selectedGoalIds,
   });
 }
+
+function idSequence(...ids: string[]): () => string {
+  let index = 0;
+  return () => ids[index++] ?? `generated-${index}`;
+}
+
+describe("buildEmptyWeek", () => {
+  it("builds an empty Week shell with copied Roles and no planning items", () => {
+    const target = buildEmptyWeek({
+      weekId: defaultTargetWeekId,
+      carryOverRoles: [
+        role({ id: "old-work", name: "Work", color: "teal", order: 7 }),
+        role({ id: "old-health", name: "Health", color: "rose", order: 2 }),
+      ],
+      now: "2026-03-08T10:00:00.000Z",
+      createId: idSequence("new-work", "new-health"),
+    });
+
+    expect(target).toMatchObject({
+      id: defaultTargetWeekId,
+      startDate: "2026-03-08T22:00:00.000Z",
+      goals: [],
+      dayPriorities: [],
+      timeBlocks: [],
+      eveningBlocks: [],
+      createdAt: "2026-03-08T10:00:00.000Z",
+      updatedAt: "2026-03-08T10:00:00.000Z",
+    });
+    expect(target.roles).toEqual([
+      { id: "new-work", name: "Work", color: "teal", order: 0 },
+      { id: "new-health", name: "Health", color: "rose", order: 1 },
+    ]);
+  });
+});
+
+describe("buildTargetWeek", () => {
+  it("carries Roles and selected Goals through an explicit source-role-id map", () => {
+    const sourceWeek = week({
+      roles: [
+        role({ id: "work-a", name: "Work", color: "teal", order: 0 }),
+        role({ id: "work-b", name: "Work", color: "amber", order: 1 }),
+      ],
+    });
+
+    const target = buildTargetWeek({
+      targetWeekId: defaultTargetWeekId,
+      sourceWeek,
+      carryOverGoals: [
+        goal({ id: "ship", roleId: "work-a", text: "Ship", notes: "soon", completed: true }),
+        goal({ id: "budget", roleId: "work-b", text: "Budget", completed: false }),
+      ],
+      now: "2026-03-08T10:00:00.000Z",
+      createId: idSequence("new-work-a", "new-work-b", "new-ship", "new-budget"),
+    });
+
+    expect(target.roles.map((targetRole) => targetRole.name)).toEqual(["Work", "Work"]);
+    expect(target.goals).toEqual([
+      {
+        id: "new-ship",
+        roleId: "new-work-a",
+        text: "Ship",
+        notes: "soon",
+        completed: false,
+      },
+      {
+        id: "new-budget",
+        roleId: "new-work-b",
+        text: "Budget",
+        notes: undefined,
+        completed: false,
+      },
+    ]);
+    expect(target.dayPriorities).toEqual([]);
+    expect(target.timeBlocks).toEqual([]);
+    expect(target.eveningBlocks).toEqual([]);
+  });
+
+  it("drops carried Goals whose source Role is not present", () => {
+    const target = buildTargetWeek({
+      targetWeekId: defaultTargetWeekId,
+      sourceWeek: week({ roles: [role({ id: "work" })] }),
+      carryOverGoals: [
+        goal({ id: "ship", roleId: "work", text: "Ship" }),
+        goal({ id: "orphan", roleId: "missing", text: "Orphan" }),
+      ],
+      createId: idSequence("new-work", "new-ship"),
+    });
+
+    expect(target.goals.map((targetGoal) => targetGoal.text)).toEqual(["Ship"]);
+  });
+
+  it("starts fresh by carrying Source Week Roles without carrying Goals", () => {
+    const target = buildTargetWeek({
+      targetWeekId: defaultTargetWeekId,
+      sourceWeek: week({
+        roles: [role({ id: "work" })],
+        goals: [goal({ id: "open", roleId: "work" })],
+      }),
+      now: "2026-03-08T10:00:00.000Z",
+      createId: idSequence("new-work"),
+    });
+
+    expect(target.roles).toEqual([{ id: "new-work", name: "Work", color: "teal", order: 0 }]);
+    expect(target.goals).toEqual([]);
+  });
+});
 
 describe("buildWeeklyHandoffModel", () => {
   it("summarizes Source Week Goal completion from Goal state only", () => {

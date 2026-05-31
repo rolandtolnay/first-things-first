@@ -11,7 +11,7 @@ vi.mock("@/lib/db", () => ({
 
 import { useWeekStore, getNextRoleColor } from "@/stores/weekStore";
 import { getWeek, saveWeek } from "@/lib/db";
-import type { Week, WeekId, Role, Goal, EveningBlock, CreateDayPriorityInput } from "@/types";
+import type { Week, WeekId, Role, EveningBlock, CreateDayPriorityInput } from "@/types";
 
 function makeWeek(): Week {
   return {
@@ -926,32 +926,19 @@ describe("moveEveningToDay", () => {
 // ============================================================================
 
 describe("createWeek", () => {
-  it("carries over roles with fresh ids but preserved name/color/order; empty content; persists", async () => {
+  it("persists a newly built Week and adds it to the available Week ids", async () => {
     const carryRoles: Role[] = [
       { id: "old-1", name: "Work", color: "teal", order: 0 },
-      { id: "old-2", name: "Health", color: "amber", order: 1 },
     ];
     vi.clearAllMocks();
 
     const week = await useWeekStore.getState().createWeek("2026-W05" as WeekId, carryRoles);
 
     expect(saveWeek).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(saveWeek).mock.calls[0][0]).toBe(week);
+    expect(useWeekStore.getState().availableWeekIds).toContain("2026-W05");
     expect(week.id).toBe("2026-W05");
-    expect(week.roles.map((r) => ({ name: r.name, color: r.color, order: r.order }))).toEqual([
-      { name: "Work", color: "teal", order: 0 },
-      { name: "Health", color: "amber", order: 1 },
-    ]);
-    expect(week.roles.map((r) => r.id)).not.toContain("old-1");
-    expect(week.roles.map((r) => r.id)).not.toContain("old-2");
-    expect(week.goals).toHaveLength(0);
-    expect(week.dayPriorities).toHaveLength(0);
-    expect(week.timeBlocks).toHaveLength(0);
-    expect(week.eveningBlocks).toHaveLength(0);
-  });
-
-  it("creates an empty week with no roles when none are carried over", async () => {
-    const week = await useWeekStore.getState().createWeek("2026-W05" as WeekId);
-    expect(week.roles).toHaveLength(0);
+    expect(week.roles).toHaveLength(1);
   });
 });
 
@@ -970,69 +957,34 @@ describe("createNewWeek", () => {
     };
   }
 
-  it("remaps carried-over goals onto the new week's role ids by source role id, resets completion", async () => {
+  it("persists a Target Week for carried Goals and adds it to the available Week ids", async () => {
     const source = sourceWeek();
-    const carryOverGoals: Goal[] = [
-      { id: "g-1", roleId: "s-1", text: "Ship", notes: "soon", completed: true },
-      { id: "g-2", roleId: "s-2", text: "Run", completed: false },
-    ];
     vi.clearAllMocks();
 
     const week = await useWeekStore
       .getState()
-      .createNewWeek("2026-W05" as WeekId, { carryOverGoals, sourceWeek: source });
+      .createNewWeek("2026-W05" as WeekId, {
+        carryOverGoals: [{ id: "g-1", roleId: "s-1", text: "Ship", completed: true }],
+        sourceWeek: source,
+      });
 
     expect(saveWeek).toHaveBeenCalledTimes(1);
-    expect(week.goals).toHaveLength(2);
-
-    const work = week.goals.find((g) => g.text === "Ship")!;
-    const newWorkRole = week.roles.find((r) => r.name === "Work")!;
-    expect(work.roleId).toBe(newWorkRole.id); // remapped to the NEW role id
-    expect(work.roleId).not.toBe("s-1");
-    expect(work.notes).toBe("soon"); // notes preserved
-    expect(work.completed).toBe(false); // completion reset
+    expect(vi.mocked(saveWeek).mock.calls[0][0]).toBe(week);
+    expect(useWeekStore.getState().availableWeekIds).toContain("2026-W05");
+    expect(week.roles).toHaveLength(2);
+    expect(week.goals).toHaveLength(1);
   });
 
-  it("does not confuse duplicate role names during carryover", async () => {
-    const source = sourceWeek();
-    source.roles = [
-      { id: "s-1", name: "Work", color: "teal", order: 0 },
-      { id: "s-2", name: "Work", color: "amber", order: 1 },
-    ];
-    const carryOverGoals: Goal[] = [
-      { id: "g-1", roleId: "s-1", text: "Ship", completed: false },
-      { id: "g-2", roleId: "s-2", text: "Budget", completed: false },
-    ];
+  it("persists a fresh Target Week with Source Week Roles and no Goals", async () => {
     vi.clearAllMocks();
 
-    const week = await useWeekStore
-      .getState()
-      .createNewWeek("2026-W05" as WeekId, { carryOverGoals, sourceWeek: source });
-
-    expect(week.roles.map((role) => role.name)).toEqual(["Work", "Work"]);
-    expect(week.goals.find((goal) => goal.text === "Ship")?.roleId).toBe(week.roles[0].id);
-    expect(week.goals.find((goal) => goal.text === "Budget")?.roleId).toBe(week.roles[1].id);
-  });
-
-  it("drops goals whose source role is gone", async () => {
-    const source = sourceWeek();
-    const carryOverGoals: Goal[] = [
-      { id: "g-1", roleId: "s-1", text: "Ship", completed: false },
-      { id: "g-orphan", roleId: "missing-role", text: "Orphan", completed: false },
-    ];
-    vi.clearAllMocks();
-
-    const week = await useWeekStore
-      .getState()
-      .createNewWeek("2026-W05" as WeekId, { carryOverGoals, sourceWeek: source });
-
-    expect(week.goals.map((g) => g.text)).toEqual(["Ship"]); // orphan dropped
-  });
-
-  it("produces empty goals when no carryOverGoals are given", async () => {
     const week = await useWeekStore
       .getState()
       .createNewWeek("2026-W05" as WeekId, { sourceWeek: sourceWeek() });
+
+    expect(saveWeek).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(saveWeek).mock.calls[0][0]).toBe(week);
+    expect(week.roles).toHaveLength(2);
     expect(week.goals).toHaveLength(0);
   });
 });
