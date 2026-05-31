@@ -54,16 +54,16 @@ export function buildWeeklyHandoffModel({
   selectedGoalIds,
 }: WeeklyHandoffModelInput): WeeklyHandoffModel {
   const goals = sourceWeek?.goals ?? [];
-  const completedGoals = goals.filter((goal) => goal.completed).length;
+  const unfinishedGoals = goals.filter((goal) => !goal.completed);
+  const completedGoals = goals.length - unfinishedGoals.length;
   const totalGoals = goals.length;
-  const unfinishedGoals = totalGoals - completedGoals;
   const unfinishedGoalGroups =
     sourceWeek
       ? [...sourceWeek.roles]
           .sort((left, right) => left.order - right.order)
           .map((role) => ({
             role,
-            goals: goals.filter((goal) => goal.roleId === role.id && !goal.completed),
+            goals: unfinishedGoals.filter((goal) => goal.roleId === role.id),
           }))
           .filter((group) => group.goals.length > 0)
       : [];
@@ -83,7 +83,7 @@ export function buildWeeklyHandoffModel({
     summary: {
       completedGoals,
       totalGoals,
-      unfinishedGoals,
+      unfinishedGoals: unfinishedGoals.length,
       completionPercent: totalGoals === 0 ? 0 : Math.round((completedGoals / totalGoals) * 100),
     },
     unfinishedGoalGroups,
