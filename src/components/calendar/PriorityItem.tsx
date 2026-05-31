@@ -1,7 +1,20 @@
 "use client";
 
+import { useRef } from "react";
 import { useDraggable } from "@dnd-kit/core";
-import { X } from "lucide-react";
+import { CheckCircle, Circle, MoreVertical, Trash2 } from "lucide-react";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useWeekStore } from "@/stores/weekStore";
 import { cn } from "@/lib/utils";
 import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
@@ -19,6 +32,7 @@ interface PriorityItemProps {
 export function PriorityItem({ priority, goal, roleColor, dayIndex, height }: PriorityItemProps) {
   const removeDayPriority = useWeekStore((state) => state.removeDayPriority);
   const toggleDayPriorityCompleted = useWeekStore((state) => state.toggleDayPriorityCompleted);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const dragData = {
     type: "priority",
     priorityId: priority.id,
@@ -33,7 +47,33 @@ export function PriorityItem({ priority, goal, roleColor, dayIndex, height }: Pr
     data: dragData,
   });
 
-  return (
+  function handleToggleCompleted() {
+    toggleDayPriorityCompleted(priority.id);
+  }
+
+  function handleDelete() {
+    removeDayPriority(priority.id);
+  }
+
+  function handleDropdownCloseAutoFocus(event: Event) {
+    event.preventDefault();
+    menuButtonRef.current?.blur();
+  }
+
+  const contextMenuItems = (
+    <>
+      <ContextMenuItem onSelect={handleToggleCompleted}>
+        {priority.completed ? <Circle className="size-3.5 mr-2" /> : <CheckCircle className="size-3.5 mr-2" />}
+        {priority.completed ? "Mark incomplete" : "Mark complete"}
+      </ContextMenuItem>
+      <ContextMenuItem className="text-destructive" onSelect={handleDelete}>
+        <Trash2 className="size-3.5 mr-2" />
+        Delete
+      </ContextMenuItem>
+    </>
+  );
+
+  const cardContent = (
     <div
       ref={setNodeRef}
       {...listeners}
@@ -61,7 +101,7 @@ export function PriorityItem({ priority, goal, roleColor, dayIndex, height }: Pr
           onPointerDown={(event) => event.stopPropagation()}
           onClick={(event) => {
             event.stopPropagation();
-            toggleDayPriorityCompleted(priority.id);
+            handleToggleCompleted();
           }}
           aria-label={priority.completed ? "Mark priority incomplete" : "Mark priority complete"}
         />
@@ -77,19 +117,52 @@ export function PriorityItem({ priority, goal, roleColor, dayIndex, height }: Pr
         >
           {goal.text}
         </span>
-        <button
-          type="button"
-          className="absolute right-0.5 top-0.5 flex size-4 items-center justify-center rounded-[4px] text-muted-foreground opacity-0 transition-[background-color,color,opacity] hover:bg-[var(--ds-line)] hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100"
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={(event) => {
-            event.stopPropagation();
-            removeDayPriority(priority.id);
-          }}
-          aria-label="Delete priority"
-        >
-          <X className="size-2.5" strokeWidth={1.8} />
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              ref={menuButtonRef}
+              type="button"
+              className="absolute right-0.5 top-0.5 flex size-4 items-center justify-center rounded-[4px] text-muted-foreground opacity-0 transition-[background-color,color,opacity] hover:bg-[var(--ds-line)] hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
+              onDoubleClick={(event) => event.stopPropagation()}
+              aria-label="Open priority menu"
+            >
+              <MoreVertical className="size-3" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="w-auto min-w-36"
+            onCloseAutoFocus={handleDropdownCloseAutoFocus}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <DropdownMenuItem onSelect={handleToggleCompleted}>
+              {priority.completed ? <Circle className="size-3.5 mr-2" /> : <CheckCircle className="size-3.5 mr-2" />}
+              {priority.completed ? "Mark incomplete" : "Mark complete"}
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive" onSelect={handleDelete}>
+              <Trash2 className="size-3.5 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
+  );
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        {cardContent}
+      </ContextMenuTrigger>
+      <ContextMenuContent
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+      >
+        {contextMenuItems}
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }

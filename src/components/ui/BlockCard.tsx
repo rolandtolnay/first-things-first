@@ -323,7 +323,8 @@ export function BlockCard({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            align="end"
+            align="start"
+            className="w-auto min-w-36"
             onPointerDown={(e) => {
               e.stopPropagation();
               handleMenuInteraction();
