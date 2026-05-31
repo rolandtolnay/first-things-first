@@ -1,7 +1,7 @@
 {
   "default": [
     {
-      "name": "general-reviewer",
+      "name": "pi-general-reviewer",
       "description": "correctness, contracts, side effects, edge cases, test impact"
     },
     {
@@ -15,7 +15,7 @@
   ],
   "hard": [
     {
-      "name": "general-reviewer",
+      "name": "pi-general-reviewer",
       "description": "correctness, contracts, side effects, edge cases, test impact"
     },
     {

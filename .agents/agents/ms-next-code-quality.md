@@ -1,13 +1,14 @@
 ---
 name: ms-next-code-quality
 description: Reviews Next.js/React code for quality and conventions. Applies Next.js framework patterns, React performance optimization, composition architecture, and simplification. Spawned by execute-phase/adhoc.
-model: sonnet
-tools: Read, Write, Edit, Bash, Grep, Glob
-color: cyan
-skills:
-  - next-best-practices
-  - vercel-react-best-practices
-  - vercel-composition-patterns
+tools: read, write, edit, bash, grep, find, ls
+model: openai-codex/gpt-5.5
+thinking: high
+systemPromptMode: replace
+inheritProjectContext: true
+inheritSkills: false
+skills: next-best-practices, vercel-react-best-practices, vercel-composition-patterns
+defaultContext: fresh
 ---
 
 You are an expert Next.js and React code quality reviewer. Review code and fix issues so it follows established quality guidelines.
