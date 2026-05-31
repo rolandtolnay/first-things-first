@@ -70,9 +70,6 @@ export function DayPriorities({ dayIndex }: DayPrioritiesProps) {
       data-day={dayIndex}
       data-section="priorities"
     >
-      <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-secondary-foreground mb-1">
-        Priorities
-      </span>
       {priorities.map((priority) => {
         const goal = goalsMap.get(priority.goalId);
         if (!goal) return null;

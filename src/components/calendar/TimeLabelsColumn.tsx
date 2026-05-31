@@ -36,11 +36,20 @@ export function TimeLabelsColumn() {
         style={{ height: `${HEADER_HEIGHT}px` }}
       />
 
-      {/* Priorities spacer */}
+      {/* Priorities row label */}
       <div
-        className="border-b border-border"
+        className="relative border-b border-border"
         style={{ height: `${PRIORITIES_SECTION_HEIGHT}px` }}
-      />
+      >
+        <div className="absolute inset-y-0 right-1.5 flex items-center">
+          <span
+            className="whitespace-nowrap font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-secondary-foreground"
+            style={{ writingMode: "sideways-lr" }}
+          >
+            Priorities
+          </span>
+        </div>
+      </div>
 
       {/* Time labels — absolutely positioned over a slot-height grid */}
       <div

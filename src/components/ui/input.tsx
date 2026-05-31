@@ -8,11 +8,13 @@ function Input({ className, type, style, ...props }: React.ComponentProps<"input
       type={type}
       data-slot="input"
       className={cn(
-        // Bare by default; lights up on focus (hairline underline → accent).
-        "w-full min-w-0 rounded-[var(--ds-r-xs)] bg-transparent px-1.5 py-1 text-sm outline-none",
-        "border-0 border-b-[1.5px] border-border/0 transition-colors",
-        "placeholder:text-muted-foreground",
-        "focus:bg-foreground/5 focus:border-border focus-visible:outline-none",
+        // Calm inline editor: transparent at rest, subtle neutral rectangle on focus.
+        "h-6 w-full min-w-0 rounded-[var(--ds-r-xs)] bg-transparent px-2 py-0 text-sm leading-5 outline-none",
+        "border border-transparent transition-[background-color,border-color,box-shadow]",
+        "placeholder:text-muted-foreground/70",
+        "focus:bg-[var(--ds-panel-2)] focus:border-[var(--ds-line-strong)]",
+        "focus-visible:!outline-none focus-visible:ring-0 focus-visible:shadow-none",
+        "aria-invalid:border-destructive/70 aria-invalid:focus:border-destructive aria-invalid:focus-visible:ring-[3px] aria-invalid:focus-visible:ring-destructive/20",
         "disabled:pointer-events-none disabled:opacity-50",
         className
       )}
