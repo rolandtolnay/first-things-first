@@ -7,7 +7,7 @@ import { useWeekStore } from "@/stores/weekStore";
 import { useBlockResize } from "@/hooks/useBlockResize";
 import { BlockCard } from "@/components/ui/BlockCard";
 import { cn } from "@/lib/utils";
-import { slotToTime, slotToPixels, durationToPixels } from "@/lib/time-model";
+import { formatBlockMeta, slotToPixels, durationToPixels } from "@/lib/time-model";
 
 interface TimeBlockProps {
   block: TimeBlockType;
@@ -91,7 +91,7 @@ export function TimeBlock({
         freestyle={isFreestyle}
         height={height}
         autoEdit={isNewFreestyle}
-        subtitle={`${slotToTime(block.startSlot)} \u2013 ${slotToTime(block.startSlot + displayDuration)}`}
+        subtitle={formatBlockMeta(block.startSlot, displayDuration)}
         onToggle={() => toggleTimeBlockCompleted(block.id)}
         onDelete={isNewFreestyle ? handleAutoDelete : () => deleteTimeBlock(block.id)}
         onEdit={isFreestyle ? handleEdit : undefined}

@@ -9,7 +9,7 @@ import { StreakCard } from "./StreakCard";
  */
 export function Rail() {
   return (
-    <aside className="flex h-full flex-col gap-5 overflow-y-auto border-l border-border px-4 py-5">
+    <aside className="flex h-full flex-col gap-5 overflow-y-auto px-4 py-5">
       <WeekMetrics />
       <hr className="border-border" />
       <StreakCard />

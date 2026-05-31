@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { TextActionButton } from "@/components/ui/TextActionButton";
 import { useWeekStore } from "@/stores/weekStore";
 import { getNextRoleColor } from "@/stores/weekStore";
 import { getRoleColorStyle } from "@/lib/role-colors";
@@ -102,12 +103,12 @@ export function AddRoleButton({
   }
 
   return (
-    <button
+    <TextActionButton
       onClick={onStartAdding}
-      className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-[var(--ds-r-sm)] border border-dashed border-[var(--ds-line)] py-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:border-[var(--ds-line-strong)] hover:bg-[var(--ds-hover-tint)] hover:text-foreground"
+      className="h-auto w-full gap-1.5 rounded-[var(--ds-r-sm)] border border-dashed border-[var(--ds-line)] py-2.5 hover:border-[var(--ds-line-strong)]"
     >
-      <Plus size={12} strokeWidth={1.6} />
+      <Plus strokeWidth={1.6} />
       Add role
-    </button>
+    </TextActionButton>
   );
 }

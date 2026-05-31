@@ -8,7 +8,7 @@ import {
 } from "@/lib/constants";
 import {
   TOTAL_SLOTS,
-  SLOT_HEIGHT,
+  TIME_GRID_HEIGHT,
   slotIsHourStart,
   slotToHourLabel,
   slotToPixels,
@@ -16,7 +16,7 @@ import {
 
 export function TimeLabelsColumn() {
   // Only hour-start slots carry a label; positioned absolutely against the grid
-  // so they stay in lockstep with the day-column hour lines at 16px density.
+  // so they stay in lockstep with the day-column hour lines.
   const hourSlots = Array.from({ length: TOTAL_SLOTS }, (_, i) => i).filter(
     slotIsHourStart
   );
@@ -44,8 +44,8 @@ export function TimeLabelsColumn() {
 
       {/* Time labels — absolutely positioned over a slot-height grid */}
       <div
-        className="relative flex-1"
-        style={{ minHeight: `${TOTAL_SLOTS * SLOT_HEIGHT}px` }}
+        className="relative flex-none"
+        style={{ height: `${TIME_GRID_HEIGHT}px` }}
       >
         {hourSlots.map((slotIndex) => {
           const hour = slotToHourLabel(slotIndex);

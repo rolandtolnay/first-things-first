@@ -19,8 +19,9 @@ interface TimeSlotProps {
 }
 
 export function TimeSlot({ slotIndex, dayIndex }: TimeSlotProps) {
-  // Make this slot a drop target. Hour hairlines are painted by the TimeGrid
-  // background gradient, so slots themselves are borderless at this density.
+  // Make this slot a drop target. Horizontal grid lines are real borders rather
+  // than a repeating gradient because Safari can randomly drop 1px gradient
+  // hairlines while scrolling/rasterizing the calendar.
   const dropData: DropZoneData = {
     zone: "timegrid",
     dayIndex,
@@ -35,9 +36,10 @@ export function TimeSlot({ slotIndex, dayIndex }: TimeSlotProps) {
   return (
     <div
       ref={setNodeRef}
-      className="relative"
+      className="relative border-t"
       style={{
         height: `${SLOT_HEIGHT}px`,
+        borderColor: slotIndex % 2 === 0 ? "var(--ds-line)" : "var(--ds-line-soft)",
         ...(isOver && {
           backgroundColor: 'var(--ds-accent-soft)',
           boxShadow: 'inset 0 0 0 1px var(--ds-accent)',

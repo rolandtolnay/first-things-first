@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useRef, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
+import { AddGoalButton } from "./AddGoalButton";
 import { GoalItem } from "./GoalItem";
 
 interface GoalListProps {
@@ -78,15 +78,7 @@ export function GoalList({ roleId, addingGoal, onStartAddingGoal, onAddingGoalDo
           aria-label="New goal text"
         />
       ) : goals.length === 0 ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="xs"
-          className="h-6 justify-start rounded-[4px] px-2 text-[12px] font-normal text-muted-foreground hover:bg-[var(--ds-line)] hover:text-foreground"
-          onClick={onStartAddingGoal}
-        >
-          Add goal
-        </Button>
+        <AddGoalButton onClick={() => onStartAddingGoal?.()} />
       ) : null}
     </div>
   );

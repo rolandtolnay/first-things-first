@@ -13,7 +13,7 @@ import { useMemo } from "react";
 import type { TimeSlotIndex, DayOfWeek } from "@/types";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockDraw } from "@/hooks/useBlockDraw";
-import { TOTAL_SLOTS, SLOT_HEIGHT, slotToPixels, durationToPixels } from "@/lib/time-model";
+import { TOTAL_SLOTS, TIME_GRID_HEIGHT, slotToPixels, durationToPixels } from "@/lib/time-model";
 import { TimeSlot } from "./TimeSlot";
 import { TimeBlock } from "./TimeBlock";
 import { CurrentTimeIndicator } from "./CurrentTimeIndicator";
@@ -45,18 +45,13 @@ export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
     clearNewBlockId,
   } = useBlockDraw(dayIndex, blocks);
 
-  // Hairline every hour (2 slots): transparent for the first slot, a soft line
-  // on the hour boundary. Derived from SLOT_HEIGHT so it tracks the density.
-  const hourPx = SLOT_HEIGHT * 2;
-  const gridBackground = `repeating-linear-gradient(to bottom, transparent 0 calc(${hourPx}px - 1px), var(--ds-line-soft) calc(${hourPx}px - 1px) ${hourPx}px)`;
-
   return (
     <div
-      className="relative h-full"
+      className="relative"
       data-slots-column
       {...containerProps}
       style={{
-        background: gridBackground,
+        height: `${TIME_GRID_HEIGHT}px`,
         ...(isDrawing ? { touchAction: "none", userSelect: "none" } : {}),
       }}
     >

@@ -38,8 +38,10 @@ export const MIN_BLOCK_SLOTS = 2;
 /** Default duration in slots for a freshly created block (1 hour). */
 export const DEFAULT_BLOCK_SLOTS = 2;
 
-/** Height of one slot row in pixels on the grid. */
-export const SLOT_HEIGHT = 16;
+/** Height of one 30-minute slot row in pixels on the grid. */
+export const SLOT_HEIGHT = 24;
+/** Total height of the visible 8:00–20:00 time grid. */
+export const TIME_GRID_HEIGHT = TOTAL_SLOTS * SLOT_HEIGHT;
 
 // ============================================================================
 // Slot ↔ Clock conversions
@@ -141,4 +143,9 @@ export function slotIsHourStart(slot: number): boolean {
 /** Integer hour for a slot's label (e.g. slot 0 → 8). Caller formats `${hour}:00`. */
 export function slotToHourLabel(slot: number): number {
   return DAY_START_HOUR + Math.floor(slot / SLOTS_PER_HOUR);
+}
+
+/** Human-readable block range metadata, e.g. "10:30 – 12:30". */
+export function formatBlockMeta(startSlot: number, duration: number): string {
+  return `${slotToTime(startSlot)} – ${slotToTime(startSlot + duration)}`;
 }

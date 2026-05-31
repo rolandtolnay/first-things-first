@@ -97,9 +97,7 @@ export function DayColumn({ dayIndex, date }: DayColumnProps) {
       <DayPriorities dayIndex={dayIndex} />
 
       {/* Time grid */}
-      <div className="flex-1">
-        <TimeGrid dayIndex={dayIndex} isToday={isToday} />
-      </div>
+      <TimeGrid dayIndex={dayIndex} isToday={isToday} />
 
       {/* Evening slot */}
       <EveningSlot dayIndex={dayIndex} />

@@ -1,26 +1,22 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useWeekStore } from "@/stores/weekStore";
-import { AddItemInput } from "@/components/ui/AddItemInput";
+import { TextActionButton } from "@/components/ui/TextActionButton";
 
 interface AddGoalButtonProps {
-  roleId: string;
+  onClick: () => void;
 }
 
 /**
- * Subtle, mono add-goal affordance. Not currently mounted (RoleSection drives
- * the inline add-goal flow via GoalList) but kept wired for reuse.
+ * Compact inline add-goal affordance for an empty role. Keep this visually
+ * lighter than AddRoleButton: adding a goal is an in-card action, not a new
+ * card-level drop target.
  */
-export function AddGoalButton({ roleId }: AddGoalButtonProps) {
-  const addGoal = useWeekStore((state) => state.addGoal);
-
+export function AddGoalButton({ onClick }: AddGoalButtonProps) {
   return (
-    <AddItemInput
-      label="Add goal"
-      placeholder="New goal…"
-      onAdd={(text) => addGoal({ roleId, text })}
-      icon={<Plus size={12} strokeWidth={1.6} className="text-muted-foreground" />}
-    />
+    <TextActionButton className="self-start" onClick={onClick}>
+      <Plus strokeWidth={1.6} />
+      Add goal
+    </TextActionButton>
   );
 }
