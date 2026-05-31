@@ -1,9 +1,9 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useWeekStore } from "@/stores/weekStore";
 import { formatWeekId, getCurrentWeekId, getWeekDates } from "@/lib/utils";
-import { AppActions } from "@/components/layout/AppActions";
 import { Button } from "@/components/ui/button";
 import { TabPill } from "@/components/ui/TabPill";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -11,9 +11,10 @@ import type { WeekId } from "@/types";
 
 interface WeekNavigationProps {
   onNewWeek: () => void;
+  actions?: ReactNode;
 }
 
-export function WeekNavigation({ onNewWeek }: WeekNavigationProps) {
+export function WeekNavigation({ onNewWeek, actions }: WeekNavigationProps) {
   const selectedWeekId = useWeekStore((s) => s.selectedWeekId);
   const navigateToWeek = useWeekStore((s) => s.navigateToWeek);
 
@@ -121,8 +122,12 @@ export function WeekNavigation({ onNewWeek }: WeekNavigationProps) {
           <Button variant="outline" size="sm" onClick={onNewWeek}>
             + New
           </Button>
-          <div className="h-5 w-px bg-border" aria-hidden="true" />
-          <AppActions />
+          {actions && (
+            <>
+              <div className="h-5 w-px bg-border" aria-hidden="true" />
+              {actions}
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -9,7 +9,7 @@
  * selectedWeekId from the store and renders.
  */
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { DayOfWeek } from "@/types";
 import { getWeekDates } from "@/lib/utils";
 import { useWeekStore } from "@/stores/weekStore";
@@ -18,7 +18,11 @@ import { TimeLabelsColumn } from "./TimeLabelsColumn";
 import { WeekNavigation } from "./WeekNavigation";
 import { CarryoverDialog } from "./CarryoverDialog";
 
-export function WeekView() {
+interface WeekViewProps {
+  toolbarActions?: ReactNode;
+}
+
+export function WeekView({ toolbarActions }: WeekViewProps) {
   const selectedWeekId = useWeekStore((s) => s.selectedWeekId);
   const currentWeek = useWeekStore((s) => s.currentWeek);
   const isLoading = useWeekStore((s) => s.isLoading);
@@ -46,7 +50,7 @@ export function WeekView() {
   if (!currentWeek && !isLoading) {
     return (
       <div className="h-full flex flex-col">
-        <WeekNavigation onNewWeek={openCarryover} />
+        <WeekNavigation onNewWeek={openCarryover} actions={toolbarActions} />
       </div>
     );
   }
@@ -54,7 +58,7 @@ export function WeekView() {
   return (
     <div className="h-full flex flex-col">
       {/* Navigation header */}
-      <WeekNavigation onNewWeek={openCarryover} />
+      <WeekNavigation onNewWeek={openCarryover} actions={toolbarActions} />
 
       {/* Carryover dialog */}
       <CarryoverDialog
