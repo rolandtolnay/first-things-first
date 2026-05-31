@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import { useDraggable } from "@dnd-kit/core";
 import { useWeekStore } from "@/stores/weekStore";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { InlineInput } from "@/components/ui/input";
 import { useEditableText } from "@/hooks/useEditableText";
 import {
   AlertDialog,
@@ -99,7 +99,7 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
         />
 
         {isEditing ? (
-          <Input
+          <InlineInput
             ref={inputRef}
             type="text"
             value={editValue}

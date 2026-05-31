@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useEffect, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { InlineInput } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
 import { AddGoalButton } from "./AddGoalButton";
 import { GoalItem } from "./GoalItem";
@@ -76,7 +76,7 @@ export function GoalList({
       ))}
 
       {addingGoal ? (
-        <Input
+        <InlineInput
           ref={inputRef}
           type="text"
           value={inputValue}

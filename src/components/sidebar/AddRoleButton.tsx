@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Plus } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { InlineInput } from "@/components/ui/input";
 import { TextActionButton } from "@/components/ui/TextActionButton";
 import { useWeekStore } from "@/stores/weekStore";
 import { getNextRoleColor } from "@/stores/weekStore";
@@ -87,7 +87,7 @@ export function AddRoleButton({
             style={{ backgroundColor: getRoleColorStyle(previewColor) }}
             aria-hidden="true"
           />
-          <Input
+          <InlineInput
             ref={inputRef}
             type="text"
             value={value}

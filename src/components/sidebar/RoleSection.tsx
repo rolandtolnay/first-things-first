@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { MoreVertical, Plus, Trash2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { InlineInput } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
 import { slotsToHours, EVENING_BLOCK_HOURS } from "@/lib/time-model";
 import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
@@ -120,7 +120,7 @@ export function RoleSection({ role }: RoleSectionProps) {
             />
 
             {isEditing ? (
-              <Input
+              <InlineInput
                 ref={inputRef}
                 type="text"
                 value={editValue}
