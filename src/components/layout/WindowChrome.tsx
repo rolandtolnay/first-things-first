@@ -24,7 +24,17 @@ import {
  */
 export function WindowChrome() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const { user, signOut } = useAuth();
+
+  async function handleSignOut() {
+    setIsSigningOut(true);
+    try {
+      await signOut();
+    } finally {
+      setIsSigningOut(false);
+    }
+  }
 
   return (
     <header className="flex shrink-0 items-center justify-between px-4 py-3">
@@ -67,9 +77,14 @@ export function WindowChrome() {
                 {user?.email ?? "—"}
               </span>
             </div>
-            <Button variant="outline" size="sm" onClick={() => void signOut()}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isSigningOut}
+              onClick={handleSignOut}
+            >
               <LogOut className="size-3.5" strokeWidth={1.4} />
-              Sign out
+              {isSigningOut ? "Signing out…" : "Sign out"}
             </Button>
           </div>
         </DialogContent>

@@ -1,10 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-/** Paths reachable without a Session: the login screen and the auth callbacks. */
-function isPublicPath(pathname: string): boolean {
-  return pathname === "/login" || pathname.startsWith("/auth");
-}
+import {
+  buildAuthenticatedHomeUrl,
+  buildLoginRedirectUrl,
+  isPublicAuthPath,
+} from "@/lib/auth-redirects";
+import { getSupabaseConfig } from "@/lib/supabase/config";
+import type { Database } from "@/lib/supabase/database.types";
 
 /**
  * Refreshes the Supabase session cookie on every matched request and gates
@@ -15,26 +18,23 @@ function isPublicPath(pathname: string): boolean {
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          );
-        },
+  const { url, publishableKey } = getSupabaseConfig();
+  const supabase = createServerClient<Database>(url, publishableKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) =>
+          request.cookies.set(name, value),
+        );
+        supabaseResponse = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options),
+        );
       },
     },
-  );
+  });
 
   // IMPORTANT: do not run code between creating the client and getUser().
   // getUser() revalidates and refreshes the token; interleaving other logic
@@ -47,19 +47,13 @@ export async function updateSession(request: NextRequest) {
 
   // No Session on a private path → send to /login, remembering the target so the
   // magic link can return the user there.
-  if (!user && !isPublicPath(pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("redirectTo", pathname);
-    return NextResponse.redirect(url);
+  if (!user && !isPublicAuthPath(pathname)) {
+    return NextResponse.redirect(buildLoginRedirectUrl(request.nextUrl));
   }
 
   // Already signed in but sitting on /login → nothing to do there.
   if (user && pathname === "/login") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    url.search = "";
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(buildAuthenticatedHomeUrl(request.nextUrl));
   }
 
   return supabaseResponse;

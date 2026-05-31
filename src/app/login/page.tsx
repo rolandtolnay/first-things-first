@@ -6,6 +6,7 @@ import { MailCheck } from "lucide-react";
 import { AppWindow } from "@/components/layout/AppWindow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { parseReturnPath } from "@/lib/auth-redirects";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -44,10 +45,11 @@ export default function LoginPage() {
 
     // The magic-link template routes through /auth/confirm itself; emailRedirectTo
     // is the page to land on afterward (the path middleware preserved, else root).
-    const redirectTo =
-      new URLSearchParams(window.location.search).get("redirectTo") ?? "/";
-    const safePath = redirectTo.startsWith("/") ? redirectTo : "/";
-    const emailRedirectTo = `${window.location.origin}${safePath}`;
+    const redirectTo = new URLSearchParams(window.location.search).get("redirectTo");
+    const emailRedirectTo = `${window.location.origin}${parseReturnPath(
+      redirectTo,
+      window.location.origin,
+    )}`;
 
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
