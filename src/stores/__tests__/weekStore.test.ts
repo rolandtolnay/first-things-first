@@ -10,7 +10,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { useWeekStore, getNextRoleColor } from "@/stores/weekStore";
-import { saveWeek } from "@/lib/db";
+import { getWeek, saveWeek } from "@/lib/db";
 import type { Week, WeekId, Role, Goal, EveningBlock, CreateDayPriorityInput } from "@/types";
 
 function makeWeek(): Week {
@@ -41,6 +41,7 @@ function makeWeek(): Week {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  useWeekStore.getState().reset();
   useWeekStore.setState({
     currentWeek: makeWeek(),
     selectedWeekId: "2026-W01" as WeekId,
@@ -73,6 +74,75 @@ describe("save failure surfacing", () => {
     // saveWeek reverts to its default resolved value for the next call.
     await useWeekStore.getState().addRole({ name: "Second" });
     expect(useWeekStore.getState().error).toBeNull();
+  });
+
+  it("keeps a pending optimistic snapshot instead of reloading a stale row", async () => {
+    let resolveSave!: (weekId: WeekId) => void;
+    vi.mocked(saveWeek).mockImplementationOnce(
+      () => new Promise<WeekId>((resolve) => {
+        resolveSave = resolve;
+      }),
+    );
+
+    const savePromise = useWeekStore.getState().addRole({ name: "Pending" });
+    await Promise.resolve();
+    useWeekStore.setState({ currentWeek: null, selectedWeekId: "2026-W01" as WeekId });
+    vi.mocked(getWeek).mockResolvedValueOnce(makeWeek());
+
+    await useWeekStore.getState().loadWeek("2026-W01" as WeekId);
+
+    expect(getWeek).not.toHaveBeenCalled();
+    expect(
+      useWeekStore.getState().currentWeek!.roles.some((r) => r.name === "Pending"),
+    ).toBe(true);
+
+    resolveSave("2026-W01" as WeekId);
+    await savePromise;
+  });
+
+  it("does not let an older same-timestamp save clear the newest pending snapshot", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+
+    let resolveFirst!: (weekId: WeekId) => void;
+    let resolveSecond!: (weekId: WeekId) => void;
+    vi.mocked(saveWeek)
+      .mockImplementationOnce(
+        () => new Promise<WeekId>((resolve) => {
+          resolveFirst = resolve;
+        }),
+      )
+      .mockImplementationOnce(
+        () => new Promise<WeekId>((resolve) => {
+          resolveSecond = resolve;
+        }),
+      );
+
+    try {
+      const firstSave = useWeekStore.getState().addRole({ name: "First pending" });
+      await Promise.resolve();
+      const secondSave = useWeekStore.getState().addRole({ name: "Second pending" });
+      await Promise.resolve();
+
+      resolveFirst("2026-W01" as WeekId);
+      await firstSave;
+      await Promise.resolve();
+
+      useWeekStore.setState({ currentWeek: null, selectedWeekId: "2026-W01" as WeekId });
+      vi.mocked(getWeek).mockResolvedValueOnce(makeWeek());
+
+      await useWeekStore.getState().loadWeek("2026-W01" as WeekId);
+
+      expect(getWeek).not.toHaveBeenCalled();
+      const roleNames = useWeekStore.getState().currentWeek!.roles.map((r) => r.name);
+      expect(roleNames).toContain("First pending");
+      expect(roleNames).toContain("Second pending");
+
+      resolveSecond("2026-W01" as WeekId);
+      await secondSave;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

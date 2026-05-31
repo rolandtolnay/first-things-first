@@ -6,7 +6,6 @@
  */
 
 import { create } from "zustand";
-import { getWeek, getAllWeekIds, saveWeek } from "@/lib/db";
 import {
   generateId,
   getCurrentWeekId,
@@ -18,6 +17,7 @@ import {
   resolveMovePlacement,
   resolveResize,
 } from "@/lib/scheduling";
+import { weekPersistence } from "@/stores/weekPersistence";
 import type {
   Week,
   WeekId,
@@ -200,15 +200,7 @@ async function withWeek(
   const week = get().currentWeek;
   if (!week) throw new Error("No week loaded");
 
-  set({
-    currentWeek: {
-      ...week,
-      ...updater(week),
-      updatedAt: new Date().toISOString(),
-    },
-  });
-
-  await get().saveCurrentWeek();
+  await commitWeek(get, set, { ...week, ...updater(week) });
 }
 
 /** Append position for a new priority on a given day (mirrors addDayPriority). */
@@ -235,6 +227,46 @@ function goalFields(week: Week, goalId: string): { roleId: string | undefined; t
   return { roleId: goal?.roleId, title: goal?.text ?? "" };
 }
 
+async function commitWeek(
+  get: StoreGet,
+  set: StoreSet,
+  week: Week,
+): Promise<Week> {
+  const updatedWeek = { ...week, updatedAt: new Date().toISOString() };
+  set({ currentWeek: updatedWeek });
+
+  const result = await weekPersistence.commitWeek(updatedWeek);
+  if (result.ok) {
+    if (get().error) set({ error: null });
+  } else if (!result.stale) {
+    // Keep the optimistic edit in memory and surface the persistence failure.
+    set({ error: result.message });
+  }
+
+  return updatedWeek;
+}
+
+async function persistCreatedWeek(
+  get: StoreGet,
+  set: StoreSet,
+  week: Week,
+): Promise<void> {
+  const epoch = weekPersistence.epoch();
+  const result = await weekPersistence.commitWeek(week);
+
+  if (!result.ok) {
+    if (!result.stale) {
+      set({ error: result.message });
+      throw result.error;
+    }
+    return;
+  }
+
+  if (weekPersistence.isCurrent(epoch)) {
+    set({ availableWeekIds: withWeekId(get().availableWeekIds, week.id) });
+  }
+}
+
 // ============================================================================
 // Week Store Implementation
 // ============================================================================
@@ -252,36 +284,48 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   // -------------------------------------------------------------------------
 
   bootstrap: async () => {
+    const epoch = weekPersistence.epoch();
     set({ isLoading: true, error: null });
 
-    try {
-      const weekIds = await getAllWeekIds();
-      set({ availableWeekIds: weekIds });
-
-      if (weekIds.length === 0) {
-        // First-ever sign-in: start fresh on the current calendar week.
-        const weekId = getCurrentWeekId();
-        const week = await get().createWeek(weekId);
-        set({ currentWeek: week, selectedWeekId: week.id, isLoading: false });
-        return;
+    const weekIdsResult = await weekPersistence.listWeekIds(epoch);
+    if (!weekIdsResult.ok) {
+      if (!weekIdsResult.stale) {
+        set({ error: weekIdsResult.message, isLoading: false });
       }
-
-      // Prefer the current calendar week if the user has one; else the latest.
-      const currentId = getCurrentWeekId();
-      const targetId = weekIds.includes(currentId)
-        ? currentId
-        : weekIds[weekIds.length - 1];
-
-      set({ selectedWeekId: targetId });
-      await get().loadWeek(targetId);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to load your weeks";
-      set({ error: message, isLoading: false });
+      return;
     }
+
+    if (!weekPersistence.isCurrent(epoch)) return;
+    const weekIds = weekIdsResult.value;
+    set({ availableWeekIds: weekIds });
+
+    if (weekIds.length === 0) {
+      // First-ever sign-in: start fresh on the current calendar week.
+      const weekId = getCurrentWeekId();
+      try {
+        const week = await get().createWeek(weekId);
+        if (!weekPersistence.isCurrent(epoch)) return;
+        set({ currentWeek: week, selectedWeekId: week.id, isLoading: false });
+      } catch (error) {
+        if (!weekPersistence.isCurrent(epoch)) return;
+        const message = error instanceof Error ? error.message : "Failed to load your weeks";
+        set({ error: message, isLoading: false });
+      }
+      return;
+    }
+
+    // Prefer the current calendar week if the user has one; else the latest.
+    const currentId = getCurrentWeekId();
+    const targetId = weekIds.includes(currentId)
+      ? currentId
+      : weekIds[weekIds.length - 1];
+
+    set({ selectedWeekId: targetId });
+    await get().loadWeek(targetId);
   },
 
   reset: () => {
+    weekPersistence.reset();
     set({
       currentWeek: null,
       selectedWeekId: null,
@@ -298,20 +342,23 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   // -------------------------------------------------------------------------
 
   loadWeek: async (weekId: WeekId) => {
-    set({ isLoading: true, error: null });
+    const epoch = weekPersistence.epoch();
+    const existingPending = weekPersistence.pendingSnapshot(weekId);
+    set({ isLoading: true, error: existingPending ? get().error : null });
 
-    try {
-      const week = await getWeek(weekId);
-
-      // Stale-request guard: another navigation may have started
-      if (get().selectedWeekId !== weekId) return;
-
-      set({ currentWeek: week ?? null, isLoading: false });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to load week";
-      set({ error: message, isLoading: false });
-      throw error;
+    const result = await weekPersistence.loadWeek(weekId, epoch);
+    if (!result.ok) {
+      if (!result.stale) {
+        set({ error: result.message, isLoading: false });
+        throw result.error;
+      }
+      return;
     }
+
+    // Stale-request guard: another navigation or session reset may have started.
+    if (!weekPersistence.isCurrent(epoch) || get().selectedWeekId !== weekId) return;
+
+    set({ currentWeek: result.value ?? null, isLoading: false });
   },
 
   navigateToWeek: async (weekId: WeekId) => {
@@ -321,8 +368,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
 
   createWeek: async (weekId: WeekId, carryOverRoles?: Role[]) => {
     const week = createEmptyWeek(weekId, carryOverRoles);
-    await saveWeek(week);
-    set((s) => ({ availableWeekIds: withWeekId(s.availableWeekIds, weekId) }));
+    await persistCreatedWeek(get, set, week);
     return week;
   },
 
@@ -361,8 +407,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
       week.goals = mappedGoals;
     }
 
-    await saveWeek(week);
-    set((s) => ({ availableWeekIds: withWeekId(s.availableWeekIds, weekId) }));
+    await persistCreatedWeek(get, set, week);
     return week;
   },
 
@@ -370,20 +415,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     const week = get().currentWeek;
     if (!week) return;
 
-    const updatedWeek = { ...week, updatedAt: new Date().toISOString() };
-    set({ currentWeek: updatedWeek });
-
-    try {
-      await saveWeek(updatedWeek);
-      // A previously-failed save that now succeeds should clear the banner.
-      if (get().error) set({ error: null });
-    } catch (error) {
-      // Keep the optimistic edit in memory (don't drop the user's work) and
-      // surface the failure through the shared error state.
-      const message =
-        error instanceof Error ? error.message : "Failed to save changes";
-      set({ error: message });
-    }
+    await commitWeek(get, set, week);
   },
 
   // -------------------------------------------------------------------------
@@ -405,17 +437,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
       order: maxOrder + 1,
     };
 
-    // Optimistic update
-    set({
-      currentWeek: {
-        ...week,
-        roles: [...week.roles, role],
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    // Persist
-    await get().saveCurrentWeek();
+    await commitWeek(get, set, { ...week, roles: [...week.roles, role] });
     return role;
   },
 
@@ -460,15 +482,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
       completed: false,
     };
 
-    set({
-      currentWeek: {
-        ...week,
-        goals: [...week.goals, goal],
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await commitWeek(get, set, { ...week, goals: [...week.goals, goal] });
     return goal;
   },
 
@@ -509,15 +523,10 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
       completed: input.completed ?? false,
     };
 
-    set({
-      currentWeek: {
-        ...week,
-        dayPriorities: [...week.dayPriorities, priority],
-        updatedAt: new Date().toISOString(),
-      },
+    await commitWeek(get, set, {
+      ...week,
+      dayPriorities: [...week.dayPriorities, priority],
     });
-
-    await get().saveCurrentWeek();
     return priority;
   },
 
@@ -556,15 +565,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
       ...input,
     };
 
-    set({
-      currentWeek: {
-        ...week,
-        timeBlocks: [...week.timeBlocks, block],
-        updatedAt: new Date().toISOString(),
-      },
-    });
-
-    await get().saveCurrentWeek();
+    await commitWeek(get, set, { ...week, timeBlocks: [...week.timeBlocks, block] });
     return block;
   },
 
@@ -605,15 +606,10 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
       ...input,
     };
 
-    set({
-      currentWeek: {
-        ...week,
-        eveningBlocks: [...week.eveningBlocks, block],
-        updatedAt: new Date().toISOString(),
-      },
+    await commitWeek(get, set, {
+      ...week,
+      eveningBlocks: [...week.eveningBlocks, block],
     });
-
-    await get().saveCurrentWeek();
     return block;
   },
 
