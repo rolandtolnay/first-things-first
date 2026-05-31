@@ -11,11 +11,12 @@
 
 import { useMemo } from "react";
 import { useDndContext } from "@dnd-kit/core";
-import type { TimeBlock as TimeBlockType, TimeSlotIndex, DayOfWeek } from "@/types";
+import type { Role, RoleColor, TimeBlock as TimeBlockType, TimeSlotIndex, DayOfWeek } from "@/types";
 import type { DragData, DropZoneData } from "@/types/dnd";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockDraw } from "@/hooks/useBlockDraw";
 import { DEFAULT_BLOCK_SLOTS, TOTAL_SLOTS, TIME_GRID_HEIGHT, slotToPixels, durationToPixels } from "@/lib/time-model";
+import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import { resolveMovePlacement, resolveNewPlacement } from "@/lib/scheduling";
 import { TimeSlot } from "./TimeSlot";
 import { TimeBlock } from "./TimeBlock";
@@ -32,6 +33,11 @@ const SLOTS = Array.from({ length: TOTAL_SLOTS }, (_, i) => i as TimeSlotIndex);
 interface TimeGridDropPreview {
   startSlot: number;
   duration: number;
+  roleColor?: RoleColor;
+}
+
+function roleColorForId(roles: Role[], roleId: string | undefined): RoleColor | undefined {
+  return roleId ? roles.find((role) => role.id === roleId)?.color : undefined;
 }
 
 function resolveTimeGridDropPreview(
@@ -39,7 +45,8 @@ function resolveTimeGridDropPreview(
   dropData: DropZoneData | undefined,
   dayIndex: DayOfWeek,
   dayBlocks: TimeBlockType[],
-  allBlocks: TimeBlockType[]
+  allBlocks: TimeBlockType[],
+  roles: Role[]
 ): TimeGridDropPreview | null {
   if (!dragData || !dropData) return null;
   if (dropData.zone !== "timegrid" || dropData.dayIndex !== dayIndex) return null;
@@ -56,7 +63,11 @@ function resolveTimeGridDropPreview(
       block.id
     );
     return placement.ok
-      ? { startSlot: placement.startSlot, duration: placement.duration }
+      ? {
+          startSlot: placement.startSlot,
+          duration: placement.duration,
+          roleColor: roleColorForId(roles, block.roleId),
+        }
       : null;
   }
 
@@ -67,7 +78,11 @@ function resolveTimeGridDropPreview(
       DEFAULT_BLOCK_SLOTS
     );
     return placement.ok
-      ? { startSlot: placement.startSlot, duration: placement.duration }
+      ? {
+          startSlot: placement.startSlot,
+          duration: placement.duration,
+          roleColor: roleColorForId(roles, dragData.roleId),
+        }
       : null;
   }
 
@@ -77,6 +92,7 @@ function resolveTimeGridDropPreview(
 export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
   // Get raw time blocks from store (stable reference)
   const timeBlocks = useWeekStore((state) => state.currentWeek?.timeBlocks);
+  const roles = useWeekStore((state) => state.currentWeek?.roles);
   const { active, over } = useDndContext();
 
   // Filter blocks for this day in useMemo (avoids infinite loop)
@@ -92,9 +108,10 @@ export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
         over?.data.current as DropZoneData | undefined,
         dayIndex,
         blocks,
-        timeBlocks ?? []
+        timeBlocks ?? [],
+        roles ?? []
       ),
-    [active, over, dayIndex, blocks, timeBlocks]
+    [active, over, dayIndex, blocks, timeBlocks, roles]
   );
 
   // Click-drag-draw hook for freestyle block creation
@@ -145,8 +162,10 @@ export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
             right: 4,
             height: `${durationToPixels((dropPreview ?? previewBlock)!.duration)}px`,
             borderRadius: 'var(--ds-r-sm)',
-            border: '1px dashed var(--ds-accent)',
-            backgroundColor: 'var(--ds-accent-soft)',
+            border: `1px dashed ${dropPreview?.roleColor ? getRoleColorStyle(dropPreview.roleColor) : "var(--ds-accent)"}`,
+            backgroundColor: dropPreview?.roleColor
+              ? getRoleColorStyleWithOpacity(dropPreview.roleColor, 0.12)
+              : 'var(--ds-accent-soft)',
           }}
         />
       )}
