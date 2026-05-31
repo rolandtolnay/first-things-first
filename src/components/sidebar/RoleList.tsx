@@ -21,13 +21,14 @@ export function RoleList() {
   const currentWeek = useWeekStore((state) => state.currentWeek);
   const isLoading = useWeekStore((state) => state.isLoading);
   const [isAddingRole, setIsAddingRole] = useState(false);
+  const weekRoles = currentWeek?.roles;
 
   // Memoize sorted roles to avoid infinite loop during hydration
   // (selectors that return new arrays on each call cause SSR issues)
   const roles = useMemo(() => {
-    if (!currentWeek?.roles) return [];
-    return [...currentWeek.roles].sort((a, b) => a.order - b.order);
-  }, [currentWeek?.roles]);
+    if (!weekRoles) return [];
+    return [...weekRoles].sort((a, b) => a.order - b.order);
+  }, [weekRoles]);
 
   const addRoleControl = (
     <AddRoleButton
