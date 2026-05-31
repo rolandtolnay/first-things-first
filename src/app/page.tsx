@@ -1,5 +1,6 @@
 import { AppWindow } from "@/components/layout/AppWindow";
 import { WindowChrome } from "@/components/layout/WindowChrome";
+import { StoreErrorBanner } from "@/components/layout/StoreErrorBanner";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { WeekView } from "@/components/calendar/WeekView";
@@ -9,6 +10,7 @@ export default function Home() {
   return (
     <AppWindow>
       <WindowChrome />
+      <StoreErrorBanner />
       <MainLayout sidebar={<Sidebar />} rail={<Rail />}>
         <WeekView />
       </MainLayout>

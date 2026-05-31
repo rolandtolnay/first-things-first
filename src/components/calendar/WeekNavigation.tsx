@@ -1,14 +1,11 @@
 "use client";
 
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
 import { useWeekStore } from "@/stores/weekStore";
 import { formatWeekId, getCurrentWeekId, getWeekNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { TabPill } from "@/components/ui/TabPill";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import type { WeekId } from "@/types";
 
 interface WeekNavigationProps {
   onNewWeek: () => void;
@@ -18,8 +15,7 @@ export function WeekNavigation({ onNewWeek }: WeekNavigationProps) {
   const selectedWeekId = useWeekStore((s) => s.selectedWeekId);
   const navigateToWeek = useWeekStore((s) => s.navigateToWeek);
 
-  const weekIds =
-    useLiveQuery(() => db.weeks.orderBy("id").primaryKeys(), [], []) as WeekId[];
+  const weekIds = useWeekStore((s) => s.availableWeekIds);
 
   const currentCalendarWeekId = getCurrentWeekId();
   const currentIndex = selectedWeekId

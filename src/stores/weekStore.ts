@@ -1,13 +1,18 @@
 /**
  * First Things First - Week Store
  *
- * Zustand store for week data with Dexie persistence.
+ * Zustand store for week data with Supabase persistence.
  * Implements optimistic updates for instant UI feedback.
  */
 
 import { create } from "zustand";
-import { db, saveWeek } from "@/lib/db";
-import { generateId, getWeekStartDate, parseWeekId } from "@/lib/utils";
+import { getWeek, getAllWeekIds, saveWeek } from "@/lib/db";
+import {
+  generateId,
+  getCurrentWeekId,
+  getWeekStartDate,
+  parseWeekId,
+} from "@/lib/utils";
 import {
   resolveNewPlacement,
   resolveMovePlacement,
@@ -66,8 +71,19 @@ interface WeekStore {
   // Current week state
   currentWeek: Week | null;
   selectedWeekId: WeekId | null;
+  /** Ids of every week the signed-in user owns, ascending (reactive nav feed). */
+  availableWeekIds: WeekId[];
   isLoading: boolean;
   error: string | null;
+
+  // Session lifecycle (driven by AuthProvider)
+  /** Load the user's week list + an initial week (today's, else latest, else a
+   *  fresh empty week). Called when a User signs in. */
+  bootstrap: () => Promise<void>;
+  /** Clear all in-memory week state. Called on sign-out. */
+  reset: () => void;
+  /** Dismiss the current error banner. */
+  clearError: () => void;
 
   // Week operations
   loadWeek: (weekId: WeekId) => Promise<void>;
@@ -201,6 +217,15 @@ function nextPriorityOrder(week: Week, dayIndex: number): number {
 }
 
 /**
+ * Insert a week id into the reactive list, deduped and kept ascending. WeekId
+ * strings sort lexically in chronological order, so a plain sort is correct.
+ */
+function withWeekId(ids: WeekId[], weekId: WeekId): WeekId[] {
+  if (ids.includes(weekId)) return ids;
+  return [...ids, weekId].sort();
+}
+
+/**
  * Role color id + display title carried from a goal onto a derived block/evening.
  * Returns empty title / undefined role when the goal can't be found (unreachable
  * in practice — a priority/evening always references an existing goal).
@@ -218,8 +243,55 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   // Initial state
   currentWeek: null,
   selectedWeekId: null,
+  availableWeekIds: [],
   isLoading: false,
   error: null,
+
+  // -------------------------------------------------------------------------
+  // Session Lifecycle (driven by AuthProvider)
+  // -------------------------------------------------------------------------
+
+  bootstrap: async () => {
+    set({ isLoading: true, error: null });
+
+    try {
+      const weekIds = await getAllWeekIds();
+      set({ availableWeekIds: weekIds });
+
+      if (weekIds.length === 0) {
+        // First-ever sign-in: start fresh on the current calendar week.
+        const weekId = getCurrentWeekId();
+        const week = await get().createWeek(weekId);
+        set({ currentWeek: week, selectedWeekId: week.id, isLoading: false });
+        return;
+      }
+
+      // Prefer the current calendar week if the user has one; else the latest.
+      const currentId = getCurrentWeekId();
+      const targetId = weekIds.includes(currentId)
+        ? currentId
+        : weekIds[weekIds.length - 1];
+
+      set({ selectedWeekId: targetId });
+      await get().loadWeek(targetId);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load your weeks";
+      set({ error: message, isLoading: false });
+    }
+  },
+
+  reset: () => {
+    set({
+      currentWeek: null,
+      selectedWeekId: null,
+      availableWeekIds: [],
+      isLoading: false,
+      error: null,
+    });
+  },
+
+  clearError: () => set({ error: null }),
 
   // -------------------------------------------------------------------------
   // Week Operations
@@ -229,7 +301,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const week = await db.weeks.get(weekId);
+      const week = await getWeek(weekId);
 
       // Stale-request guard: another navigation may have started
       if (get().selectedWeekId !== weekId) return;
@@ -250,6 +322,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   createWeek: async (weekId: WeekId, carryOverRoles?: Role[]) => {
     const week = createEmptyWeek(weekId, carryOverRoles);
     await saveWeek(week);
+    set((s) => ({ availableWeekIds: withWeekId(s.availableWeekIds, weekId) }));
     return week;
   },
 
@@ -289,6 +362,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     }
 
     await saveWeek(week);
+    set((s) => ({ availableWeekIds: withWeekId(s.availableWeekIds, weekId) }));
     return week;
   },
 
@@ -298,7 +372,18 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
 
     const updatedWeek = { ...week, updatedAt: new Date().toISOString() };
     set({ currentWeek: updatedWeek });
-    await saveWeek(updatedWeek);
+
+    try {
+      await saveWeek(updatedWeek);
+      // A previously-failed save that now succeeds should clear the banner.
+      if (get().error) set({ error: null });
+    } catch (error) {
+      // Keep the optimistic edit in memory (don't drop the user's work) and
+      // surface the failure through the shared error state.
+      const message =
+        error instanceof Error ? error.message : "Failed to save changes";
+      set({ error: message });
+    }
   },
 
   // -------------------------------------------------------------------------

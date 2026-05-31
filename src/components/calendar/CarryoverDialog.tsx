@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
 import { useWeekStore } from "@/stores/weekStore";
 import {
   getCurrentWeekId,
@@ -45,8 +43,7 @@ export function CarryoverDialog({
   const createNewWeek = useWeekStore((s) => s.createNewWeek);
   const navigateToWeek = useWeekStore((s) => s.navigateToWeek);
 
-  const existingWeekIds =
-    useLiveQuery(() => db.weeks.orderBy("id").primaryKeys(), [], []) as WeekId[];
+  const existingWeekIds = useWeekStore((s) => s.availableWeekIds);
 
   const [targetWeekId, setTargetWeekId] = useState<WeekId>(getCurrentWeekId());
   const [dropdownWeekIds, setDropdownWeekIds] = useState<WeekId[]>([]);

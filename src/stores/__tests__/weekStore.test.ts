@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock the Dexie persistence layer so the store runs in a plain node env and we
-// can count persists. saveWeek is the single write path withWeek funnels through.
+// Mock the Supabase persistence adapter so the store runs in a plain node env
+// and we can count persists. saveWeek is the single write path withWeek funnels
+// through; getWeek / getAllWeekIds back loadWeek / bootstrap.
 vi.mock("@/lib/db", () => ({
-  db: { weeks: { get: vi.fn(), put: vi.fn() } },
+  getWeek: vi.fn(),
   saveWeek: vi.fn().mockResolvedValue("2026-W01"),
+  getAllWeekIds: vi.fn().mockResolvedValue([]),
 }));
 
 import { useWeekStore, getNextRoleColor } from "@/stores/weekStore";
@@ -42,8 +44,35 @@ beforeEach(() => {
   useWeekStore.setState({
     currentWeek: makeWeek(),
     selectedWeekId: "2026-W01" as WeekId,
+    availableWeekIds: ["2026-W01" as WeekId],
     isLoading: false,
     error: null,
+  });
+});
+
+describe("save failure surfacing", () => {
+  it("sets error and keeps the optimistic edit when saveWeek rejects", async () => {
+    vi.mocked(saveWeek).mockRejectedValueOnce(new Error("network down"));
+
+    // addRole optimistically updates state, then persists via saveCurrentWeek.
+    await useWeekStore.getState().addRole({ name: "Offline" });
+
+    // The failure surfaces through the shared error state...
+    expect(useWeekStore.getState().error).toBe("network down");
+    // ...and the user's edit is NOT silently dropped.
+    expect(
+      useWeekStore.getState().currentWeek!.roles.some((r) => r.name === "Offline")
+    ).toBe(true);
+  });
+
+  it("clears a stale error once a later save succeeds", async () => {
+    vi.mocked(saveWeek).mockRejectedValueOnce(new Error("network down"));
+    await useWeekStore.getState().addRole({ name: "First" });
+    expect(useWeekStore.getState().error).toBe("network down");
+
+    // saveWeek reverts to its default resolved value for the next call.
+    await useWeekStore.getState().addRole({ name: "Second" });
+    expect(useWeekStore.getState().error).toBeNull();
   });
 });
 

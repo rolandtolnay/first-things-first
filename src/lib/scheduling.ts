@@ -5,7 +5,7 @@
  * space" rule that used to be reimplemented across draw, resize, and every drop
  * branch. Wires the overlap interval helpers (overlap.ts) to a placement
  * *decision*: each function returns a plain result and never mutates the store.
- * No React, dnd-kit, or Dexie dependency — so the decisions are directly
+ * No React, dnd-kit, or persistence dependency — so the decisions are directly
  * unit-testable.
  */
 

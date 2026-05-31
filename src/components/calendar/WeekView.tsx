@@ -4,14 +4,14 @@
  * WeekView - 7-day week container with navigation and day columns
  *
  * Main calendar visualization showing all 7 days in a horizontal grid.
- * Handles initial week selection: auto-creates on first-ever use,
- * otherwise navigates to the latest existing week.
+ * Initial week selection is owned by the store's bootstrap() (triggered by
+ * AuthProvider when the User signs in); this component just reads currentWeek /
+ * selectedWeekId from the store and renders.
  */
 
-import { useEffect, useState, useRef } from "react";
+import { useState } from "react";
 import type { DayOfWeek } from "@/types";
-import { getCurrentWeekId, getWeekDates } from "@/lib/utils";
-import { db } from "@/lib/db";
+import { getWeekDates } from "@/lib/utils";
 import { useWeekStore } from "@/stores/weekStore";
 import { DayColumn } from "./DayColumn";
 import { TimeLabelsColumn } from "./TimeLabelsColumn";
@@ -22,11 +22,8 @@ export function WeekView() {
   const selectedWeekId = useWeekStore((s) => s.selectedWeekId);
   const currentWeek = useWeekStore((s) => s.currentWeek);
   const isLoading = useWeekStore((s) => s.isLoading);
-  const navigateToWeek = useWeekStore((s) => s.navigateToWeek);
-  const createNewWeek = useWeekStore((s) => s.createNewWeek);
 
   const [isCarryoverOpen, setIsCarryoverOpen] = useState(false);
-  const initializedRef = useRef(false);
 
   function openCarryover() {
     setIsCarryoverOpen(true);
@@ -35,35 +32,6 @@ export function WeekView() {
   function closeCarryover() {
     setIsCarryoverOpen(false);
   }
-
-  // On mount, determine initial week
-  useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-
-    async function init() {
-      const count = await db.weeks.count();
-
-      if (count === 0) {
-        // First-ever use: auto-create the current week
-        const weekId = getCurrentWeekId();
-        await createNewWeek(weekId, {});
-        await navigateToWeek(weekId);
-      } else {
-        // Navigate to the latest existing week
-        const keys = await db.weeks
-          .orderBy("id")
-          .reverse()
-          .limit(1)
-          .primaryKeys();
-        if (keys.length > 0) {
-          await navigateToWeek(keys[0]);
-        }
-      }
-    }
-
-    init();
-  }, [createNewWeek, navigateToWeek]);
 
   // Derive dates from selectedWeekId
   const dates = selectedWeekId ? getWeekDates(selectedWeekId) : null;
