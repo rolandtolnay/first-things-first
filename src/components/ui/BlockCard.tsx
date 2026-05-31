@@ -14,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { BlockMeta } from "@/components/ui/BlockMeta";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { suppressBlockDraw } from "@/hooks/useBlockDraw";
@@ -29,6 +30,8 @@ interface BlockCardProps {
   height?: number;
   autoEdit?: boolean;
   freestyle?: boolean;
+  /** Calendar block with no role assignment; renders as transparent + dotted. */
+  unassigned?: boolean;
   variant?: "default" | "card";
   subtitle?: string;
   className?: string;
@@ -47,6 +50,7 @@ export function BlockCard({
   height,
   autoEdit,
   freestyle,
+  unassigned,
   variant = "default",
   subtitle,
   className,
@@ -81,8 +85,8 @@ export function BlockCard({
     if (!isEditing) setEditValue(text);
   }, [text, isEditing]);
 
-  // At the dense (16px slot) grid a 1h block is ~32px tall: blocks at or below
-  // ~1h collapse to a single line and hide their meta/subtitle.
+  // Blocks shorter than the meta-friendly height collapse to a single line and
+  // hide their meta/subtitle.
   const SHORT_BLOCK_PX = 40;
   const isShort = height !== undefined && height < SHORT_BLOCK_PX;
   const lineClamp = isShort ? 1 : 2;
@@ -90,19 +94,29 @@ export function BlockCard({
   const padding = compact ? "px-2 py-1" : "px-2.5 py-2.5";
 
   const isCard = variant === "card";
+  const isUnassignedCalendarBlock = unassigned && !isCard;
 
-  const bgColor = isCard
-    ? "var(--card)"
-    : roleColor
-      ? getRoleColorStyleWithOpacity(roleColor, isHovered ? 0.16 : 0.12)
-      : completed
-        ? "var(--completed-bg)"
-        : "var(--muted)";
+  const bgColor = isUnassignedCalendarBlock
+    ? isHovered
+      ? "color-mix(in oklab, var(--ds-panel-2), transparent 8%)"
+      : "color-mix(in oklab, var(--ds-panel-2), transparent 24%)"
+    : isCard
+      ? "var(--card)"
+      : roleColor
+        ? getRoleColorStyleWithOpacity(roleColor, isHovered ? 0.16 : 0.12)
+        : completed
+          ? "var(--completed-bg)"
+          : "var(--muted)";
 
-  const showBorder = roleColor && (isCard || !completed);
+  const roleColorValue = roleColor ? getRoleColorStyle(roleColor) : undefined;
+  const roleBorderColor = roleColorValue
+    ? `color-mix(in oklab, ${roleColorValue}, transparent 65%)`
+    : undefined;
   const borderStyle = freestyle ? "dashed" : "solid";
+  const unassignedBorderColor = "var(--ds-fg-faint)";
 
   const hasMenu = (onToggle || onDelete) && !isEditing;
+  const subtitleItems = subtitle?.split(" · ");
 
   function handleMenuInteraction() {
     suppressBlockDraw();
@@ -194,7 +208,7 @@ export function BlockCard({
   const cardContent = (
     <div
       className={cn(
-        "group relative flex items-start gap-1.5 transition-shadow",
+        "group relative flex items-start gap-1.5 transition-[background-color,border-color,box-shadow]",
         isCard ? "rounded-[8px] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.1)]" : "rounded-[6px]",
         !completed && !isCard && "shadow-sm hover:shadow-md",
         fontSize,
@@ -204,7 +218,26 @@ export function BlockCard({
       style={{
         ...(height !== undefined && { height: `${height}px` }),
         backgroundColor: bgColor,
-        borderLeft: showBorder ? `3px ${borderStyle} ${getRoleColorStyle(roleColor!)}` : undefined,
+        borderTop: isUnassignedCalendarBlock
+          ? `1px dotted ${unassignedBorderColor}`
+          : roleBorderColor
+            ? `1px ${borderStyle} ${roleBorderColor}`
+            : undefined,
+        borderRight: isUnassignedCalendarBlock
+          ? `1px dotted ${unassignedBorderColor}`
+          : roleBorderColor
+            ? `1px ${borderStyle} ${roleBorderColor}`
+            : undefined,
+        borderBottom: isUnassignedCalendarBlock
+          ? `1px dotted ${unassignedBorderColor}`
+          : roleBorderColor
+            ? `1px ${borderStyle} ${roleBorderColor}`
+            : undefined,
+        borderLeft: isUnassignedCalendarBlock
+          ? `1px dotted ${unassignedBorderColor}`
+          : roleColorValue
+            ? `3px solid ${roleColorValue}`
+            : undefined,
         opacity: completed ? "var(--completed-opacity)" : undefined,
         ...style,
       }}
@@ -240,10 +273,8 @@ export function BlockCard({
           >
             {text}
           </span>
-          {subtitle && !isShort && (
-            <span className="text-label text-muted-foreground truncate block mt-0.5">
-              {subtitle}
-            </span>
+          {subtitleItems && !isShort && (
+            <BlockMeta items={subtitleItems} className="mt-1" />
           )}
         </div>
       )}

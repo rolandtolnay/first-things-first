@@ -214,7 +214,8 @@ describe("slotToHourLabel", () => {
 });
 
 describe("formatBlockMeta", () => {
-  it("formats a block's start and end time range", () => {
-    expect(formatBlockMeta(5, 4)).toBe("10:30 – 12:30");
+  it("formats a block's start time and duration", () => {
+    expect(formatBlockMeta(2, 4)).toBe("9:00 · 2h");
+    expect(formatBlockMeta(5, 3)).toBe("10:30 · 1.5h");
   });
 });

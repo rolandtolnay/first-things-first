@@ -145,7 +145,7 @@ export function slotToHourLabel(slot: number): number {
   return DAY_START_HOUR + Math.floor(slot / SLOTS_PER_HOUR);
 }
 
-/** Human-readable block range metadata, e.g. "10:30 – 12:30". */
+/** Human-readable block metadata, e.g. "10:30 · 2h". */
 export function formatBlockMeta(startSlot: number, duration: number): string {
-  return `${slotToTime(startSlot)} – ${slotToTime(startSlot + duration)}`;
+  return `${slotToTime(startSlot)} · ${slotsToHours(duration)}h`;
 }
