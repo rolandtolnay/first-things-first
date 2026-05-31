@@ -13,6 +13,9 @@ interface WeekSelectorProps {
   onChange: (weekId: WeekId) => void;
   options: WeekId[];
   existingWeekIds: WeekId[];
+  disabled?: boolean;
+  contentClassName?: string;
+  triggerClassName?: string;
 }
 
 export function WeekSelector({
@@ -20,30 +23,35 @@ export function WeekSelector({
   onChange,
   options,
   existingWeekIds,
+  disabled = false,
+  contentClassName,
+  triggerClassName,
 }: WeekSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   function handleSelect(weekId: WeekId) {
+    if (disabled) return;
     onChange(weekId);
     setIsOpen(false);
   }
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={!disabled && isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-full justify-between text-left font-normal"
+          disabled={disabled}
+          className={cn("w-full justify-between text-left font-normal", triggerClassName)}
         >
           <span>
             W{getWeekNumber(value)} &mdash; {formatWeekId(value)}
           </span>
           <ChevronDown
-            className={cn("size-4 shrink-0 ml-2 transition-transform", isOpen && "rotate-180")}
+            className={cn("size-4 shrink-0 ml-2 transition-transform", !disabled && isOpen && "rotate-180")}
           />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0 max-h-56 overflow-y-auto" align="start">
+      <PopoverContent className={cn("p-0 max-h-56 overflow-y-auto", contentClassName)} align="start">
         {options.map((weekId) => {
           const isSelected = weekId === value;
           const isPlanned = existingWeekIds.includes(weekId);

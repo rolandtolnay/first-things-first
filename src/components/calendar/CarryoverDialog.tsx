@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useWeekStore } from "@/stores/weekStore";
 import {
+  formatWeekId,
   getCurrentWeekId,
   getNextWeekId,
   getWeekIdRange,
+  getWeekNumber,
 } from "@/lib/utils";
 import { getRoleColorStyle } from "@/lib/role-colors";
+import { buildWeeklyHandoffModel } from "@/lib/weekly-handoff";
 import {
   Dialog,
   DialogContent,
@@ -19,8 +22,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { SectionLabel } from "@/components/ui/SectionLabel";
+import { TextActionButton } from "@/components/ui/TextActionButton";
 import { WeekSelector } from "./WeekSelector";
-import type { Week, Goal, Role, WeekId } from "@/types";
+import type { Goal, Week, WeekId } from "@/types";
 
 interface CarryoverDialogProps {
   open: boolean;
@@ -29,9 +34,26 @@ interface CarryoverDialogProps {
   viewedWeekId: WeekId;
 }
 
-interface RoleGoalGroup {
-  role: Role;
-  goals: Goal[];
+function formatGoalCount(count: number): string {
+  return `${count} ${count === 1 ? "Goal" : "Goals"}`;
+}
+
+function getDefaultTargetWeekId(
+  viewedWeekId: WeekId,
+  existingWeekIds: readonly WeekId[],
+  excludedWeekId?: WeekId
+): WeekId {
+  const range = getWeekIdRange(getCurrentWeekId(), 11);
+  const scanStart = getNextWeekId(viewedWeekId);
+  const scanIndex = range.indexOf(scanStart);
+  const startIdx = scanIndex >= 0 ? scanIndex : 0;
+
+  for (let i = 0; i < range.length; i++) {
+    const candidate = range[(startIdx + i) % range.length];
+    if (candidate !== excludedWeekId && !existingWeekIds.includes(candidate)) return candidate;
+  }
+
+  return range.find((weekId) => weekId !== excludedWeekId) ?? range[0];
 }
 
 export function CarryoverDialog({
@@ -42,61 +64,59 @@ export function CarryoverDialog({
 }: CarryoverDialogProps) {
   const createNewWeek = useWeekStore((s) => s.createNewWeek);
   const navigateToWeek = useWeekStore((s) => s.navigateToWeek);
-
   const existingWeekIds = useWeekStore((s) => s.availableWeekIds);
 
   const [targetWeekId, setTargetWeekId] = useState<WeekId>(getCurrentWeekId());
   const [dropdownWeekIds, setDropdownWeekIds] = useState<WeekId[]>([]);
-
-  const roleGroups: RoleGoalGroup[] = sourceWeek
-    ? sourceWeek.roles
-        .map((role) => ({
-          role,
-          goals: sourceWeek.goals.filter(
-            (g) => g.roleId === role.id && !g.completed
-          ),
-        }))
-        .filter((group) => group.goals.length > 0)
-    : [];
-
-  const allUncompletedIds = roleGroups.flatMap((g) =>
-    g.goals.map((goal) => goal.id)
-  );
-
-  const completionSummary = useMemo(() => {
-    if (!sourceWeek || sourceWeek.goals.length === 0) return null;
-    const total = sourceWeek.goals.length;
-    const completed = sourceWeek.goals.filter((g) => g.completed).length;
-    return { total, completed, percent: Math.round((completed / total) * 100) };
-  }, [sourceWeek]);
-
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    () => new Set(allUncompletedIds)
-  );
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
-    if (open) {
-      setSelectedIds(new Set(allUncompletedIds));
-
-      const range = getWeekIdRange(getCurrentWeekId(), 11);
-      setDropdownWeekIds(range);
-
-      const scanStart = getNextWeekId(viewedWeekId);
-      const scanIndex = range.indexOf(scanStart);
-      const startIdx = scanIndex >= 0 ? scanIndex : 0;
-
-      let defaultWeek: WeekId | null = null;
-      for (let i = 0; i < range.length; i++) {
-        const candidate = range[(startIdx + i) % range.length];
-        if (!existingWeekIds.includes(candidate)) {
-          defaultWeek = candidate;
-          break;
-        }
-      }
-      setTargetWeekId(defaultWeek ?? range[0]);
+    if (!open) {
+      wasOpenRef.current = false;
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, sourceWeek?.id]);
+    if (wasOpenRef.current) return;
+    wasOpenRef.current = true;
+
+    const range = getWeekIdRange(getCurrentWeekId(), 11).filter((weekId) => weekId !== sourceWeek?.id);
+    const defaultTargetWeekId = getDefaultTargetWeekId(viewedWeekId, existingWeekIds, sourceWeek?.id);
+    const openingModel = buildWeeklyHandoffModel({
+      sourceWeek,
+      targetWeekId: defaultTargetWeekId,
+      existingWeekIds,
+      selectedGoalIds: new Set(),
+    });
+
+    setDropdownWeekIds(range);
+    setTargetWeekId(defaultTargetWeekId);
+    setSelectedIds(new Set(openingModel.unfinishedGoalIds));
+    setSubmitError(null);
+    setIsSubmitting(false);
+  }, [open, sourceWeek, viewedWeekId, existingWeekIds]);
+
+  const model = useMemo(
+    () =>
+      buildWeeklyHandoffModel({
+        sourceWeek,
+        targetWeekId,
+        existingWeekIds,
+        selectedGoalIds: selectedIds,
+      }),
+    [sourceWeek, targetWeekId, existingWeekIds, selectedIds]
+  );
+
+  const sourceWeekLabel = sourceWeek
+    ? `W${getWeekNumber(sourceWeek.id)} — ${formatWeekId(sourceWeek.id)}`
+    : "No Source Week";
+
+  const targetWeekLabel = `W${getWeekNumber(targetWeekId)} — ${formatWeekId(targetWeekId)}`;
+
+  const targetExplanation = model.isReplacingTargetWeek
+    ? "This Target Week already has a plan. Continuing will replace its current Roles, Goals, and blocks."
+    : "A new Target Week will be created with carried Roles and only the selected unfinished Goals.";
 
   const toggleGoal = useCallback((goalId: string) => {
     setSelectedIds((prev) => {
@@ -110,116 +130,211 @@ export function CarryoverDialog({
     });
   }, []);
 
-  async function handleCarryOver() {
-    if (!sourceWeek) return;
-    const selectedGoals = sourceWeek.goals.filter((g) => selectedIds.has(g.id));
-    await createNewWeek(targetWeekId, { carryOverGoals: selectedGoals, sourceWeek });
-    await navigateToWeek(targetWeekId);
-    onClose();
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(model.unfinishedGoalIds));
+  }, [model.unfinishedGoalIds]);
+
+  const clearSelected = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  async function submit(mode: "carry-forward" | "fresh") {
+    if (!sourceWeek || isSubmitting) return;
+    if (targetWeekId === sourceWeek.id) {
+      setSubmitError("Choose a Target Week that is different from the Source Week.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      if (mode === "carry-forward") {
+        const unfinishedSelectedIds = new Set(
+          model.unfinishedGoalIds.filter((id) => selectedIds.has(id))
+        );
+        const carryOverGoals: Goal[] = sourceWeek.goals.filter((goal) =>
+          unfinishedSelectedIds.has(goal.id)
+        );
+        await createNewWeek(targetWeekId, { carryOverGoals, sourceWeek });
+      } else {
+        await createNewWeek(targetWeekId, { sourceWeek });
+      }
+
+      await navigateToWeek(targetWeekId);
+      onClose();
+    } catch {
+      setSubmitError("Couldn’t start the Target Week. Please try again.");
+      setIsSubmitting(false);
+    }
   }
 
-  async function handleStartFresh() {
-    if (!sourceWeek) return;
-    await createNewWeek(targetWeekId, { sourceWeek });
-    await navigateToWeek(targetWeekId);
-    onClose();
-  }
-
-  const hasUncompletedGoals = roleGroups.length > 0;
+  const canCarryForward = !model.isCleanSlate && model.selectedCount > 0;
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
-      <DialogContent className="max-w-[480px]">
-        <DialogHeader>
-          <DialogTitle>Start a New Week</DialogTitle>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen && !isSubmitting) onClose();
+      }}
+    >
+      <DialogContent
+        showCloseButton={!isSubmitting}
+        className="flex max-h-[min(90vh,760px)] max-w-[calc(100%-1rem)] flex-col gap-5 overflow-hidden bg-[var(--ds-overlay)] p-5 sm:max-w-[800px]"
+      >
+        <DialogHeader className="shrink-0 gap-2 pr-8">
+          <DialogTitle className="text-[length:var(--text-h5)]">Start a new Week</DialogTitle>
           <DialogDescription>
-            {hasUncompletedGoals
-              ? "Select goals to carry over from last week."
-              : "Ready to plan a fresh week."}
+            Close the Source Week, choose what continues, and begin with a clean plan.
           </DialogDescription>
         </DialogHeader>
 
-        {/* Completion summary */}
-        {completionSummary && (
-          <div className="rounded-md bg-primary-soft p-3 mb-4">
-            <div className="text-caption font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-              Last Week
-            </div>
-            <div className="text-sm font-medium">
-              You completed{' '}
-              <span className="text-primary font-bold">{completionSummary.completed}</span>{' '}
-              of{' '}
-              <span className="text-secondary-foreground">{completionSummary.total}</span>{' '}
-              goals
-            </div>
-            <Progress value={completionSummary.percent} className="mt-2 h-1" />
-          </div>
-        )}
-
-        {/* Target week selector */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-muted-foreground mb-1.5">
-            Target week
-          </label>
-          <WeekSelector
-            value={targetWeekId}
-            onChange={setTargetWeekId}
-            options={dropdownWeekIds}
-            existingWeekIds={existingWeekIds}
-          />
-        </div>
-
-        {/* Overwrite warning */}
-        {existingWeekIds.includes(targetWeekId) && (
-          <div className="mb-4 p-3 rounded-md bg-warning-soft text-sm text-secondary-foreground"
-            style={{ borderLeft: '3px solid var(--warning)' }}
-          >
-            <span className="font-semibold">This week already has a plan.</span>{" "}
-            Continuing will replace its contents.
-          </div>
-        )}
-
-        {/* Uncompleted goals */}
-        {hasUncompletedGoals && (
-          <div className="space-y-4 overflow-y-auto max-h-[280px] mb-6">
-            {roleGroups.map(({ role, goals }) => (
-              <div key={role.id}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: getRoleColorStyle(role.color) }}
-                  />
-                  <span className="text-sm font-medium">{role.name}</span>
+        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden">
+          <div className="grid shrink-0 gap-3 md:grid-cols-2">
+            <section className="rounded-lg border border-[var(--ds-line-soft)] bg-[var(--ds-panel)] p-4">
+              <SectionLabel className="mb-3">Source Week</SectionLabel>
+              <div className="mb-4 text-sm font-medium text-foreground">{sourceWeekLabel}</div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <div className="font-mono text-[length:var(--text-caption)] uppercase tracking-[0.12em] text-muted-foreground">
+                    Completed
+                  </div>
+                  <div className="mt-1 text-foreground">
+                    {model.summary.completedGoals}/{model.summary.totalGoals} Goals
+                  </div>
                 </div>
-                <div className="space-y-1.5 ml-[18px]">
-                  {goals.map((goal) => (
-                    <label
-                      key={goal.id}
-                      className="flex items-start gap-2 cursor-pointer"
-                    >
-                      <Checkbox
-                        checked={selectedIds.has(goal.id)}
-                        onCheckedChange={() => toggleGoal(goal.id)}
-                        className="mt-0.5"
-                      />
-                      <span className="text-sm leading-snug text-secondary-foreground">
-                        {goal.text}
-                      </span>
-                    </label>
-                  ))}
+                <div>
+                  <div className="font-mono text-[length:var(--text-caption)] uppercase tracking-[0.12em] text-muted-foreground">
+                    Unfinished
+                  </div>
+                  <div className="mt-1 text-foreground">
+                    {formatGoalCount(model.summary.unfinishedGoals)}
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+              <Progress value={model.summary.completionPercent} className="mt-4 h-1.5" />
+            </section>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          {hasUncompletedGoals && (
-            <Button variant="outline" onClick={handleStartFresh}>Start fresh</Button>
+            <section className="rounded-lg border border-[var(--ds-line-soft)] bg-[var(--ds-panel)] p-4">
+              <SectionLabel className="mb-3">Target Week</SectionLabel>
+              <WeekSelector
+                value={targetWeekId}
+                onChange={(weekId) => {
+                  setTargetWeekId(weekId);
+                  setSubmitError(null);
+                }}
+                options={dropdownWeekIds}
+                existingWeekIds={existingWeekIds}
+                disabled={isSubmitting}
+                triggerClassName="bg-[var(--ds-window)]"
+              />
+              <p className="mt-3 text-caption leading-relaxed text-muted-foreground">
+                <span className="font-medium text-secondary-foreground">{targetWeekLabel}.</span>{" "}
+                {targetExplanation}
+              </p>
+            </section>
+          </div>
+
+          {model.isReplacingTargetWeek && (
+            <div
+              role="alert"
+              className="shrink-0 rounded-lg border border-[var(--ds-line-soft)] bg-[color:color-mix(in_oklch,var(--ds-warning)_8%,transparent)] p-3 text-sm text-secondary-foreground"
+            >
+              <span className="font-semibold text-foreground">The Target Week already has a plan.</span>{" "}
+              Continuing will replace it with this Weekly Handoff.
+            </div>
           )}
-          <Button onClick={hasUncompletedGoals ? handleCarryOver : handleStartFresh}>
-            {hasUncompletedGoals ? "Carry over selected" : "Start week"}
+
+          <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+            <SectionLabel
+              action={
+                !model.isCleanSlate && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[length:var(--text-label)] uppercase tracking-[0.12em] text-muted-foreground">
+                      {model.selectedCount} selected
+                    </span>
+                    <TextActionButton
+                      onClick={selectAll}
+                      disabled={isSubmitting || model.selectedCount === model.unfinishedGoalIds.length}
+                    >
+                      Select all
+                    </TextActionButton>
+                    <TextActionButton
+                      onClick={clearSelected}
+                      disabled={isSubmitting || model.selectedCount === 0}
+                    >
+                      Clear
+                    </TextActionButton>
+                  </div>
+                )
+              }
+            >
+              Carry Forward
+            </SectionLabel>
+
+            {model.isCleanSlate ? (
+              <div className="rounded-lg border border-[var(--ds-line-soft)] bg-[var(--ds-panel)] p-5 text-sm text-secondary-foreground">
+                <div className="mb-1 font-medium text-foreground">No unfinished Goals in the Source Week.</div>
+                Start the Target Week with a clean slate. Roles can still carry forward, while Day Priorities,
+                Time Blocks, and Evening Blocks start empty.
+              </div>
+            ) : (
+              <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-[var(--ds-line-soft)] bg-[var(--ds-panel)]">
+                {model.unfinishedGoalGroups.map(({ role, goals }) => (
+                  <div key={role.id} className="border-b border-[var(--ds-line-soft)] last:border-b-0">
+                    <div className="flex items-center gap-2 px-4 py-3">
+                      <span
+                        className="size-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: getRoleColorStyle(role.color) }}
+                      />
+                      <span className="text-sm font-medium text-foreground">{role.name}</span>
+                    </div>
+                    <div className="border-t border-[var(--ds-line-soft)]">
+                      {goals.map((goal) => (
+                        <label
+                          key={goal.id}
+                          className="flex cursor-pointer items-start gap-3 border-b border-[var(--ds-line-soft)] px-4 py-3 text-sm last:border-b-0 hover:bg-[var(--ds-hover-tint)]"
+                        >
+                          <Checkbox
+                            checked={selectedIds.has(goal.id)}
+                            onCheckedChange={() => toggleGoal(goal.id)}
+                            disabled={isSubmitting}
+                            className="mt-0.5"
+                          />
+                          <span className="leading-snug text-secondary-foreground">{goal.text}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {submitError && (
+            <p
+              role="alert"
+              className="shrink-0 rounded-md border border-[var(--ds-line-soft)] bg-[var(--ds-panel)] px-3 py-2 text-caption text-secondary-foreground"
+            >
+              {submitError}
+            </p>
+          )}
+        </div>
+
+        <DialogFooter className="shrink-0">
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          {canCarryForward && (
+            <Button variant="outline" onClick={() => submit("fresh")} disabled={isSubmitting}>
+              Start fresh
+            </Button>
+          )}
+          <Button
+            onClick={() => submit(canCarryForward ? "carry-forward" : "fresh")}
+            disabled={isSubmitting || !sourceWeek}
+          >
+            {isSubmitting ? "Starting…" : model.primaryActionLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
