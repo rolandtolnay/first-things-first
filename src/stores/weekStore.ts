@@ -94,6 +94,7 @@ interface WeekStore {
     options: { carryOverGoals?: Goal[]; sourceWeek?: Week }
   ) => Promise<Week>;
   saveCurrentWeek: () => Promise<void>;
+  clearCurrentWeek: () => Promise<void>;
 
   // Role operations
   addRole: (input: CreateRoleInput) => Promise<Role>;
@@ -416,6 +417,16 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     if (!week) return;
 
     await commitWeek(get, set, week);
+  },
+
+  clearCurrentWeek: async () => {
+    await withWeek(get, set, () => ({
+      roles: [],
+      goals: [],
+      dayPriorities: [],
+      timeBlocks: [],
+      eveningBlocks: [],
+    }));
   },
 
   // -------------------------------------------------------------------------

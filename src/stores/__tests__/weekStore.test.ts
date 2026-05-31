@@ -146,6 +146,22 @@ describe("save failure surfacing", () => {
   });
 });
 
+describe("clearCurrentWeek", () => {
+  it("empties the current week and persists once", async () => {
+    await useWeekStore.getState().clearCurrentWeek();
+
+    expect(saveWeek).toHaveBeenCalledTimes(1);
+    expect(useWeekStore.getState().currentWeek).toMatchObject({
+      id: "2026-W01",
+      roles: [],
+      goals: [],
+      dayPriorities: [],
+      timeBlocks: [],
+      eveningBlocks: [],
+    });
+  });
+});
+
 describe("placeTimeBlockAt", () => {
   it("creates a clamped block on a free day with a single persist", async () => {
     const created = await useWeekStore
