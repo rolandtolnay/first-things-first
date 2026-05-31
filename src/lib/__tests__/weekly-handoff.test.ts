@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildEmptyWeek, buildTargetWeek, buildWeeklyHandoffModel } from "@/lib/weekly-handoff";
+import {
+  buildEmptyWeek,
+  buildTargetWeek,
+  buildWeeklyHandoffModel,
+  buildWeeklyHandoffOpeningModel,
+} from "@/lib/weekly-handoff";
 import type { Goal, Role, Week, WeekId } from "@/types";
 
 const sourceWeekId = "2026-W10" as WeekId;
@@ -63,6 +68,41 @@ function idSequence(...ids: string[]): () => string {
   let index = 0;
   return () => ids[index++] ?? `generated-${index}`;
 }
+
+describe("buildWeeklyHandoffOpeningModel", () => {
+  it("chooses the first unplanned Target Week after the viewed Week", () => {
+    const sourceWeek = week({
+      id: "2026-W11" as WeekId,
+      roles: [role()],
+      goals: [goal({ id: "open-1" }), goal({ id: "done-1", completed: true })],
+    });
+
+    const openingModel = buildWeeklyHandoffOpeningModel({
+      sourceWeek,
+      viewedWeekId: "2026-W11" as WeekId,
+      existingWeekIds: ["2026-W12" as WeekId],
+      currentWeekId: "2026-W10" as WeekId,
+    });
+
+    expect(openingModel.targetWeekId).toBe("2026-W13");
+    expect(openingModel.dropdownWeekIds).not.toContain("2026-W11");
+    expect(openingModel.defaultSelectedGoalIds).toEqual(["open-1"]);
+  });
+
+  it("falls back to a replacement week when the candidate range is fully planned", () => {
+    const candidateWeekIds = ["2026-W10", "2026-W11", "2026-W12"] as WeekId[];
+    const openingModel = buildWeeklyHandoffOpeningModel({
+      sourceWeek: week({ id: "2026-W10" as WeekId }),
+      viewedWeekId: "2026-W11" as WeekId,
+      existingWeekIds: candidateWeekIds,
+      currentWeekId: "2026-W10" as WeekId,
+      horizonWeeks: 3,
+    });
+
+    expect(openingModel.targetWeekId).toBe("2026-W11");
+    expect(openingModel.dropdownWeekIds).toEqual(["2026-W11", "2026-W12"]);
+  });
+});
 
 describe("buildEmptyWeek", () => {
   it("builds an empty Week shell with copied Roles and no planning items", () => {

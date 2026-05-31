@@ -5,12 +5,10 @@ import { useWeekStore } from "@/stores/weekStore";
 import {
   formatWeekId,
   getCurrentWeekId,
-  getNextWeekId,
-  getWeekIdRange,
   getWeekNumber,
 } from "@/lib/utils";
 import { getRoleColorStyle } from "@/lib/role-colors";
-import { buildWeeklyHandoffModel } from "@/lib/weekly-handoff";
+import { buildWeeklyHandoffModel, buildWeeklyHandoffOpeningModel } from "@/lib/weekly-handoff";
 import {
   Dialog,
   DialogContent,
@@ -38,24 +36,6 @@ function formatGoalCount(count: number): string {
   return `${count} ${count === 1 ? "Goal" : "Goals"}`;
 }
 
-function getDefaultTargetWeekId(
-  viewedWeekId: WeekId,
-  existingWeekIds: readonly WeekId[],
-  excludedWeekId?: WeekId
-): WeekId {
-  const range = getWeekIdRange(getCurrentWeekId(), 11);
-  const scanStart = getNextWeekId(viewedWeekId);
-  const scanIndex = range.indexOf(scanStart);
-  const startIdx = scanIndex >= 0 ? scanIndex : 0;
-
-  for (let i = 0; i < range.length; i++) {
-    const candidate = range[(startIdx + i) % range.length];
-    if (candidate !== excludedWeekId && !existingWeekIds.includes(candidate)) return candidate;
-  }
-
-  return range.find((weekId) => weekId !== excludedWeekId) ?? range[0];
-}
-
 export function CarryoverDialog({
   open,
   onClose,
@@ -81,18 +61,15 @@ export function CarryoverDialog({
     if (wasOpenRef.current) return;
     wasOpenRef.current = true;
 
-    const range = getWeekIdRange(getCurrentWeekId(), 11).filter((weekId) => weekId !== sourceWeek?.id);
-    const defaultTargetWeekId = getDefaultTargetWeekId(viewedWeekId, existingWeekIds, sourceWeek?.id);
-    const openingModel = buildWeeklyHandoffModel({
+    const openingModel = buildWeeklyHandoffOpeningModel({
       sourceWeek,
-      targetWeekId: defaultTargetWeekId,
+      viewedWeekId,
       existingWeekIds,
-      selectedGoalIds: new Set(),
     });
 
-    setDropdownWeekIds(range);
-    setTargetWeekId(defaultTargetWeekId);
-    setSelectedIds(new Set(openingModel.unfinishedGoalIds));
+    setDropdownWeekIds(openingModel.dropdownWeekIds);
+    setTargetWeekId(openingModel.targetWeekId);
+    setSelectedIds(new Set(openingModel.defaultSelectedGoalIds));
     setSubmitError(null);
     setIsSubmitting(false);
   }, [open, sourceWeek, viewedWeekId, existingWeekIds]);

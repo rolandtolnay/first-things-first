@@ -1,4 +1,11 @@
-import { generateId, getWeekStartDate, parseWeekId } from "@/lib/utils";
+import {
+  generateId,
+  getCurrentWeekId,
+  getNextWeekId,
+  getWeekIdRange,
+  getWeekStartDate,
+  parseWeekId,
+} from "@/lib/utils";
 import type { Goal, Role, Week, WeekId } from "@/types";
 
 export interface WeeklyHandoffModelInput {
@@ -28,6 +35,20 @@ export interface WeeklyHandoffModel {
   isReplacingTargetWeek: boolean;
   isCleanSlate: boolean;
   primaryActionLabel: string;
+}
+
+export interface WeeklyHandoffOpeningModelInput {
+  sourceWeek: Week | null;
+  viewedWeekId: WeekId;
+  existingWeekIds: readonly WeekId[];
+  currentWeekId?: WeekId;
+  horizonWeeks?: number;
+}
+
+export interface WeeklyHandoffOpeningModel {
+  targetWeekId: WeekId;
+  dropdownWeekIds: WeekId[];
+  defaultSelectedGoalIds: string[];
 }
 
 export interface BuildWeekOptions {
@@ -133,6 +154,57 @@ export function buildTargetWeek({
   });
 
   return week;
+}
+
+function getDefaultTargetWeekId({
+  viewedWeekId,
+  existingWeekIds,
+  candidateWeekIds,
+  excludedWeekId,
+}: {
+  viewedWeekId: WeekId;
+  existingWeekIds: readonly WeekId[];
+  candidateWeekIds: readonly WeekId[];
+  excludedWeekId?: WeekId;
+}): WeekId {
+  const scanStart = getNextWeekId(viewedWeekId);
+  const scanIndex = candidateWeekIds.indexOf(scanStart);
+  const startIdx = scanIndex >= 0 ? scanIndex : 0;
+
+  for (let i = 0; i < candidateWeekIds.length; i++) {
+    const candidate = candidateWeekIds[(startIdx + i) % candidateWeekIds.length];
+    if (candidate !== excludedWeekId && !existingWeekIds.includes(candidate)) return candidate;
+  }
+
+  return candidateWeekIds.find((weekId) => weekId !== excludedWeekId) ?? candidateWeekIds[0];
+}
+
+export function buildWeeklyHandoffOpeningModel({
+  sourceWeek,
+  viewedWeekId,
+  existingWeekIds,
+  currentWeekId = getCurrentWeekId(),
+  horizonWeeks = 11,
+}: WeeklyHandoffOpeningModelInput): WeeklyHandoffOpeningModel {
+  const candidateWeekIds = getWeekIdRange(currentWeekId, Math.max(1, horizonWeeks));
+  const targetWeekId = getDefaultTargetWeekId({
+    viewedWeekId,
+    existingWeekIds,
+    candidateWeekIds,
+    excludedWeekId: sourceWeek?.id,
+  });
+  const openingModel = buildWeeklyHandoffModel({
+    sourceWeek,
+    targetWeekId,
+    existingWeekIds,
+    selectedGoalIds: new Set(),
+  });
+
+  return {
+    targetWeekId,
+    dropdownWeekIds: candidateWeekIds.filter((weekId) => weekId !== sourceWeek?.id),
+    defaultSelectedGoalIds: openingModel.unfinishedGoalIds,
+  };
 }
 
 export function buildWeeklyHandoffModel({
