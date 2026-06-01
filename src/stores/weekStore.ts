@@ -17,6 +17,22 @@ import {
 } from "@/lib/scheduling";
 import { buildEmptyWeek, buildTargetWeek } from "@/lib/weekly-handoff";
 import { getNextRoleColor } from "@/lib/role-colors";
+import {
+  appendRoleSnapshot,
+  removeRoleSnapshotCascade,
+  reorderRoleSnapshots,
+  resolveRestoredRoleName,
+  updateRoleSnapshot,
+} from "@/lib/role-snapshots";
+import {
+  archiveRole,
+  createRole,
+  getActiveRoles,
+  persistRoleOrder,
+  restoreRole as restoreDurableRole,
+  searchArchivedRoles as searchArchivedRolesDb,
+  updateRoleDefaults,
+} from "@/lib/db";
 import { weekPersistence } from "@/stores/weekPersistence";
 import type {
   Week,
@@ -43,6 +59,8 @@ interface WeekStore {
   // Current week state
   currentWeek: Week | null;
   selectedWeekId: WeekId | null;
+  /** Active durable Role defaults for Week seeding and Sidebar operations. */
+  activeRoles: Role[];
   /** Ids of every week the signed-in user owns, ascending (reactive nav feed). */
   availableWeekIds: WeekId[];
   isLoading: boolean;
@@ -60,7 +78,7 @@ interface WeekStore {
   // Week operations
   loadWeek: (weekId: WeekId) => Promise<void>;
   navigateToWeek: (weekId: WeekId) => Promise<void>;
-  createWeek: (weekId: WeekId, carryOverRoles?: Role[]) => Promise<Week>;
+  createWeek: (weekId: WeekId) => Promise<Week>;
   createNewWeek: (
     weekId: WeekId,
     options: { carryOverGoals?: Goal[]; sourceWeek?: Week }
@@ -70,9 +88,11 @@ interface WeekStore {
 
   // Role operations
   addRole: (input: CreateRoleInput) => Promise<Role>;
-  updateRole: (roleId: string, updates: Partial<Omit<Role, "id">>) => Promise<void>;
+  updateRole: (roleId: string, updates: Partial<Pick<Role, "name" | "color" | "order">>) => Promise<void>;
   deleteRole: (roleId: string) => Promise<void>;
   reorderRoles: (roleIds: string[]) => Promise<void>;
+  searchArchivedRoles: (query: string) => Promise<Role[]>;
+  restoreRole: (role: Role) => Promise<Role>;
 
   // Goal operations
   addGoal: (input: CreateGoalInput) => Promise<Goal>;
@@ -169,6 +189,19 @@ function goalFields(week: Week, goalId: string): { roleId: string | undefined; t
   return { roleId: goal?.roleId, title: goal?.text ?? "" };
 }
 
+function normalizedRoleName(name: string): string {
+  return name.trim().toLocaleLowerCase();
+}
+
+function hasActiveRoleNameConflict(roles: readonly Role[], name: string, exceptRoleId?: string): boolean {
+  const normalized = normalizedRoleName(name);
+  return roles.some((role) => role.id !== exceptRoleId && normalizedRoleName(role.name) === normalized);
+}
+
+function roleErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Failed to save role changes";
+}
+
 async function commitWeek(
   get: StoreGet,
   set: StoreSet,
@@ -217,6 +250,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   // Initial state
   currentWeek: null,
   selectedWeekId: null,
+  activeRoles: [],
   availableWeekIds: [],
   isLoading: false,
   error: null,
@@ -228,6 +262,18 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   bootstrap: async () => {
     const epoch = weekPersistence.epoch();
     set({ isLoading: true, error: null });
+
+    let activeRoles: Role[];
+    try {
+      activeRoles = await getActiveRoles({ signal: epoch.signal });
+    } catch (error) {
+      if (!weekPersistence.isCurrent(epoch)) return;
+      set({ error: roleErrorMessage(error), isLoading: false });
+      return;
+    }
+
+    if (!weekPersistence.isCurrent(epoch)) return;
+    set({ activeRoles });
 
     const weekIdsResult = await weekPersistence.listWeekIds(epoch);
     if (!weekIdsResult.ok) {
@@ -271,6 +317,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     set({
       currentWeek: null,
       selectedWeekId: null,
+      activeRoles: [],
       availableWeekIds: [],
       isLoading: false,
       error: null,
@@ -308,8 +355,8 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     await get().loadWeek(weekId);
   },
 
-  createWeek: async (weekId: WeekId, carryOverRoles?: Role[]) => {
-    const week = buildEmptyWeek({ weekId, carryOverRoles });
+  createWeek: async (weekId: WeekId) => {
+    const week = buildEmptyWeek({ weekId, activeRoles: get().activeRoles });
     await persistCreatedWeek(get, set, week);
     return week;
   },
@@ -320,7 +367,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   ) => {
     const week = buildTargetWeek({
       targetWeekId: weekId,
-      sourceWeek: options.sourceWeek,
+      activeRoles: get().activeRoles,
       carryOverGoals: options.carryOverGoals,
     });
 
@@ -353,57 +400,141 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     const week = get().currentWeek;
     if (!week) throw new Error("No week loaded");
 
-    // Use max order + 1 to ensure new role appears at end
-    // (roles.length doesn't work after deletions create order gaps)
-    const maxOrder = week.roles.reduce((max, r) => Math.max(max, r.order), -1);
+    const name = input.name.trim();
+    if (!name) throw new Error("Role name is required");
+    if (hasActiveRoleNameConflict(get().activeRoles, name)) {
+      const message = "A role with that name already exists";
+      set({ error: message });
+      throw new Error(message);
+    }
 
-    const role: Role = {
-      id: generateId(),
-      name: input.name,
-      color: getNextRoleColor(week.roles),
-      order: maxOrder + 1,
-    };
+    const maxOrder = Math.max(
+      get().activeRoles.reduce((max, role) => Math.max(max, role.order), -1),
+      week.roles.reduce((max, snapshot) => Math.max(max, snapshot.order), -1),
+    );
 
-    await commitWeek(get, set, { ...week, roles: [...week.roles, role] });
+    let role: Role;
+    try {
+      role = await createRole({
+        name,
+        color: getNextRoleColor(week.roles),
+        order: maxOrder + 1,
+      });
+    } catch (error) {
+      const message = roleErrorMessage(error);
+      set({ error: message });
+      throw error;
+    }
+
+    set({ activeRoles: [...get().activeRoles, role].sort((left, right) => left.order - right.order) });
+    await commitWeek(get, set, appendRoleSnapshot(week, role));
     return role;
   },
 
-  updateRole: async (roleId: string, updates: Partial<Omit<Role, "id">>) => {
-    await withWeek(get, set, (week) => ({
-      roles: week.roles.map((r) => (r.id === roleId ? { ...r, ...updates } : r)),
-    }));
+  updateRole: async (roleId: string, updates: Partial<Pick<Role, "name" | "color" | "order">>) => {
+    const week = get().currentWeek;
+    if (!week) throw new Error("No week loaded");
+
+    const normalizedUpdates = {
+      ...updates,
+      ...(updates.name !== undefined ? { name: updates.name.trim() } : {}),
+    };
+    if (
+      normalizedUpdates.name !== undefined &&
+      hasActiveRoleNameConflict(get().activeRoles, normalizedUpdates.name, roleId)
+    ) {
+      const message = "A role with that name already exists";
+      set({ error: message });
+      throw new Error(message);
+    }
+
+    let updatedRole: Role;
+    try {
+      updatedRole = await updateRoleDefaults(roleId, normalizedUpdates);
+    } catch (error) {
+      const message = roleErrorMessage(error);
+      set({ error: message });
+      throw error;
+    }
+
+    set({
+      activeRoles: get().activeRoles
+        .map((role) => (role.id === roleId ? updatedRole : role))
+        .sort((left, right) => left.order - right.order),
+    });
+    await commitWeek(get, set, updateRoleSnapshot(week, roleId, normalizedUpdates));
   },
 
   deleteRole: async (roleId: string) => {
-    await withWeek(get, set, (week) => {
-      const goalIds = week.goals.filter((g) => g.roleId === roleId).map((g) => g.id);
-      return {
-        roles: week.roles.filter((r) => r.id !== roleId),
-        goals: week.goals.filter((g) => g.roleId !== roleId),
-        dayPriorities: week.dayPriorities.filter((p) => !goalIds.includes(p.goalId)),
-        timeBlocks: week.timeBlocks.filter((b) => b.type === "freestyle" || !goalIds.includes(b.goalId!)),
-        eveningBlocks: week.eveningBlocks.filter((b) => b.type === "freestyle" || !goalIds.includes(b.goalId!)),
-      };
-    });
+    const week = get().currentWeek;
+    if (!week) throw new Error("No week loaded");
+
+    try {
+      await archiveRole(roleId);
+    } catch (error) {
+      const message = roleErrorMessage(error);
+      set({ error: message });
+      throw error;
+    }
+
+    set({ activeRoles: get().activeRoles.filter((role) => role.id !== roleId) });
+    await commitWeek(get, set, removeRoleSnapshotCascade(week, roleId));
   },
 
   reorderRoles: async (roleIds: string[]) => {
     const week = get().currentWeek;
     if (!week) throw new Error("No week loaded");
 
-    const currentRoleIds = new Set(week.roles.map((role) => role.id));
-    const uniqueRoleIds = new Set(roleIds);
-    const isCompleteRoleSet =
-      roleIds.length === week.roles.length &&
-      uniqueRoleIds.size === roleIds.length &&
-      roleIds.every((roleId) => currentRoleIds.has(roleId));
+    const reorderedWeek = reorderRoleSnapshots(week, roleIds);
+    if (reorderedWeek === week) return;
 
-    if (!isCompleteRoleSet) return;
+    let orderedRoles: Role[];
+    try {
+      orderedRoles = await persistRoleOrder(roleIds);
+    } catch (error) {
+      const message = roleErrorMessage(error);
+      set({ error: message });
+      throw error;
+    }
 
-    await commitWeek(get, set, {
-      ...week,
-      roles: week.roles.map((role) => ({ ...role, order: roleIds.indexOf(role.id) })),
-    });
+    set({ activeRoles: orderedRoles });
+    await commitWeek(get, set, reorderedWeek);
+  },
+
+  searchArchivedRoles: async (query: string) => {
+    try {
+      return await searchArchivedRolesDb(query);
+    } catch (error) {
+      set({ error: roleErrorMessage(error) });
+      return [];
+    }
+  },
+
+  restoreRole: async (archivedRole: Role) => {
+    const week = get().currentWeek;
+    if (!week) throw new Error("No week loaded");
+
+    const activeMatch = get().activeRoles.find((role) => role.id === archivedRole.id);
+    if (activeMatch) return activeMatch;
+
+    const maxOrder = Math.max(
+      get().activeRoles.reduce((max, role) => Math.max(max, role.order), -1),
+      week.roles.reduce((max, snapshot) => Math.max(max, snapshot.order), -1),
+    );
+    const restoredName = resolveRestoredRoleName(get().activeRoles, archivedRole);
+
+    let restoredRole: Role;
+    try {
+      restoredRole = await restoreDurableRole(archivedRole.id, { name: restoredName, order: maxOrder + 1 });
+    } catch (error) {
+      const message = roleErrorMessage(error);
+      set({ error: message });
+      throw error;
+    }
+
+    set({ activeRoles: [...get().activeRoles, restoredRole].sort((left, right) => left.order - right.order) });
+    await commitWeek(get, set, appendRoleSnapshot(week, restoredRole));
+    return restoredRole;
   },
 
   // -------------------------------------------------------------------------
