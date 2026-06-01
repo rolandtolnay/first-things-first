@@ -21,31 +21,69 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   ContextMenu,
-  ContextMenuContent,
-  ContextMenuSub,
-  ContextMenuSubContent,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AppContextMenuContent,
+  AppDropdownMenuContent,
+  AppMenuItem,
+  AppMenuSub,
+  AppMenuSubContent,
+} from "@/components/ui/app-menu";
 import { GoalList } from "./GoalList";
 import { RoleColorPicker } from "./RoleColorPicker";
-import {
-  RoleContextMenuItem,
-  RoleContextMenuSubTrigger,
-  RoleDropdownMenuItem,
-  RoleDropdownMenuSubTrigger,
-} from "./RoleMenuAction";
 import type { RoleColor, RoleSnapshot } from "@/types";
 import type { RoleReorderDragData } from "@/types/dnd";
 
 interface RoleSectionProps {
   role: RoleSnapshot;
+}
+
+interface RoleMenuItemsProps {
+  roleColor: RoleColor;
+  onChangeRoleColor: (color: RoleColor) => void;
+  onAddGoal: () => void;
+  onRenameRole: () => void;
+  onArchiveRole: () => void;
+}
+
+function RoleMenuItems({
+  roleColor,
+  onChangeRoleColor,
+  onAddGoal,
+  onRenameRole,
+  onArchiveRole,
+}: RoleMenuItemsProps) {
+  return (
+    <>
+      <AppMenuItem icon={Plus} onSelect={onAddGoal}>
+        Add goal
+      </AppMenuItem>
+      <AppMenuItem icon={Pencil} onSelect={onRenameRole}>
+        Rename role
+      </AppMenuItem>
+      <AppMenuSub>
+        <AppMenuItem icon={Palette} kind="subTrigger">
+          Change color
+        </AppMenuItem>
+        <AppMenuSubContent className="p-2">
+          <RoleColorPicker value={roleColor} onChange={onChangeRoleColor} />
+        </AppMenuSubContent>
+      </AppMenuSub>
+      <AppMenuItem
+        icon={Trash2}
+        variant="destructive"
+        onSelect={onArchiveRole}
+      >
+        Archive role
+      </AppMenuItem>
+    </>
+  );
 }
 
 export function RoleSection({ role }: RoleSectionProps) {
@@ -138,32 +176,6 @@ export function RoleSection({ role }: RoleSectionProps) {
   const pointerListeners: { onPointerDown?: PointerEventHandler<HTMLButtonElement> } = listeners?.onPointerDown
     ? { onPointerDown: listeners.onPointerDown as PointerEventHandler<HTMLButtonElement> }
     : {};
-
-  const menuItems = (
-    <>
-      <RoleContextMenuItem icon={Plus} onSelect={handleStartAddingGoal}>
-        Add goal
-      </RoleContextMenuItem>
-      <RoleContextMenuItem icon={Pencil} onSelect={handleStartRenameRole}>
-        Rename role
-      </RoleContextMenuItem>
-      <ContextMenuSub>
-        <RoleContextMenuSubTrigger icon={Palette}>
-          Change color
-        </RoleContextMenuSubTrigger>
-        <ContextMenuSubContent className="min-w-0 p-2">
-          <RoleColorPicker value={role.color} onChange={handleChangeRoleColor} />
-        </ContextMenuSubContent>
-      </ContextMenuSub>
-      <RoleContextMenuItem
-        icon={Trash2}
-        variant="destructive"
-        onSelect={() => setDeleteDialogOpen(true)}
-      >
-        Archive role
-      </RoleContextMenuItem>
-    </>
-  );
 
   return (
     <ContextMenu key={contextMenuKey}>
@@ -270,33 +282,19 @@ export function RoleSection({ role }: RoleSectionProps) {
                       <MoreVertical className="size-3.5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent
+                  <AppDropdownMenuContent
                     align="start"
                     className="w-auto min-w-36"
                     onCloseAutoFocus={handleDropdownCloseAutoFocus}
                   >
-                    <RoleDropdownMenuItem icon={Plus} onSelect={handleStartAddingGoalFromDropdownMenu}>
-                      Add goal
-                    </RoleDropdownMenuItem>
-                    <RoleDropdownMenuItem icon={Pencil} onSelect={handleStartRenameRoleFromDropdownMenu}>
-                      Rename role
-                    </RoleDropdownMenuItem>
-                    <DropdownMenuSub>
-                      <RoleDropdownMenuSubTrigger icon={Palette}>
-                        Change color
-                      </RoleDropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="min-w-0 p-2">
-                        <RoleColorPicker value={role.color} onChange={handleChangeRoleColor} />
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                    <RoleDropdownMenuItem
-                      icon={Trash2}
-                      variant="destructive"
-                      onSelect={() => { setDeleteDialogOpen(true); setMenuOpen(false); }}
-                    >
-                      Archive role
-                    </RoleDropdownMenuItem>
-                  </DropdownMenuContent>
+                    <RoleMenuItems
+                      roleColor={role.color}
+                      onChangeRoleColor={handleChangeRoleColor}
+                      onAddGoal={handleStartAddingGoalFromDropdownMenu}
+                      onRenameRole={handleStartRenameRoleFromDropdownMenu}
+                      onArchiveRole={() => { setDeleteDialogOpen(true); setMenuOpen(false); }}
+                    />
+                  </AppDropdownMenuContent>
                 </DropdownMenu>
               </div>
             )}
@@ -313,9 +311,15 @@ export function RoleSection({ role }: RoleSectionProps) {
           </div>
         </div>
       </ContextMenuTrigger>
-      <ContextMenuContent>
-        {menuItems}
-      </ContextMenuContent>
+      <AppContextMenuContent>
+        <RoleMenuItems
+          roleColor={role.color}
+          onChangeRoleColor={handleChangeRoleColor}
+          onAddGoal={handleStartAddingGoal}
+          onRenameRole={handleStartRenameRole}
+          onArchiveRole={() => setDeleteDialogOpen(true)}
+        />
+      </AppContextMenuContent>
 
       {/* Archive confirmation dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

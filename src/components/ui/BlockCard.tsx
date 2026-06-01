@@ -4,16 +4,17 @@ import { useState, useRef, useEffect, type CSSProperties, type KeyboardEvent, ty
 import { MoreVertical, Check, CheckCircle, Circle, Trash2 } from "lucide-react";
 import {
   ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
   DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AppContextMenuContent,
+  AppDropdownMenuContent,
+  AppMenuItem,
+} from "@/components/ui/app-menu";
 import { BlockMeta } from "@/components/ui/BlockMeta";
 import { InlineInput } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -107,7 +108,7 @@ export function BlockCard({
   const isUnassignedCalendarBlock = unassigned && !isCard;
 
   const roleTintOpacity = roleTint === "strong"
-    ? { rest: 0.16, hover: 0.2 }
+    ? { rest: 0.2, hover: 0.24 }
     : { rest: 0.12, hover: 0.16 };
 
   const bgColor = isUnassignedCalendarBlock
@@ -201,25 +202,29 @@ export function BlockCard({
     handleSave();
   }
 
-  const menuItems = (
-    <>
-      {onToggle && (
-        <ContextMenuItem onSelect={() => handleMenuAction(onToggle)}>
-          {completed ? <Circle className="size-3.5 mr-2" /> : <CheckCircle className="size-3.5 mr-2" />}
-          {completed ? "Mark incomplete" : "Mark complete"}
-        </ContextMenuItem>
-      )}
-      {onDelete && (
-        <ContextMenuItem
-          className="text-destructive"
-          onSelect={() => handleMenuAction(onDelete)}
-        >
-          <Trash2 className="size-3.5 mr-2" />
-          Delete
-        </ContextMenuItem>
-      )}
-    </>
-  );
+  function renderMenuItems() {
+    return (
+      <>
+        {onToggle && (
+          <AppMenuItem
+            icon={completed ? Circle : CheckCircle}
+            onSelect={() => handleMenuAction(onToggle)}
+          >
+            {completed ? "Mark incomplete" : "Mark complete"}
+          </AppMenuItem>
+        )}
+        {onDelete && (
+          <AppMenuItem
+            icon={Trash2}
+            variant="destructive"
+            onSelect={() => handleMenuAction(onDelete)}
+          >
+            Delete
+          </AppMenuItem>
+        )}
+      </>
+    );
+  }
 
   const cardContent = (
     <div
@@ -333,7 +338,7 @@ export function BlockCard({
               <MoreVertical className="size-4 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent
+          <AppDropdownMenuContent
             align="start"
             className="w-auto min-w-36"
             onPointerDown={(e) => {
@@ -344,22 +349,8 @@ export function BlockCard({
               e.stopPropagation();
             }}
           >
-            {onToggle && (
-              <DropdownMenuItem onSelect={() => handleMenuAction(onToggle)}>
-                {completed ? <Circle className="size-3.5 mr-2" /> : <CheckCircle className="size-3.5 mr-2" />}
-                {completed ? "Mark incomplete" : "Mark complete"}
-              </DropdownMenuItem>
-            )}
-            {onDelete && (
-              <DropdownMenuItem
-                className="text-destructive"
-                onSelect={() => handleMenuAction(onDelete)}
-              >
-                <Trash2 className="size-3.5 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
+            {renderMenuItems()}
+          </AppDropdownMenuContent>
         </DropdownMenu>
       )}
     </div>
@@ -372,7 +363,7 @@ export function BlockCard({
         <ContextMenuTrigger asChild>
           {cardContent}
         </ContextMenuTrigger>
-        <ContextMenuContent
+        <AppContextMenuContent
           onPointerDown={(e) => {
             e.stopPropagation();
             handleMenuInteraction();
@@ -381,8 +372,8 @@ export function BlockCard({
             e.stopPropagation();
           }}
         >
-          {menuItems}
-        </ContextMenuContent>
+          {renderMenuItems()}
+        </AppContextMenuContent>
       </ContextMenu>
     );
   }
