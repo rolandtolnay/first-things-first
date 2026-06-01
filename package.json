@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "db:push:prod": "scripts/db-push-prod.sh",
     "lint": "eslint",
     "test": "vitest",
     "test:run": "vitest run"
