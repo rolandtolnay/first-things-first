@@ -83,6 +83,18 @@ export function isRoleReorderDragData(data: unknown): data is RoleReorderDragDat
   );
 }
 
+export function isCalendarDragData(data: unknown): data is DragData {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "type" in data &&
+    (data.type === "goal" ||
+      data.type === "block" ||
+      data.type === "priority" ||
+      data.type === "evening")
+  );
+}
+
 // ============================================================================
 // Drop Zone Types (attached to droppable zones)
 // ============================================================================

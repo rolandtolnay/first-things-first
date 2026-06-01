@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { MAX_PRIORITIES_PER_DAY, PRIORITIES_SECTION_HEIGHT } from "@/lib/constants";
 import { PriorityItem } from "./PriorityItem";
 import type { DayOfWeek } from "@/types";
-import type { DropZoneData } from "@/types/dnd";
+import { isCalendarDragData, type DropZoneData } from "@/types/dnd";
 
 interface DayPrioritiesProps {
   dayIndex: DayOfWeek;
@@ -48,11 +48,12 @@ export function DayPriorities({ dayIndex }: DayPrioritiesProps) {
     data: dropData,
   });
 
-  // Show dashed border when dragging and empty
+  // Show dashed border only for calendar-routable drags, not Sidebar Role sorting.
   const { active } = useDndContext();
-  const isDragging = active !== null;
+  const isCalendarDragging = isCalendarDragData(active?.data.current);
   const isEmpty = priorities.length === 0;
-  const showDropHint = isEmpty && isDragging;
+  const showDropHint = isEmpty && isCalendarDragging;
+  const showDropOver = isOver && isCalendarDragging;
   const priorityCardHeight =
     (PRIORITIES_SECTION_HEIGHT - PRIORITIES_Y_PADDING - PRIORITIES_GAP * (MAX_PRIORITIES_PER_DAY - 1)) /
     MAX_PRIORITIES_PER_DAY;
@@ -63,12 +64,12 @@ export function DayPriorities({ dayIndex }: DayPrioritiesProps) {
       className={cn(
         "px-1.5 py-1.5 flex flex-col gap-1",
         showDropHint && "border border-dashed border-primary bg-primary-soft",
-        isOver && "bg-primary-soft"
+        showDropOver && "bg-primary-soft"
       )}
       style={{
         height: `${PRIORITIES_SECTION_HEIGHT}px`,
         borderBottom: '1px solid var(--ds-line)',
-        ...(isOver && !showDropHint && {
+        ...(showDropOver && !showDropHint && {
           outline: '1px dashed var(--ds-accent)',
           outlineOffset: '-1px',
         }),

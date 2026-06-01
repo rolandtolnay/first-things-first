@@ -12,7 +12,7 @@
 import { useMemo } from "react";
 import { useDndContext } from "@dnd-kit/core";
 import type { TimeSlotIndex, DayOfWeek } from "@/types";
-import type { DragData, DropZoneData } from "@/types/dnd";
+import { isCalendarDragData, type DropZoneData } from "@/types/dnd";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockDraw } from "@/hooks/useBlockDraw";
 import { TOTAL_SLOTS, TIME_GRID_HEIGHT, slotToPixels, durationToPixels } from "@/lib/time-model";
@@ -42,16 +42,17 @@ export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
     return timeBlocks.filter((b) => b.dayIndex === dayIndex);
   }, [timeBlocks, dayIndex]);
 
-  const dropPreview = useMemo(
-    () =>
-      resolveTimeGridDropPreview(
-        active?.data.current as DragData | undefined,
-        over?.data.current as DropZoneData | undefined,
-        dayIndex,
-        { timeBlocks: timeBlocks ?? [], roles: roles ?? [] }
-      ),
-    [active, over, dayIndex, timeBlocks, roles]
-  );
+  const dropPreview = useMemo(() => {
+    const dragData = active?.data.current;
+    if (!isCalendarDragData(dragData)) return null;
+
+    return resolveTimeGridDropPreview(
+      dragData,
+      over?.data.current as DropZoneData | undefined,
+      dayIndex,
+      { timeBlocks: timeBlocks ?? [], roles: roles ?? [] }
+    );
+  }, [active, over, dayIndex, timeBlocks, roles]);
 
   // Click-drag-draw hook for freestyle block creation
   const {

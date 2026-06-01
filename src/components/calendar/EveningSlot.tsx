@@ -2,7 +2,7 @@
 
 import { useDroppable, useDraggable, useDndContext } from "@dnd-kit/core";
 import type { DayOfWeek, EveningBlock, RoleColor } from "@/types";
-import type { DropZoneData, EveningDragData } from "@/types/dnd";
+import { isCalendarDragData, type DropZoneData, type EveningDragData } from "@/types/dnd";
 import { useWeekStore, selectEveningBlock } from "@/stores/weekStore";
 import { BlockCard } from "@/components/ui/BlockCard";
 import { cn } from "@/lib/utils";
@@ -33,9 +33,10 @@ export function EveningSlot({ dayIndex }: EveningSlotProps) {
   );
 
   const { active } = useDndContext();
-  const isDragging = active !== null;
+  const isCalendarDragging = isCalendarDragData(active?.data.current);
   const isEmpty = !eveningBlock;
-  const showDropHint = isEmpty && isDragging;
+  const showDropHint = isEmpty && isCalendarDragging;
+  const showDropOver = isOver && isCalendarDragging;
 
   return (
     <div
@@ -43,13 +44,13 @@ export function EveningSlot({ dayIndex }: EveningSlotProps) {
       className={cn(
         "px-2 py-2.5 flex flex-col",
         showDropHint && "border border-dashed border-primary bg-primary-soft",
-        isOver && "bg-primary-soft"
+        showDropOver && "bg-primary-soft"
       )}
       style={{
         height: `${EVENING_SECTION_HEIGHT}px`,
         borderTop: '1px solid var(--ds-line)',
-        background: (isOver || showDropHint) ? undefined : 'var(--ds-sunk-tint)',
-        ...(isOver && !showDropHint && {
+        background: (showDropOver || showDropHint) ? undefined : 'var(--ds-sunk-tint)',
+        ...(showDropOver && !showDropHint && {
           outline: '1px dashed var(--ds-accent)',
           outlineOffset: '-1px',
         }),
