@@ -67,3 +67,5 @@ Next.js 16 renamed the `middleware` file convention to **`proxy`** (function `pr
 ## Auth & persistence (Supabase)
 
 Auth is passwordless magic link via `@supabase/ssr`; Weeks persist to Supabase Postgres (`public.weeks`, one JSONB document per week, RLS-scoped to `auth.uid()`). The browser talks to Supabase directly — RLS is the security boundary, there is no API layer. The persistence seam is `src/lib/db.ts` (+ the pure `src/lib/week-mapping.ts`); the store's `bootstrap()` / `reset()` are driven by `AuthProvider`. See `etc/prd/supabase-auth-cloud-persistence.md` and ADR-0003 / ADR-0004.
+
+The Magic Link email template in `docs/supabase-magic-link-email.md` builds callback links from Supabase `{{ .SiteURL }}`. For production, Supabase Dashboard → Authentication → URL Configuration must set Site URL to the canonical Vercel/custom domain and include every app origin used by `emailRedirectTo` in Redirect URLs. If Site URL remains localhost, production emails will contain localhost links even though the Vercel app sent the OTP request.

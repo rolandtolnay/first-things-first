@@ -5,6 +5,23 @@ Paste the HTML below into the Supabase dashboard:
 
 Suggested **Subject**: `Your First Things First sign-in link`
 
+## Required URL configuration
+
+Because this template uses `{{ .SiteURL }}` in the link, Supabase Auth URL
+Configuration must match the deployment before production sign-in works:
+
+- **Site URL**: the canonical production app origin, for example
+  `https://first-things-first-five.vercel.app` (no trailing slash).
+- **Redirect URLs**: include the production origin/path pattern used by
+  `emailRedirectTo`, for example `https://first-things-first-five.vercel.app/**`.
+- Keep local development allowed separately, for example `http://localhost:3000/**`
+  and `http://127.0.0.1:3000/**`.
+- If using Vercel preview deployments for auth testing, add the preview wildcard,
+  for example `https://*-roland-tolnays-projects.vercel.app/**`.
+
+If Site URL is left as localhost, production emails will contain localhost magic
+links even when the OTP request is sent from Vercel.
+
 > ⚠️ **Do not change the `href`.** The link
 > `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next={{ .RedirectTo }}`
 > is the functional contract with our `/auth/confirm` route (`src/app/auth/confirm/route.ts`)
