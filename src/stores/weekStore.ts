@@ -218,6 +218,21 @@ function roleErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Failed to save role changes";
 }
 
+/**
+ * Postgres unique_violation (SQLSTATE 23505). Reaches us when an edit upserts a
+ * durable Role whose name already belongs to a different active durable row —
+ * the durable defaults already exist elsewhere, so we keep the snapshot edit
+ * and skip the durable write instead of failing.
+ */
+function isDuplicateRoleNameError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "23505"
+  );
+}
+
 async function commitWeek(
   get: StoreGet,
   set: StoreSet,
@@ -442,7 +457,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   updateRole: async (roleId: string, updates: Partial<Pick<Role, "name" | "color">>) => {
-    const { weekId, epoch } = beginRoleMutation(get);
+    const { week, weekId, epoch } = beginRoleMutation(get);
 
     const normalizedUpdates = {
       ...updates,
@@ -457,21 +472,44 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
       throw new Error(message);
     }
 
-    let updatedRole: Role;
-    try {
-      updatedRole = await updateRoleDefaults(roleId, normalizedUpdates, { signal: epoch.signal });
-    } catch (error) {
-      const message = roleErrorMessage(error);
+    // The sidebar edits a Role Snapshot, whose id may have no durable `roles`
+    // row yet (legacy weeks are never backfilled). Merge the edit onto the
+    // snapshot so the durable upsert can insert every NOT NULL column.
+    const base =
+      week.roles.find((snapshot) => snapshot.id === roleId) ??
+      get().activeRoles.find((role) => role.id === roleId);
+    if (!base) {
+      const message = "Role not found";
       set({ error: message });
-      throw error;
+      throw new Error(message);
+    }
+    const mergedRole = {
+      id: roleId,
+      name: normalizedUpdates.name ?? base.name,
+      color: normalizedUpdates.color ?? base.color,
+      order: base.order,
+    };
+
+    let updatedRole: Role | null = null;
+    try {
+      updatedRole = await updateRoleDefaults(mergedRole, { signal: epoch.signal });
+    } catch (error) {
+      if (!isDuplicateRoleNameError(error)) {
+        const message = roleErrorMessage(error);
+        set({ error: message });
+        throw error;
+      }
+      // A durable role already owns this name under a different id; keep the
+      // snapshot edit and skip the durable write rather than failing the edit.
     }
 
-    if (weekPersistence.isCurrent(epoch)) {
-      set({
-        activeRoles: get().activeRoles
-          .map((role) => (role.id === roleId ? updatedRole : role))
-          .sort((left, right) => left.order - right.order),
-      });
+    if (updatedRole && weekPersistence.isCurrent(epoch)) {
+      const durableRole = updatedRole;
+      const knownRoles = get().activeRoles;
+      const nextActiveRoles = knownRoles.some((role) => role.id === durableRole.id)
+        ? knownRoles.map((role) => (role.id === durableRole.id ? durableRole : role))
+        : [...knownRoles, durableRole];
+      set({ activeRoles: nextActiveRoles.sort((left, right) => left.order - right.order) });
     }
 
     const latestWeek = latestRoleMutationWeek(get, weekId, epoch);
@@ -480,10 +518,25 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   deleteRole: async (roleId: string) => {
-    const { weekId, epoch } = beginRoleMutation(get);
+    const { week, weekId, epoch } = beginRoleMutation(get);
+
+    // Like updateRole: the deleted role may be an orphan snapshot with no
+    // durable row, so pass the full snapshot for the materialize-then-archive
+    // upsert rather than failing on a 0-row `.single()`.
+    const base =
+      week.roles.find((snapshot) => snapshot.id === roleId) ??
+      get().activeRoles.find((role) => role.id === roleId);
+    if (!base) {
+      const message = "Role not found";
+      set({ error: message });
+      throw new Error(message);
+    }
 
     try {
-      await archiveRole(roleId, { signal: epoch.signal });
+      await archiveRole(
+        { id: roleId, name: base.name, color: base.color, order: base.order },
+        { signal: epoch.signal },
+      );
     } catch (error) {
       const message = roleErrorMessage(error);
       set({ error: message });

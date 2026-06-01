@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  roleArchiveUpdate,
-  roleDefaultUpdatesToRow,
+  roleArchiveUpsert,
   roleDefaultsToInsert,
+  roleDefaultsToUpsert,
   roleRestoreUpdate,
   rowToRole,
 } from "@/lib/role-mapping";
@@ -44,16 +44,29 @@ describe("role mapping", () => {
       updated_at: "2026-01-01T00:00:00.000Z",
     });
 
-    expect(roleDefaultUpdatesToRow(
-      { name: "Deep Work", color: "violet" },
+    expect(roleDefaultsToUpsert(
+      { id: "role-1", name: "Deep Work", color: "violet", order: 2 },
+      "user-1",
       "2026-01-03T00:00:00.000Z",
     )).toEqual({
+      id: "role-1",
+      user_id: "user-1",
       name: "Deep Work",
       color: "violet",
+      order_index: 2,
       updated_at: "2026-01-03T00:00:00.000Z",
     });
 
-    expect(roleArchiveUpdate("2026-01-04T00:00:00.000Z")).toEqual({
+    expect(roleArchiveUpsert(
+      { id: "role-1", name: "Work", color: "teal", order: 0 },
+      "user-1",
+      "2026-01-04T00:00:00.000Z",
+    )).toEqual({
+      id: "role-1",
+      user_id: "user-1",
+      name: "Work",
+      color: "teal",
+      order_index: 0,
       archived_at: "2026-01-04T00:00:00.000Z",
       updated_at: "2026-01-04T00:00:00.000Z",
     });

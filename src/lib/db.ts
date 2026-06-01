@@ -14,12 +14,11 @@
 
 import { createClient } from "@/lib/supabase/client";
 import {
-  roleArchiveUpdate,
-  roleDefaultUpdatesToRow,
+  roleArchiveUpsert,
   roleDefaultsToInsert,
+  roleDefaultsToUpsert,
   roleRestoreUpdate,
   rowToRole,
-  type RoleDefaultUpdates,
 } from "@/lib/role-mapping";
 import { rowToWeek, weekToRow } from "@/lib/week-mapping";
 import type { Role, RoleColor, Week, WeekId } from "@/types";
@@ -159,15 +158,21 @@ export async function createRole(
   return rowToRole(data);
 }
 
+/**
+ * Persist a Role's durable defaults, upserting on `id`. Editing flows through a
+ * week's Role Snapshot, whose id may not yet have a durable `roles` row (weeks
+ * created before the table existed are never backfilled); upsert materializes
+ * the row instead of failing the `.single()` with a 0-row 406. Callers pass the
+ * full snapshot so an insert has every NOT NULL column.
+ */
 export async function updateRoleDefaults(
-  roleId: string,
-  updates: RoleDefaultUpdates,
+  role: CreateRoleInput & { id: string },
   options: DbRequestOptions = {},
 ): Promise<Role> {
+  const userId = await currentUserId();
   const baseQuery = client()
     .from(ROLES_TABLE)
-    .update(roleDefaultUpdatesToRow(updates))
-    .eq("id", roleId);
+    .upsert(roleDefaultsToUpsert(role, userId), { onConflict: "id" });
   const query = options.signal ? baseQuery.abortSignal(options.signal) : baseQuery;
 
   const { data, error } = await query.select("*").single();
@@ -175,14 +180,21 @@ export async function updateRoleDefaults(
   return rowToRole(data);
 }
 
+/**
+ * Archive a Role, upserting on `id` for the same reason `updateRoleDefaults`
+ * does: deleting flows through a week's Role Snapshot whose id may have no
+ * durable row yet, so we materialize-then-archive instead of failing the
+ * `.single()` with a 0-row 406. Callers pass the full snapshot so an insert has
+ * every NOT NULL column.
+ */
 export async function archiveRole(
-  roleId: string,
+  role: CreateRoleInput & { id: string },
   options: DbRequestOptions = {},
 ): Promise<Role> {
+  const userId = await currentUserId();
   const baseQuery = client()
     .from(ROLES_TABLE)
-    .update(roleArchiveUpdate())
-    .eq("id", roleId);
+    .upsert(roleArchiveUpsert(role, userId), { onConflict: "id" });
   const query = options.signal ? baseQuery.abortSignal(options.signal) : baseQuery;
 
   const { data, error } = await query.select("*").single();
