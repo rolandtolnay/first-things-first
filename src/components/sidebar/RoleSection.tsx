@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState, type CSSProperties, type PointerEventHandler } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreVertical, Plus, Trash2 } from "lucide-react";
+import { GripVertical, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { InlineInput } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
 import { slotsToHours, EVENING_BLOCK_HOURS } from "@/lib/time-model";
@@ -76,6 +76,7 @@ export function RoleSection({ role }: RoleSectionProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const shouldOpenGoalInputAfterMenuCloseRef = useRef(false);
+  const shouldRenameRoleAfterMenuCloseRef = useRef(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
 
   const { isEditing, editValue, setEditValue, inputRef, startEdit, save, handleKeyDown } =
@@ -84,6 +85,10 @@ export function RoleSection({ role }: RoleSectionProps) {
   const handleStartAddingGoal = useCallback(() => setAddingGoal(true), []);
   const handleStartAddingGoalFromDropdownMenu = useCallback(() => {
     shouldOpenGoalInputAfterMenuCloseRef.current = true;
+  }, []);
+  const handleStartRenameRole = useCallback(() => startEdit(), [startEdit]);
+  const handleStartRenameRoleFromDropdownMenu = useCallback(() => {
+    shouldRenameRoleAfterMenuCloseRef.current = true;
   }, []);
 
   const handleDropdownCloseAutoFocus = useCallback((event: Event) => {
@@ -98,8 +103,14 @@ export function RoleSection({ role }: RoleSectionProps) {
       return;
     }
 
+    if (shouldRenameRoleAfterMenuCloseRef.current) {
+      shouldRenameRoleAfterMenuCloseRef.current = false;
+      startEdit();
+      return;
+    }
+
     requestAnimationFrame(() => menuTriggerRef.current?.blur());
-  }, []);
+  }, [startEdit]);
 
   const cardStyle: CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -116,6 +127,10 @@ export function RoleSection({ role }: RoleSectionProps) {
       <ContextMenuItem onSelect={handleStartAddingGoal}>
         <Plus className="size-3.5 mr-2" />
         Add goal
+      </ContextMenuItem>
+      <ContextMenuItem onSelect={handleStartRenameRole}>
+        <Pencil className="size-3.5 mr-2" />
+        Rename role
       </ContextMenuItem>
       <ContextMenuItem
         className="text-destructive"
@@ -209,10 +224,18 @@ export function RoleSection({ role }: RoleSectionProps) {
                       <MoreVertical className="size-3.5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" onCloseAutoFocus={handleDropdownCloseAutoFocus}>
+                  <DropdownMenuContent
+                    align="start"
+                    className="w-auto min-w-36"
+                    onCloseAutoFocus={handleDropdownCloseAutoFocus}
+                  >
                     <DropdownMenuItem onSelect={handleStartAddingGoalFromDropdownMenu}>
                       <Plus className="size-3.5 mr-2" />
                       Add goal
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleStartRenameRoleFromDropdownMenu}>
+                      <Pencil className="size-3.5 mr-2" />
+                      Rename role
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-destructive"
