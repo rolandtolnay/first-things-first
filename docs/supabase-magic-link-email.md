@@ -1,9 +1,13 @@
-# Magic Link email template
+# Passwordless auth email template
 
-Paste the HTML below into the Supabase dashboard:
-**Authentication → Email Templates → Magic Link → Message body**.
+Paste the same HTML below into both Supabase dashboard templates:
 
-Suggested **Subject**: `Your First Things First sign-in link`
+- **Authentication → Email Templates → Magic Link / OTP → Message body**
+- **Authentication → Email Templates → Confirm sign up → Message body**
+
+Using the same template for both slots makes new-account and existing-account sign-in behave like one passwordless flow instead of sending a different-looking signup email first.
+
+Suggested **Subject** for both templates: `Your First Things First sign-in link`
 
 ## Required URL configuration
 
@@ -29,7 +33,7 @@ links even when the OTP request is sent from Vercel.
 > around it, but keep that URL and its query params intact (it appears twice below:
 > the button and the copy-paste fallback).
 
-This is a Pareto pass over the bare default: a branded header, a real button, a card
+This is a Pareto pass over the bare defaults: a branded header, a real button, a card
 container, and a copy-paste fallback URL (so a stripped button never locks anyone out).
 Intentionally left out as long-tail: Outlook VML button hacks, a dark-mode variant, and
 a hosted logo image. The layout is light + table-based for broad client compatibility.
@@ -47,19 +51,19 @@ a hosted logo image. The layout is light + table-based for broad client compatib
         </tr>
         <tr>
           <td style="font-size:20px;font-weight:600;color:#18181b;padding-bottom:8px;">
-            Your sign-in link
+            Continue to First Things First
           </td>
         </tr>
         <tr>
           <td style="font-size:14px;line-height:22px;color:#52525b;padding-bottom:24px;">
-            Click the button below to sign in. This link expires shortly and can only be used once.
+            Click the button below to continue. This link expires shortly and can only be used once.
           </td>
         </tr>
         <tr>
           <td style="padding-bottom:24px;">
             <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next={{ .RedirectTo }}"
                style="display:inline-block;background:#f59e0b;color:#18181b;font-size:14px;font-weight:600;text-decoration:none;padding:11px 24px;border-radius:8px;">
-              Sign in
+              Continue
             </a>
           </td>
         </tr>
