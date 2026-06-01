@@ -59,9 +59,29 @@ export interface EveningDragData {
 }
 
 /**
- * Union type for all draggable item data.
+ * Data attached to sortable Role cards in the Sidebar.
+ * Role reorder drags are handled by the Sidebar, not calendar drop routing.
+ */
+export interface RoleReorderDragData {
+  type: "role-reorder";
+  roleId: string;
+}
+
+/**
+ * Union type for all calendar-routable draggable item data.
  */
 export type DragData = GoalDragData | BlockDragData | PriorityDragData | EveningDragData;
+
+export function isRoleReorderDragData(data: unknown): data is RoleReorderDragData {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "type" in data &&
+    data.type === "role-reorder" &&
+    "roleId" in data &&
+    typeof data.roleId === "string"
+  );
+}
 
 // ============================================================================
 // Drop Zone Types (attached to droppable zones)

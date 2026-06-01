@@ -479,6 +479,46 @@ describe("reorderRoles", () => {
     );
     expect(orderById).toEqual({ "role-3": 0, "role-1": 1, "role-2": 2 });
   });
+
+  it("ignores incomplete role id lists without persisting", async () => {
+    seed({
+      ...makeWeek(),
+      roles: [
+        { id: "role-1", name: "A", color: "teal", order: 0 },
+        { id: "role-2", name: "B", color: "amber", order: 1 },
+        { id: "role-3", name: "C", color: "rose", order: 2 },
+      ],
+    });
+    vi.clearAllMocks();
+
+    await useWeekStore.getState().reorderRoles(["role-3", "role-1"]);
+
+    expect(saveWeek).not.toHaveBeenCalled();
+    const orderById = Object.fromEntries(
+      useWeekStore.getState().currentWeek!.roles.map((r) => [r.id, r.order])
+    );
+    expect(orderById).toEqual({ "role-1": 0, "role-2": 1, "role-3": 2 });
+  });
+
+  it("ignores duplicate or unknown role ids without persisting", async () => {
+    seed({
+      ...makeWeek(),
+      roles: [
+        { id: "role-1", name: "A", color: "teal", order: 0 },
+        { id: "role-2", name: "B", color: "amber", order: 1 },
+        { id: "role-3", name: "C", color: "rose", order: 2 },
+      ],
+    });
+    vi.clearAllMocks();
+
+    await useWeekStore.getState().reorderRoles(["role-3", "role-3", "missing"]);
+
+    expect(saveWeek).not.toHaveBeenCalled();
+    const orderById = Object.fromEntries(
+      useWeekStore.getState().currentWeek!.roles.map((r) => [r.id, r.order])
+    );
+    expect(orderById).toEqual({ "role-1": 0, "role-2": 1, "role-3": 2 });
+  });
 });
 
 describe("deleteRole cascade", () => {

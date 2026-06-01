@@ -11,15 +11,19 @@
  */
 
 import { useMemo, useState } from "react";
+import { useDndMonitor } from "@dnd-kit/core";
+import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Plus, Users } from "lucide-react";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { useWeekStore } from "@/stores/weekStore";
+import { isRoleReorderDragData } from "@/types/dnd";
 import { RoleSection } from "./RoleSection";
 import { AddRoleButton } from "./AddRoleButton";
 
 export function RoleList() {
   const currentWeek = useWeekStore((state) => state.currentWeek);
   const isLoading = useWeekStore((state) => state.isLoading);
+  const reorderRoles = useWeekStore((state) => state.reorderRoles);
   const [isAddingRole, setIsAddingRole] = useState(false);
   const weekRoles = currentWeek?.roles;
 
@@ -29,6 +33,22 @@ export function RoleList() {
     if (!weekRoles) return [];
     return [...weekRoles].sort((a, b) => a.order - b.order);
   }, [weekRoles]);
+  const roleIds = useMemo(() => roles.map((role) => role.id), [roles]);
+
+  useDndMonitor({
+    onDragEnd(event) {
+      const { active, over } = event;
+      if (!over) return;
+      if (!isRoleReorderDragData(active.data.current)) return;
+      if (!isRoleReorderDragData(over.data.current)) return;
+
+      const oldIndex = roleIds.indexOf(active.data.current.roleId);
+      const newIndex = roleIds.indexOf(over.data.current.roleId);
+      if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
+
+      void reorderRoles(arrayMove(roleIds, oldIndex, newIndex));
+    },
+  });
 
   const addRoleControl = (
     <AddRoleButton
@@ -87,9 +107,11 @@ export function RoleList() {
     <div className="flex flex-col gap-3">
       {sectionLabel}
       <div className="flex flex-col gap-1.5">
-        {roles.map((role) => (
-          <RoleSection key={role.id} role={role} />
-        ))}
+        <SortableContext items={roleIds} strategy={verticalListSortingStrategy}>
+          {roles.map((role) => (
+            <RoleSection key={role.id} role={role} />
+          ))}
+        </SortableContext>
         {addRoleControl}
       </div>
     </div>

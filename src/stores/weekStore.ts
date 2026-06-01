@@ -415,9 +415,22 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   reorderRoles: async (roleIds: string[]) => {
-    await withWeek(get, set, (week) => ({
-      roles: week.roles.map((r) => ({ ...r, order: roleIds.indexOf(r.id) })),
-    }));
+    const week = get().currentWeek;
+    if (!week) throw new Error("No week loaded");
+
+    const currentRoleIds = new Set(week.roles.map((role) => role.id));
+    const uniqueRoleIds = new Set(roleIds);
+    const isCompleteRoleSet =
+      roleIds.length === week.roles.length &&
+      uniqueRoleIds.size === roleIds.length &&
+      roleIds.every((roleId) => currentRoleIds.has(roleId));
+
+    if (!isCompleteRoleSet) return;
+
+    await commitWeek(get, set, {
+      ...week,
+      roles: week.roles.map((role) => ({ ...role, order: roleIds.indexOf(role.id) })),
+    });
   },
 
   // -------------------------------------------------------------------------

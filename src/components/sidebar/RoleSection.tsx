@@ -1,13 +1,16 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { MoreVertical, Plus, Trash2 } from "lucide-react";
+import { useCallback, useRef, useState, type CSSProperties, type PointerEventHandler } from "react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical, MoreVertical, Plus, Trash2 } from "lucide-react";
 import { InlineInput } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
 import { slotsToHours, EVENING_BLOCK_HOURS } from "@/lib/time-model";
 import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import { useEditableText } from "@/hooks/useEditableText";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { GoalList } from "./GoalList";
 import type { Role } from "@/types";
+import type { RoleReorderDragData } from "@/types/dnd";
 
 interface RoleSectionProps {
   role: Role;
@@ -38,6 +42,18 @@ interface RoleSectionProps {
 export function RoleSection({ role }: RoleSectionProps) {
   const updateRole = useWeekStore((state) => state.updateRole);
   const deleteRole = useWeekStore((state) => state.deleteRole);
+  const {
+    attributes,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: role.id,
+    data: { type: "role-reorder", roleId: role.id } satisfies RoleReorderDragData,
+  });
 
   // Primitive selector (returns a number) to preserve re-render frequency;
   // weighting goes through the shared time-model helpers so the magic numbers
@@ -85,6 +101,16 @@ export function RoleSection({ role }: RoleSectionProps) {
     requestAnimationFrame(() => menuTriggerRef.current?.blur());
   }, []);
 
+  const cardStyle: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    background: `linear-gradient(180deg, ${getRoleColorStyleWithOpacity(role.color, 0.055)}, transparent 52px), var(--card)`,
+    boxShadow: `inset 0 1px 0 ${getRoleColorStyleWithOpacity(role.color, 0.12)}`,
+  };
+  const pointerListeners: { onPointerDown?: PointerEventHandler<HTMLButtonElement> } = listeners?.onPointerDown
+    ? { onPointerDown: listeners.onPointerDown as PointerEventHandler<HTMLButtonElement> }
+    : {};
+
   const menuItems = (
     <>
       <ContextMenuItem onSelect={handleStartAddingGoal}>
@@ -105,14 +131,30 @@ export function RoleSection({ role }: RoleSectionProps) {
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
-          className="group/role flex flex-col rounded-[var(--ds-r-sm)] border border-[var(--ds-line-soft)] px-3 py-3 transition-colors hover:border-[var(--ds-line)]"
-          style={{
-            background: `linear-gradient(180deg, ${getRoleColorStyleWithOpacity(role.color, 0.055)}, transparent 52px), var(--card)`,
-            boxShadow: `inset 0 1px 0 ${getRoleColorStyleWithOpacity(role.color, 0.12)}`,
-          }}
+          ref={setNodeRef}
+          className={cn(
+            "group/role flex flex-col rounded-[var(--ds-r-sm)] border border-[var(--ds-line-soft)] px-3 py-3 transition-colors hover:border-[var(--ds-line)]",
+            isDragging && "opacity-70"
+          )}
+          style={cardStyle}
         >
           {/* Role header */}
           <div className="flex items-center gap-2">
+            {!isEditing && (
+              <Button
+                ref={setActivatorNodeRef}
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="-ml-1 size-5 shrink-0 cursor-grab touch-none rounded-[5px] border-0 bg-transparent text-[var(--ds-fg-faint)] hover:bg-[var(--ds-line)] hover:text-foreground active:cursor-grabbing"
+                aria-label={`Reorder ${role.name}`}
+                {...attributes}
+                {...pointerListeners}
+              >
+                <GripVertical className="size-3.5" />
+              </Button>
+            )}
+
             <span
               className="h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: getRoleColorStyle(role.color) }}

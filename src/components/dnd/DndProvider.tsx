@@ -20,7 +20,7 @@
  * Individual components use useDraggable and useDroppable hooks.
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -30,9 +30,11 @@ import {
   KeyboardSensor,
   useSensor,
   useSensors,
+  closestCenter,
   rectIntersection,
+  type CollisionDetection,
 } from "@dnd-kit/core";
-import type { DragData, DropZoneData } from "@/types/dnd";
+import { isRoleReorderDragData, type DragData, type DropZoneData } from "@/types/dnd";
 import { useWeekStore } from "@/stores/weekStore";
 import { resolveDrop, dispatchDropIntent } from "@/lib/drop-routing";
 import { DragOverlayContent } from "./DragOverlayContent";
@@ -45,9 +47,9 @@ export function DndProvider({ children }: DndProviderProps) {
   // Track currently dragged item data for DragOverlay
   const [activeData, setActiveData] = useState<DragData | null>(null);
   const [activeRect, setActiveRect] = useState<{ width: number; height: number } | null>(null);
-  // Ref preserves drag type across the re-render caused by setActiveData(null)
-  // so dropAnimation stays correct when dnd-kit reads it
-  const activeTypeRef = useRef<DragData["type"] | null>(null);
+  // Preserve drag type after activeData clears so dropAnimation stays correct
+  // when dnd-kit reads it at the end of a drag.
+  const [activeType, setActiveType] = useState<DragData["type"] | null>(null);
 
   // Get store actions for drop handling.
   // goal→priorities and goal→evening are single-array, non-placement creates and
@@ -76,10 +78,23 @@ export function DndProvider({ children }: DndProviderProps) {
     useSensor(KeyboardSensor)
   );
 
+  const collisionDetection = useCallback<CollisionDetection>((args) => {
+    return isRoleReorderDragData(args.active.data.current)
+      ? closestCenter(args)
+      : rectIntersection(args);
+  }, []);
+
   // Handle drag start - capture active item data and source dimensions
   const handleDragStart = useCallback((event: DragStartEvent) => {
+    if (isRoleReorderDragData(event.active.data.current)) {
+      setActiveType(null);
+      setActiveData(null);
+      setActiveRect(null);
+      return;
+    }
+
     const data = event.active.data.current as DragData;
-    activeTypeRef.current = data.type;
+    setActiveType(data.type);
     setActiveData(data);
 
     // Find the draggable source element from the pointer event target
@@ -108,6 +123,8 @@ export function DndProvider({ children }: DndProviderProps) {
       // Clear active state
       setActiveData(null);
       setActiveRect(null);
+
+      if (isRoleReorderDragData(active.data.current)) return;
 
       // No valid drop target
       if (!over) return;
@@ -163,7 +180,7 @@ export function DndProvider({ children }: DndProviderProps) {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={rectIntersection}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
@@ -176,7 +193,7 @@ export function DndProvider({ children }: DndProviderProps) {
       */}
       <DragOverlay
         dropAnimation={
-          activeTypeRef.current === "goal"
+          activeType === "goal"
             ? null // Goals create copies, no animation needed
             : { duration: 200, easing: "ease" } // Everything else moves
         }
