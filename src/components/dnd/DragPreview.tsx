@@ -6,9 +6,10 @@ interface DragPreviewProps {
   roleColor?: RoleColor;
   width?: number;
   height?: number;
+  roleBorder?: "accent" | "uniform";
 }
 
-export function DragPreview({ text, roleColor, width, height }: DragPreviewProps) {
+export function DragPreview({ text, roleColor, width, height, roleBorder }: DragPreviewProps) {
   return (
     <div
       className="pointer-events-none"
@@ -21,6 +22,7 @@ export function DragPreview({ text, roleColor, width, height }: DragPreviewProps
       <BlockCard
         text={text}
         roleColor={roleColor}
+        roleBorder={roleBorder}
         compact
         height={height ?? 56}
       />

@@ -34,6 +34,7 @@ interface BlockCardProps {
   unassigned?: boolean;
   variant?: "default" | "card";
   roleTint?: "default" | "strong";
+  roleBorder?: "accent" | "uniform";
   metaItems?: ReactNode[];
   leading?: ReactNode;
   hideCompletedIndicator?: boolean;
@@ -57,6 +58,7 @@ export function BlockCard({
   unassigned,
   variant = "default",
   roleTint = "default",
+  roleBorder = "accent",
   metaItems,
   leading,
   hideCompletedIndicator = false,
@@ -249,8 +251,10 @@ export function BlockCard({
             : undefined,
         borderLeft: isUnassignedCalendarBlock
           ? `1px dotted ${unassignedBorderColor}`
-          : roleColorValue
-            ? `3px solid ${roleColorValue}`
+          : roleBorderColor
+            ? roleBorder === "uniform"
+              ? `1px ${borderStyle} ${roleBorderColor}`
+              : `3px solid ${roleColorValue}`
             : undefined,
         opacity: completed ? "var(--completed-opacity)" : undefined,
         ...style,

@@ -75,6 +75,7 @@ export function PriorityItem({ priority, goal, roleColor, dayIndex, height }: Pr
         completed={priority.completed}
         compact={true}
         height={height}
+        roleBorder="uniform"
         leading={leadingCompletion}
         hideCompletedIndicator={true}
         menuLabel="Open priority menu"
