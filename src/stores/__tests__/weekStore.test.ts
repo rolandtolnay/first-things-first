@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the Supabase persistence adapter so the store runs in a plain node env
 // and we can count persists. saveWeek is the single write path withWeek funnels
-// through; getWeek / getAllWeekIds back loadWeek / bootstrap.
+// through; getWeek / getAllWeekIds / getActiveRoles back loadWeek / bootstrap.
 vi.mock("@/lib/db", () => ({
   getWeek: vi.fn(),
   saveWeek: vi.fn().mockResolvedValue("2026-W01"),
@@ -59,7 +59,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { useWeekStore } from "@/stores/weekStore";
-import { getWeek, saveWeek } from "@/lib/db";
+import { getActiveRoles, getAllWeekIds, getWeek, saveWeek } from "@/lib/db";
 import type { Week, WeekId, EveningBlock, CreateDayPriorityInput, Role, RoleSnapshot } from "@/types";
 
 function durableRole(snapshot: RoleSnapshot): Role {
@@ -107,6 +107,39 @@ beforeEach(() => {
     availableWeekIds: ["2026-W01" as WeekId],
     isLoading: false,
     error: null,
+  });
+});
+
+describe("bootstrap", () => {
+  it("loads an existing week even when durable role defaults fail", async () => {
+    useWeekStore.getState().reset();
+    vi.mocked(getActiveRoles).mockRejectedValueOnce({ message: "roles endpoint unavailable" });
+    vi.mocked(getAllWeekIds).mockResolvedValueOnce(["2026-W01" as WeekId]);
+    vi.mocked(getWeek).mockResolvedValueOnce(makeWeek());
+
+    await useWeekStore.getState().bootstrap();
+
+    expect(useWeekStore.getState().currentWeek).toMatchObject({ id: "2026-W01" });
+    expect(useWeekStore.getState().availableWeekIds).toEqual(["2026-W01"]);
+    expect(useWeekStore.getState().activeRoles).toEqual([]);
+    expect(useWeekStore.getState().isLoading).toBe(false);
+    expect(useWeekStore.getState().error).toBe("roles endpoint unavailable");
+  });
+
+  it("creates a first week with no snapshots when role defaults fail on first sign-in", async () => {
+    useWeekStore.getState().reset();
+    vi.mocked(getActiveRoles).mockRejectedValueOnce({ message: "roles endpoint unavailable" });
+    vi.mocked(getAllWeekIds).mockResolvedValueOnce([]);
+
+    await useWeekStore.getState().bootstrap();
+
+    const state = useWeekStore.getState();
+    expect(state.currentWeek).not.toBeNull();
+    expect(state.currentWeek!.roles).toEqual([]);
+    expect(state.selectedWeekId).toBe(state.currentWeek!.id);
+    expect(state.activeRoles).toEqual([]);
+    expect(state.isLoading).toBe(false);
+    expect(state.error).toBe("roles endpoint unavailable");
   });
 });
 

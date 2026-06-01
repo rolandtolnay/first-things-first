@@ -4,7 +4,6 @@ import type { Role, RoleColor } from "@/types";
 export type DbRoleRow = Database["public"]["Tables"]["roles"]["Row"];
 export type RoleInsert = Database["public"]["Tables"]["roles"]["Insert"];
 export type RoleUpdate = Database["public"]["Tables"]["roles"]["Update"];
-export type RoleDefaultUpdates = Partial<Pick<Role, "name" | "color">>;
 
 export interface RoleCreateDefaults {
   name: string;

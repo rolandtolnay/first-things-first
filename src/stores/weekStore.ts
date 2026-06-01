@@ -214,8 +214,25 @@ function latestRoleMutationWeek(get: StoreGet, weekId: WeekId, epoch: ReturnType
   return week?.id === weekId ? week : null;
 }
 
+function errorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+  return fallback;
+}
+
 function roleErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Failed to save role changes";
+  return errorMessage(error, "Failed to save role changes");
+}
+
+function roleLoadErrorMessage(error: unknown): string {
+  return errorMessage(error, "Failed to load role defaults");
 }
 
 /**
@@ -231,6 +248,22 @@ function isDuplicateRoleNameError(error: unknown): boolean {
     "code" in error &&
     (error as { code?: unknown }).code === "23505"
   );
+}
+
+async function loadBootstrapActiveRoles(
+  epoch: ReturnType<typeof weekPersistence.epoch>,
+): Promise<{ roles: Role[]; error: string | null } | null> {
+  try {
+    const roles = await getActiveRoles({ signal: epoch.signal });
+    if (!weekPersistence.isCurrent(epoch)) return null;
+    return { roles, error: null };
+  } catch (error) {
+    if (!weekPersistence.isCurrent(epoch)) return null;
+    // Role defaults seed future Weeks, but existing Week documents remain the
+    // primary data. Never block loading a user's saved Week because the newer
+    // durable-role table/API is temporarily unavailable.
+    return { roles: [], error: roleLoadErrorMessage(error) };
+  }
 }
 
 async function commitWeek(
@@ -288,19 +321,8 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
 
   bootstrap: async () => {
     const epoch = weekPersistence.epoch();
+    const activeRolesRequest = loadBootstrapActiveRoles(epoch);
     set({ isLoading: true, error: null });
-
-    let activeRoles: Role[];
-    try {
-      activeRoles = await getActiveRoles({ signal: epoch.signal });
-    } catch (error) {
-      if (!weekPersistence.isCurrent(epoch)) return;
-      set({ error: roleErrorMessage(error), isLoading: false });
-      return;
-    }
-
-    if (!weekPersistence.isCurrent(epoch)) return;
-    set({ activeRoles });
 
     const weekIdsResult = await weekPersistence.listWeekIds(epoch);
     if (!weekIdsResult.ok) {
@@ -315,15 +337,24 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     set({ availableWeekIds: weekIds });
 
     if (weekIds.length === 0) {
+      const activeRolesResult = await activeRolesRequest;
+      if (!activeRolesResult || !weekPersistence.isCurrent(epoch)) return;
+      set({ activeRoles: activeRolesResult.roles });
+
       // First-ever sign-in: start fresh on the current calendar week.
       const weekId = getCurrentWeekId();
       try {
         const week = await get().createWeek(weekId);
         if (!weekPersistence.isCurrent(epoch)) return;
-        set({ currentWeek: week, selectedWeekId: week.id, isLoading: false });
+        set({
+          currentWeek: week,
+          selectedWeekId: week.id,
+          isLoading: false,
+          ...(activeRolesResult.error ? { error: activeRolesResult.error } : {}),
+        });
       } catch (error) {
         if (!weekPersistence.isCurrent(epoch)) return;
-        const message = error instanceof Error ? error.message : "Failed to load your weeks";
+        const message = errorMessage(error, "Failed to load your weeks");
         set({ error: message, isLoading: false });
       }
       return;
@@ -337,6 +368,13 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
 
     set({ selectedWeekId: targetId });
     await get().loadWeek(targetId);
+
+    const activeRolesResult = await activeRolesRequest;
+    if (!activeRolesResult || !weekPersistence.isCurrent(epoch)) return;
+    set({
+      activeRoles: activeRolesResult.roles,
+      ...(activeRolesResult.error ? { error: activeRolesResult.error } : {}),
+    });
   },
 
   reset: () => {
