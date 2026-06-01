@@ -33,7 +33,7 @@ interface CarryoverDialogProps {
 }
 
 function formatGoalCount(count: number): string {
-  return `${count} ${count === 1 ? "Goal" : "Goals"}`;
+  return `${count} ${count === 1 ? "goal" : "goals"}`;
 }
 
 export function CarryoverDialog({
@@ -87,13 +87,13 @@ export function CarryoverDialog({
 
   const sourceWeekLabel = sourceWeek
     ? `W${getWeekNumber(sourceWeek.id)} — ${formatWeekId(sourceWeek.id)}`
-    : "No Source Week";
-
-  const targetWeekLabel = `W${getWeekNumber(targetWeekId)} — ${formatWeekId(targetWeekId)}`;
+    : "No week selected";
 
   const targetExplanation = model.isReplacingTargetWeek
-    ? "This Target Week already has a plan. Continuing will replace its current Roles, Goals, and blocks."
-    : "A new Target Week will be created with carried Roles and only the selected unfinished Goals.";
+    ? "Next week already has a plan. Continuing replaces its current roles, goals, and blocks."
+    : model.isCleanSlate
+      ? "Creates next week with your roles carried over."
+      : "Creates next week with your roles and the unfinished goals you pick below.";
 
   const toggleGoal = useCallback((goalId: string) => {
     setSelectedIds((prev) => {
@@ -118,7 +118,7 @@ export function CarryoverDialog({
   async function submit(mode: "carry-forward" | "fresh") {
     if (!sourceWeek || isSubmitting) return;
     if (targetWeekId === sourceWeek.id) {
-      setSubmitError("Choose a Target Week that is different from the Source Week.");
+      setSubmitError("The new week can’t be the same week you’re closing.");
       return;
     }
 
@@ -141,7 +141,7 @@ export function CarryoverDialog({
       await navigateToWeek(targetWeekId);
       onClose();
     } catch {
-      setSubmitError("Couldn’t start the Target Week. Please try again.");
+      setSubmitError("Couldn’t start next week. Please try again.");
       setIsSubmitting(false);
     }
   }
@@ -160,16 +160,16 @@ export function CarryoverDialog({
         className="flex max-h-[min(90vh,760px)] max-w-[calc(100%-1rem)] flex-col gap-5 overflow-hidden bg-[var(--ds-overlay)] p-5 sm:max-w-[800px]"
       >
         <DialogHeader className="shrink-0 gap-2 pr-8">
-          <DialogTitle className="text-[length:var(--text-h5)]">Start a new Week</DialogTitle>
+          <DialogTitle className="text-[length:var(--text-h5)]">Start a new week</DialogTitle>
           <DialogDescription>
-            Close the Source Week, choose what continues, and begin with a clean plan.
+            Close out this week and pick what carries into the next.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid min-h-0 flex-1 gap-4 overflow-hidden">
           <div className="grid shrink-0 gap-3 md:grid-cols-2">
             <section className="rounded-lg border border-[var(--ds-line-soft)] bg-[var(--ds-panel)] p-4">
-              <SectionLabel className="mb-3">Source Week</SectionLabel>
+              <SectionLabel className="mb-3">This week</SectionLabel>
               <div className="mb-4 text-sm font-medium text-foreground">{sourceWeekLabel}</div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
@@ -177,7 +177,9 @@ export function CarryoverDialog({
                     Completed
                   </div>
                   <div className="mt-1 text-foreground">
-                    {model.summary.completedGoals}/{model.summary.totalGoals} Goals
+                    {model.summary.totalGoals === 0
+                      ? "No goals"
+                      : `${model.summary.completedGoals}/${model.summary.totalGoals} goals`}
                   </div>
                 </div>
                 <div>
@@ -193,7 +195,7 @@ export function CarryoverDialog({
             </section>
 
             <section className="rounded-lg border border-[var(--ds-line-soft)] bg-[var(--ds-panel)] p-4">
-              <SectionLabel className="mb-3">Target Week</SectionLabel>
+              <SectionLabel className="mb-3">Next week</SectionLabel>
               <WeekSelector
                 value={targetWeekId}
                 onChange={(weekId) => {
@@ -206,7 +208,6 @@ export function CarryoverDialog({
                 triggerClassName="bg-[var(--ds-window)]"
               />
               <p className="mt-3 text-caption leading-relaxed text-muted-foreground">
-                <span className="font-medium text-secondary-foreground">{targetWeekLabel}.</span>{" "}
                 {targetExplanation}
               </p>
             </section>
@@ -217,8 +218,8 @@ export function CarryoverDialog({
               role="alert"
               className="shrink-0 rounded-lg border border-[var(--ds-line-soft)] bg-[color:color-mix(in_oklch,var(--ds-warning)_8%,transparent)] p-3 text-sm text-secondary-foreground"
             >
-              <span className="font-semibold text-foreground">The Target Week already has a plan.</span>{" "}
-              Continuing will replace it with this Weekly Handoff.
+              <span className="font-semibold text-foreground">Next week already has a plan.</span>{" "}
+              Continuing will replace it.
             </div>
           )}
 
@@ -251,9 +252,9 @@ export function CarryoverDialog({
 
             {model.isCleanSlate ? (
               <div className="rounded-lg border border-[var(--ds-line-soft)] bg-[var(--ds-panel)] p-5 text-sm text-secondary-foreground">
-                <div className="mb-1 font-medium text-foreground">No unfinished Goals in the Source Week.</div>
-                Start the Target Week with a clean slate. Roles can still carry forward, while Day Priorities,
-                Time Blocks, and Evening Blocks start empty.
+                <div className="mb-1 font-medium text-foreground">You finished everything this week.</div>
+                So next week starts fresh. Your roles carry over; day priorities, time blocks, and evening
+                blocks start empty.
               </div>
             ) : (
               <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-[var(--ds-line-soft)] bg-[var(--ds-panel)]">

@@ -75,10 +75,10 @@ function getPrimaryActionLabel({
   isReplacingTargetWeek: boolean;
   selectedCount: number;
 }): string {
-  if (isCleanSlate) return isReplacingTargetWeek ? "Replace Week" : "Start Week";
+  if (isCleanSlate) return isReplacingTargetWeek ? "Replace week" : "Start week";
   if (selectedCount === 0) return isReplacingTargetWeek ? "Replace and start fresh" : "Start fresh";
 
-  const goalNoun = selectedCount === 1 ? "Goal" : "Goals";
+  const goalNoun = selectedCount === 1 ? "goal" : "goals";
   return isReplacingTargetWeek
     ? `Replace and carry forward ${selectedCount} ${goalNoun}`
     : `Carry forward ${selectedCount} ${goalNoun}`;

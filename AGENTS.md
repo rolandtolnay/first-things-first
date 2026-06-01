@@ -64,8 +64,20 @@ Next.js 16 renamed the `middleware` file convention to **`proxy`** (function `pr
 
 `src/proxy.ts` is the thin entry; the session-refresh + route-gating logic lives in `src/lib/supabase/middleware.ts` (`updateSession`). After moving/renaming a proxy file, `rm -rf .next` before restarting `next dev` — Turbopack caches a stale module path and 500s otherwise.
 
+## Canonical terms in code, friendly terms in UI
+
+Domain terms in `CONTEXT.md`, the PRDs, code, and types stay canonical (**Source Week**, **Target Week**, **Weekly Handoff**, capitalized **Roles/Goals**, etc.). **Visible UI strings use customer-friendly equivalents** instead — a customer doesn't know what a "Source Week" is. Current mapping in the Weekly Handoff dialog (`CarryoverDialog.tsx`, CTA copy in `weekly-handoff.ts`): Source Week → "this week", Target Week → "next week", and domain nouns are lowercased in running prose (roles, goals, day priorities…).
+
+`etc/prd/weekly-handoff-dialog.md` documents this split under Implementation Decisions (canonical concepts, friendly UI copy). Do not "correct" the dialog copy back to canonical terms.
+
 ## Auth & persistence (Supabase)
 
 Auth is passwordless magic link via `@supabase/ssr`; Weeks persist to Supabase Postgres (`public.weeks`, one JSONB document per week, RLS-scoped to `auth.uid()`). The browser talks to Supabase directly — RLS is the security boundary, there is no API layer. The persistence seam is `src/lib/db.ts` (+ the pure `src/lib/week-mapping.ts`); the store's `bootstrap()` / `reset()` are driven by `AuthProvider`. See `etc/prd/supabase-auth-cloud-persistence.md` and ADR-0003 / ADR-0004.
 
 The Magic Link email template in `docs/supabase-magic-link-email.md` builds callback links from Supabase `{{ .SiteURL }}`. For production, Supabase Dashboard → Authentication → URL Configuration must set Site URL to the canonical Vercel/custom domain and include every app origin used by `emailRedirectTo` in Redirect URLs. If Site URL remains localhost, production emails will contain localhost links even though the Vercel app sent the OTP request.
+
+For local development, prefer a separate hosted Supabase dev project over using prod with a dev user. Current dev project ref: `debzwdzhkcbsvgkhucsa` (`https://debzwdzhkcbsvgkhucsa.supabase.co`). Keep the repo linked to prod unless intentionally switching it: use explicit `--project-id` / `--project-ref` / `--db-url` flags for dev operations so `supabase/.temp/` stays prod-oriented. Local `.env.local` should point at the dev project's `NEXT_PUBLIC_SUPABASE_URL` and publishable key; do not read/write `.env*` through the agent because hooks block it.
+
+Dev schema setup: apply checked-in migrations to the dev database with `supabase db push --db-url <dev connection string>` rather than relinking the repo. New Supabase direct DB hosts can be IPv6-only; if direct connection fails with `no route to host`, use the Supabase Dashboard → Project Settings → Database → **Session pooler** connection string. Do not guess the pooler host — this dev project worked via `aws-1-eu-central-1.pooler.supabase.com`, while `aws-0` produced `ENOTFOUND tenant/user ... not found`. Keep DB passwords out of chat and shell history; prompt locally and URL-encode them for `--db-url`.
+
+Dev auth setup in the Supabase Dashboard: set Auth → URL Configuration Site URL to `http://localhost:3000`, add Redirect URLs for `http://localhost:3000/**` and `http://127.0.0.1:3000/**` (plus Vercel preview URLs if testing previews), and paste/update the Magic Link template from `docs/supabase-magic-link-email.md`.

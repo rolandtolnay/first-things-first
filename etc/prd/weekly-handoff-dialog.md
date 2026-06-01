@@ -31,8 +31,8 @@ The solution preserves current semantics: Weekly Handoff carries Roles and selec
 
 ## Implementation Decisions
 
-- The product concept is **Weekly Handoff**. The visible dialog title remains action-oriented: “Start a new Week.”
-- Use **Source Week** and **Target Week** terminology in product copy where precision matters. Do not assume the Source Week is literally “last week.”
+- The product concept is **Weekly Handoff**. The visible dialog title remains action-oriented and sentence-cased: “Start a new week.”
+- **Source Week** and **Target Week** stay canonical in the domain model, code, and this PRD, but visible UI copy uses customer-friendly equivalents — “this week” and “next week” — because a customer would not recognize “Source Week.” Domain nouns are also lowercased in running UI prose (roles, goals, day priorities…). Whatever wording is used, never assume the Source Week is literally “last week”; it is the viewed Week being handed off. See the canonical→UI mapping in `AGENTS.md`.
 - Keep this work UI/flow-only. Do not introduce Goal lineage, carryover counts, stale-goal detection, or new persistence metadata.
 - Define unfinished Goals as Goals whose own completion state is incomplete. Do not infer unfinished status from Day Priorities, Time Blocks, or Evening Blocks.
 - Preserve current carryover semantics: carry Roles and selected unfinished Goals into the Target Week; reset carried Goal completion; do not carry Day Priorities, Time Blocks, Evening Blocks, or Freestyle Blocks.

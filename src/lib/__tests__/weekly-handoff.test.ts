@@ -317,14 +317,14 @@ describe("buildWeeklyHandoffModel", () => {
     });
     const cleanSourceWeek = week({ roles: [role()], goals: [goal({ id: "done", completed: true })] });
 
-    expect(buildModel({ sourceWeek: cleanSourceWeek }).primaryActionLabel).toBe("Start Week");
+    expect(buildModel({ sourceWeek: cleanSourceWeek }).primaryActionLabel).toBe("Start week");
 
     expect(
       buildModel({
         sourceWeek,
         selectedGoalIds: new Set(["open-1"]),
       }).primaryActionLabel
-    ).toBe("Carry forward 1 Goal");
+    ).toBe("Carry forward 1 goal");
 
     expect(buildModel({ sourceWeek }).primaryActionLabel).toBe("Start fresh");
 
@@ -334,7 +334,7 @@ describe("buildWeeklyHandoffModel", () => {
         existingWeekIds: [defaultTargetWeekId],
         selectedGoalIds: new Set(["open-1", "open-2"]),
       }).primaryActionLabel
-    ).toBe("Replace and carry forward 2 Goals");
+    ).toBe("Replace and carry forward 2 goals");
 
     expect(
       buildModel({
@@ -360,6 +360,6 @@ describe("buildWeeklyHandoffModel", () => {
     expect(model.unfinishedGoalGroups).toEqual([]);
     expect(model.unfinishedGoalIds).toEqual([]);
     expect(model.selectedCount).toBe(0);
-    expect(model.primaryActionLabel).toBe("Replace Week");
+    expect(model.primaryActionLabel).toBe("Replace week");
   });
 });
