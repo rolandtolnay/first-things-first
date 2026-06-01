@@ -31,8 +31,12 @@ A weekly objective belonging to exactly one Role Snapshot.
 _Avoid_: task, todo, item.
 
 **Day Priority**:
-A Goal instance placed in a Day’s priorities list.
+A priority item placed in a Day’s priorities list, either linked to a Goal or freestyle.
 _Avoid_: priority task, top task, todo.
+
+**Freestyle Day Priority**:
+A Day Priority with its own text and no linked Goal.
+_Avoid_: loose task, imported goal, unassigned goal.
 
 **Time Block**:
 A scheduled block placed on a Day’s Slot grid.
@@ -45,6 +49,10 @@ _Avoid_: night slot, evening task, after-hours event.
 **Freestyle Block**:
 A Time Block or Evening Block with no linked Goal (`type: "freestyle"`, no `goalId`).
 _Avoid_: free block, manual block, custom block.
+
+**Import Metadata**:
+Source calendar details preserved on an imported Freestyle Day Priority or Freestyle Block that are not part of the planner’s visible text/time fields.
+_Avoid_: sync state, provider cache, hidden event.
 
 **Source Week**:
 The Week used as the starting point for a Weekly Handoff.
@@ -120,13 +128,15 @@ _Avoid_: primary color palette, highlight color.
 - Deleting a **Role** while planning a **Week** archives the Role for future planning and removes that Role's Snapshot from the current Week; other existing Week snapshots remain historically unchanged.
 - Restoring an archived **Role** reactivates the Role for future planning and adds a Role Snapshot to the current Week; if its name conflicts with an active Role, the restored Role receives a distinct name.
 - A **Goal** belongs to exactly one **Role Snapshot**.
-- A **Day Priority**, **Time Block**, or **Evening Block** may reference one **Goal**; each instance has completion independent from the Goal and from other instances.
+- A **Day Priority** may be linked to one **Goal** or may be a **Freestyle Day Priority**; each instance has completion independent from the Goal and from other instances.
+- A **Time Block** or **Evening Block** may reference one **Goal**; each instance has completion independent from the Goal and from other instances.
 - A **Time Block** occupies one or more contiguous **Slots** on exactly one **Day**.
 - A **Day** has at most one **Evening Block**.
 - A **Freestyle Block** has no **Goal** and is not assigned to a **Role**.
+- **Import Metadata** belongs only to imported **Freestyle Day Priorities** and imported **Freestyle Blocks**.
 - **Weekly Balance** and **Week Metrics** count Time Blocks by slot duration and Evening Blocks as one fixed planned hour.
 - Cross-week Role analytics group historical work by durable **Role** identity and use the Role's current display values for aggregate presentation; individual Week details may show historical Role Snapshots.
-- A **Daily Streak** Day is complete only when it has at least one Day Priority and all of that Day’s Day Priorities are complete.
+- A **Daily Streak** Day is complete only when it has at least one **Day Priority** and all of that Day’s Day Priorities are complete.
 - A **Weekly Handoff** considers a **Goal** unfinished when the Goal itself is incomplete; Day Priority, Time Block, and Evening Block completion remain separate instance state.
 - A **Weekly Handoff** creates or replaces a **Target Week** snapshot; it does not move Goals out of the **Source Week**.
 - A **Weekly Handoff** creates the Target Week's Role Snapshots from active Role defaults and carries selected unfinished Goals forward by Role identity; Goals under archived Roles are not carried forward. Day Priorities, Time Blocks, and Evening Blocks start empty in the Target Week.
@@ -145,7 +155,8 @@ _Avoid_: primary color palette, highlight color.
 
 ## Flagged ambiguities
 
-- “free block” vs “freestyle block” — same concept; **Freestyle Block** is canonical, and code uses `type: "freestyle"`.
+- “free block” vs “freestyle block” — same concept for scheduled blocks; **Freestyle Block** is canonical, and code uses `type: "freestyle"`.
+- “freestyle priority” means **Freestyle Day Priority**, not a **Freestyle Block**.
 - “Donut” vs “PieChart” — same component; **Donut** is canonical, while `PieChart` remains a legacy filename/import name.
 - “right sidebar” vs “Rail” — **Rail** is canonical; it is collapsed by default but still the same right-side surface.
 - “Slot height” vs “Slot duration” — a **Slot** is always 30 minutes; the current rendering scale is `SLOT_HEIGHT = 24` pixels.
