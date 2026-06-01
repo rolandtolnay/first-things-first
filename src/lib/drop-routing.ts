@@ -26,7 +26,7 @@ import type {
   DayPriority,
   EveningBlock,
   TimeBlock,
-  Role,
+  RoleSnapshot,
   RoleColor,
   CreateDayPriorityInput,
   CreateTimeBlockInput,
@@ -72,7 +72,7 @@ export interface TimeGridDropPreview {
 
 interface TimeGridDropPreviewSnapshot {
   timeBlocks: TimeBlock[];
-  roles: Role[];
+  roles: RoleSnapshot[];
 }
 
 // ============================================================================
@@ -223,7 +223,7 @@ export function resolveDrop(
   return route ? applyDropPolicy(route, snapshot) : null;
 }
 
-function roleColorForId(roles: Role[], roleId: string | undefined): RoleColor | undefined {
+function roleColorForId(roles: RoleSnapshot[], roleId: string | undefined): RoleColor | undefined {
   return roleId ? roles.find((role) => role.id === roleId)?.color : undefined;
 }
 

@@ -6,7 +6,8 @@ import {
   getWeekStartDate,
   parseWeekId,
 } from "@/lib/utils";
-import type { Goal, Role, Week, WeekId } from "@/types";
+import { seedRoleSnapshots } from "@/lib/role-snapshots";
+import type { Goal, Role, RoleSnapshot, Week, WeekId } from "@/types";
 
 export interface WeeklyHandoffModelInput {
   sourceWeek: Week | null;
@@ -23,7 +24,7 @@ export interface WeeklyHandoffSummary {
 }
 
 export interface WeeklyHandoffGoalGroup {
-  role: Role;
+  role: RoleSnapshot;
   goals: Goal[];
 }
 
@@ -53,14 +54,13 @@ export interface WeeklyHandoffOpeningModel {
 
 export interface BuildWeekOptions {
   weekId: WeekId;
-  carryOverRoles?: readonly Role[];
+  activeRoles?: readonly Role[];
   now?: string;
-  createId?: () => string;
 }
 
 export interface BuildTargetWeekOptions {
   targetWeekId: WeekId;
-  sourceWeek?: Week;
+  activeRoles?: readonly Role[];
   carryOverGoals?: readonly Goal[];
   now?: string;
   createId?: () => string;
@@ -86,68 +86,49 @@ function getPrimaryActionLabel({
 
 function buildWeekShell({
   weekId,
-  carryOverRoles,
+  activeRoles = [],
   now = new Date().toISOString(),
-  createId = generateId,
-}: BuildWeekOptions): { week: Week; roleIdMap: Map<string, string> } {
+}: BuildWeekOptions): Week {
   const monday = parseWeekId(weekId);
-  const roleIdMap = new Map<string, string>();
-  const orderedCarryOverRoles = carryOverRoles
-    ? [...carryOverRoles].sort((left, right) => left.order - right.order)
-    : [];
-  const roles: Role[] = orderedCarryOverRoles.map((role, index) => {
-    const clonedRole = {
-      id: createId(),
-      name: role.name,
-      color: role.color,
-      order: index,
-    } satisfies Role;
-    roleIdMap.set(role.id, clonedRole.id);
-    return clonedRole;
-  });
 
   return {
-    week: {
-      id: weekId,
-      startDate: getWeekStartDate(monday).toISOString(),
-      roles,
-      goals: [],
-      dayPriorities: [],
-      timeBlocks: [],
-      eveningBlocks: [],
-      createdAt: now,
-      updatedAt: now,
-    },
-    roleIdMap,
+    id: weekId,
+    startDate: getWeekStartDate(monday).toISOString(),
+    roles: seedRoleSnapshots(activeRoles),
+    goals: [],
+    dayPriorities: [],
+    timeBlocks: [],
+    eveningBlocks: [],
+    createdAt: now,
+    updatedAt: now,
   };
 }
 
 export function buildEmptyWeek(options: BuildWeekOptions): Week {
-  return buildWeekShell(options).week;
+  return buildWeekShell(options);
 }
 
 export function buildTargetWeek({
   targetWeekId,
-  sourceWeek,
+  activeRoles,
   carryOverGoals,
   now,
   createId,
 }: BuildTargetWeekOptions): Week {
   const nextId = createId ?? generateId;
-  const { week, roleIdMap } = buildWeekShell({
+  const week = buildWeekShell({
     weekId: targetWeekId,
-    carryOverRoles: sourceWeek?.roles,
+    activeRoles,
     now,
-    createId: nextId,
   });
+  const activeRoleIds = new Set(week.roles.map((role) => role.id));
 
   week.goals = (carryOverGoals ?? []).flatMap((goal): Goal[] => {
-    const newRoleId = roleIdMap.get(goal.roleId);
-    if (!newRoleId) return [];
+    if (!activeRoleIds.has(goal.roleId)) return [];
 
     return [{
       id: nextId(),
-      roleId: newRoleId,
+      roleId: goal.roleId,
       text: goal.text,
       notes: goal.notes,
       completed: false,

@@ -5,7 +5,7 @@ import {
   buildWeeklyHandoffModel,
   buildWeeklyHandoffOpeningModel,
 } from "@/lib/weekly-handoff";
-import type { Goal, Role, Week, WeekId } from "@/types";
+import type { Goal, Role, RoleSnapshot, Week, WeekId } from "@/types";
 
 const sourceWeekId = "2026-W10" as WeekId;
 const defaultTargetWeekId = "2026-W11" as WeekId;
@@ -26,6 +26,19 @@ function week(overrides: Partial<Week> = {}): Week {
 }
 
 function role(overrides: Partial<Role> = {}): Role {
+  return {
+    id: "role-1",
+    name: "Work",
+    color: "teal",
+    order: 0,
+    archivedAt: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function snapshot(overrides: Partial<RoleSnapshot> = {}): RoleSnapshot {
   return {
     id: "role-1",
     name: "Work",
@@ -73,7 +86,7 @@ describe("buildWeeklyHandoffOpeningModel", () => {
   it("chooses the first unplanned Target Week after the viewed Week", () => {
     const sourceWeek = week({
       id: "2026-W11" as WeekId,
-      roles: [role()],
+      roles: [snapshot()],
       goals: [goal({ id: "open-1" }), goal({ id: "done-1", completed: true })],
     });
 
@@ -105,15 +118,15 @@ describe("buildWeeklyHandoffOpeningModel", () => {
 });
 
 describe("buildEmptyWeek", () => {
-  it("builds an empty Week shell with copied Roles and no planning items", () => {
+  it("builds an empty Week shell from active durable Roles and no planning items", () => {
     const target = buildEmptyWeek({
       weekId: defaultTargetWeekId,
-      carryOverRoles: [
-        role({ id: "old-work", name: "Work", color: "teal", order: 7 }),
-        role({ id: "old-health", name: "Health", color: "rose", order: 2 }),
+      activeRoles: [
+        role({ id: "archived", name: "Old", color: "rose", order: 0, archivedAt: "2026-03-01T00:00:00.000Z" }),
+        role({ id: "work", name: "Work", color: "teal", order: 7 }),
+        role({ id: "health", name: "Health", color: "rose", order: 2 }),
       ],
       now: "2026-03-08T10:00:00.000Z",
-      createId: idSequence("new-health", "new-work"),
     });
 
     expect(target).toMatchObject({
@@ -127,47 +140,43 @@ describe("buildEmptyWeek", () => {
       updatedAt: "2026-03-08T10:00:00.000Z",
     });
     expect(target.roles).toEqual([
-      { id: "new-health", name: "Health", color: "rose", order: 0 },
-      { id: "new-work", name: "Work", color: "teal", order: 1 },
+      { id: "health", name: "Health", color: "rose", order: 0 },
+      { id: "work", name: "Work", color: "teal", order: 1 },
     ]);
   });
 });
 
 describe("buildTargetWeek", () => {
-  it("carries Roles and selected Goals through an explicit source-role-id map", () => {
-    const sourceWeek = week({
-      roles: [
+  it("uses active durable Role IDs during handoff and carries selected Goals by Role identity", () => {
+    const target = buildTargetWeek({
+      targetWeekId: defaultTargetWeekId,
+      activeRoles: [
         role({ id: "work-a", name: "Work", color: "teal", order: 1 }),
         role({ id: "work-b", name: "Work", color: "amber", order: 0 }),
       ],
-    });
-
-    const target = buildTargetWeek({
-      targetWeekId: defaultTargetWeekId,
-      sourceWeek,
       carryOverGoals: [
         goal({ id: "ship", roleId: "work-a", text: "Ship", notes: "soon", completed: true }),
         goal({ id: "budget", roleId: "work-b", text: "Budget", completed: false }),
       ],
       now: "2026-03-08T10:00:00.000Z",
-      createId: idSequence("new-work-b", "new-work-a", "new-ship", "new-budget"),
+      createId: idSequence("new-ship", "new-budget"),
     });
 
     expect(target.roles).toEqual([
-      { id: "new-work-b", name: "Work", color: "amber", order: 0 },
-      { id: "new-work-a", name: "Work", color: "teal", order: 1 },
+      { id: "work-b", name: "Work", color: "amber", order: 0 },
+      { id: "work-a", name: "Work", color: "teal", order: 1 },
     ]);
     expect(target.goals).toEqual([
       {
         id: "new-ship",
-        roleId: "new-work-a",
+        roleId: "work-a",
         text: "Ship",
         notes: "soon",
         completed: false,
       },
       {
         id: "new-budget",
-        roleId: "new-work-b",
+        roleId: "work-b",
         text: "Budget",
         notes: undefined,
         completed: false,
@@ -178,32 +187,29 @@ describe("buildTargetWeek", () => {
     expect(target.eveningBlocks).toEqual([]);
   });
 
-  it("drops carried Goals whose source Role is not present", () => {
+  it("drops carried Goals whose Role is not active", () => {
     const target = buildTargetWeek({
       targetWeekId: defaultTargetWeekId,
-      sourceWeek: week({ roles: [role({ id: "work" })] }),
+      activeRoles: [role({ id: "work" })],
       carryOverGoals: [
         goal({ id: "ship", roleId: "work", text: "Ship" }),
         goal({ id: "orphan", roleId: "missing", text: "Orphan" }),
       ],
-      createId: idSequence("new-work", "new-ship"),
+      createId: idSequence("new-ship"),
     });
 
     expect(target.goals.map((targetGoal) => targetGoal.text)).toEqual(["Ship"]);
   });
 
-  it("starts fresh by carrying Source Week Roles without carrying Goals", () => {
+  it("starts fresh with active Role defaults and no Source Week planning items", () => {
     const target = buildTargetWeek({
       targetWeekId: defaultTargetWeekId,
-      sourceWeek: week({
-        roles: [role({ id: "work" })],
-        goals: [goal({ id: "open", roleId: "work" })],
-      }),
+      activeRoles: [role({ id: "work" })],
+      carryOverGoals: undefined,
       now: "2026-03-08T10:00:00.000Z",
-      createId: idSequence("new-work"),
     });
 
-    expect(target.roles).toEqual([{ id: "new-work", name: "Work", color: "teal", order: 0 }]);
+    expect(target.roles).toEqual([{ id: "work", name: "Work", color: "teal", order: 0 }]);
     expect(target.goals).toEqual([]);
   });
 });
@@ -211,7 +217,7 @@ describe("buildTargetWeek", () => {
 describe("buildWeeklyHandoffModel", () => {
   it("summarizes Source Week Goal completion from Goal state only", () => {
     const sourceWeek = week({
-      roles: [role()],
+      roles: [snapshot()],
       goals: [
         goal({ id: "done", completed: true }),
         goal({ id: "open", completed: false }),
@@ -258,10 +264,10 @@ describe("buildWeeklyHandoffModel", () => {
     ).toEqual({ completedGoals: 2, totalGoals: 2, unfinishedGoals: 0, completionPercent: 100 });
   });
 
-  it("groups only unfinished Goals under their Role in Role order", () => {
-    const work = role({ id: "work", name: "Work", color: "teal", order: 0 });
-    const health = role({ id: "health", name: "Health", color: "rose", order: 1 });
-    const family = role({ id: "family", name: "Family", color: "amber", order: 2 });
+  it("groups only unfinished Goals under their Role Snapshot in Role order", () => {
+    const work = snapshot({ id: "work", name: "Work", color: "teal", order: 0 });
+    const health = snapshot({ id: "health", name: "Health", color: "rose", order: 1 });
+    const family = snapshot({ id: "family", name: "Family", color: "amber", order: 2 });
     const sourceWeek = week({
       roles: [family, work, health],
       goals: [
@@ -285,7 +291,7 @@ describe("buildWeeklyHandoffModel", () => {
 
   it("counts selected unfinished Goals", () => {
     const sourceWeek = week({
-      roles: [role()],
+      roles: [snapshot()],
       goals: [
         goal({ id: "open-1" }),
         goal({ id: "done-1", completed: true }),
@@ -303,7 +309,7 @@ describe("buildWeeklyHandoffModel", () => {
   });
 
   it("reports whether the Target Week already has a plan", () => {
-    const sourceWeek = week({ roles: [role()], goals: [goal()] });
+    const sourceWeek = week({ roles: [snapshot()], goals: [goal()] });
 
     expect(
       buildModel({
@@ -315,10 +321,10 @@ describe("buildWeeklyHandoffModel", () => {
 
   it("uses primary action copy for start, carry-forward, and replace outcomes", () => {
     const sourceWeek = week({
-      roles: [role()],
+      roles: [snapshot()],
       goals: [goal({ id: "open-1" }), goal({ id: "open-2" })],
     });
-    const cleanSourceWeek = week({ roles: [role()], goals: [goal({ id: "done", completed: true })] });
+    const cleanSourceWeek = week({ roles: [snapshot()], goals: [goal({ id: "done", completed: true })] });
 
     expect(buildModel({ sourceWeek: cleanSourceWeek }).primaryActionLabel).toBe("Start week");
 
@@ -349,7 +355,7 @@ describe("buildWeeklyHandoffModel", () => {
 
   it("reports clean-slate state when the Source Week has no unfinished Goals", () => {
     const sourceWeek = week({
-      roles: [role()],
+      roles: [snapshot()],
       goals: [goal({ id: "done-1", completed: true }), goal({ id: "done-2", completed: true })],
     });
 

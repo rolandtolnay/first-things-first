@@ -7,11 +7,69 @@ vi.mock("@/lib/db", () => ({
   getWeek: vi.fn(),
   saveWeek: vi.fn().mockResolvedValue("2026-W01"),
   getAllWeekIds: vi.fn().mockResolvedValue([]),
+  getActiveRoles: vi.fn().mockResolvedValue([]),
+  searchArchivedRoles: vi.fn().mockResolvedValue([]),
+  createRole: vi.fn().mockImplementation((input: { name: string; color: string; order: number }) => Promise.resolve({
+    id: `role-${input.name.toLowerCase().replace(/\\s+/g, "-")}`,
+    name: input.name,
+    color: input.color,
+    order: input.order,
+    archivedAt: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  })),
+  updateRoleDefaults: vi.fn().mockImplementation((roleId: string, updates: { name?: string; color?: string; order?: number }) => Promise.resolve({
+    id: roleId,
+    name: updates.name ?? (roleId === "role-1" ? "Work" : "Health"),
+    color: updates.color ?? (roleId === "role-1" ? "teal" : "amber"),
+    order: updates.order ?? (roleId === "role-1" ? 0 : 1),
+    archivedAt: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  })),
+  archiveRole: vi.fn().mockImplementation((roleId: string) => Promise.resolve({
+    id: roleId,
+    name: "Archived",
+    color: "teal",
+    order: 0,
+    archivedAt: "2026-01-02T00:00:00.000Z",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-02T00:00:00.000Z",
+  })),
+  restoreRole: vi.fn().mockImplementation((roleId: string, updates: { name: string; order: number }) => Promise.resolve({
+    id: roleId,
+    name: updates.name,
+    color: "teal",
+    order: updates.order,
+    archivedAt: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-02T00:00:00.000Z",
+  })),
+  persistRoleOrder: vi.fn().mockImplementation((roleIds: string[]) => Promise.resolve(
+    roleIds.map((roleId, order) => ({
+      id: roleId,
+      name: roleId,
+      color: "teal",
+      order,
+      archivedAt: null,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    }))
+  )),
 }));
 
 import { useWeekStore } from "@/stores/weekStore";
 import { getWeek, saveWeek } from "@/lib/db";
-import type { Week, WeekId, EveningBlock, CreateDayPriorityInput } from "@/types";
+import type { Week, WeekId, EveningBlock, CreateDayPriorityInput, Role, RoleSnapshot } from "@/types";
+
+function durableRole(snapshot: RoleSnapshot): Role {
+  return {
+    ...snapshot,
+    archivedAt: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  };
+}
 
 function makeWeek(): Week {
   return {
@@ -45,6 +103,7 @@ beforeEach(() => {
   useWeekStore.setState({
     currentWeek: makeWeek(),
     selectedWeekId: "2026-W01" as WeekId,
+    activeRoles: makeWeek().roles.map(durableRole),
     availableWeekIds: ["2026-W01" as WeekId],
     isLoading: false,
     error: null,
@@ -121,7 +180,9 @@ describe("save failure surfacing", () => {
     try {
       const firstSave = useWeekStore.getState().addRole({ name: "First pending" });
       await Promise.resolve();
+      await Promise.resolve();
       const secondSave = useWeekStore.getState().addRole({ name: "Second pending" });
+      await Promise.resolve();
       await Promise.resolve();
 
       resolveFirst("2026-W01" as WeekId);
@@ -957,13 +1018,13 @@ describe("moveEveningToDay", () => {
 // ============================================================================
 
 describe("createWeek", () => {
-  it("persists a newly built Week and adds it to the available Week ids", async () => {
-    const carryRoles: Role[] = [
-      { id: "old-1", name: "Work", color: "teal", order: 0 },
-    ];
+  it("persists a newly built Week seeded from active Roles and adds it to the available Week ids", async () => {
+    useWeekStore.setState({
+      activeRoles: [durableRole({ id: "old-1", name: "Work", color: "teal", order: 0 })],
+    });
     vi.clearAllMocks();
 
-    const week = await useWeekStore.getState().createWeek("2026-W05" as WeekId, carryRoles);
+    const week = await useWeekStore.getState().createWeek("2026-W05" as WeekId);
 
     expect(saveWeek).toHaveBeenCalledTimes(1);
     expect(vi.mocked(saveWeek).mock.calls[0][0]).toBe(week);
@@ -990,6 +1051,7 @@ describe("createNewWeek", () => {
 
   it("persists a Target Week for carried Goals and adds it to the available Week ids", async () => {
     const source = sourceWeek();
+    useWeekStore.setState({ activeRoles: source.roles.map(durableRole) });
     vi.clearAllMocks();
 
     const week = await useWeekStore
@@ -1006,12 +1068,14 @@ describe("createNewWeek", () => {
     expect(week.goals).toHaveLength(1);
   });
 
-  it("persists a fresh Target Week with Source Week Roles and no Goals", async () => {
+  it("persists a fresh Target Week with active Role defaults and no Goals", async () => {
+    const source = sourceWeek();
+    useWeekStore.setState({ activeRoles: source.roles.map(durableRole) });
     vi.clearAllMocks();
 
     const week = await useWeekStore
       .getState()
-      .createNewWeek("2026-W05" as WeekId, { sourceWeek: sourceWeek() });
+      .createNewWeek("2026-W05" as WeekId, { sourceWeek: source });
 
     expect(saveWeek).toHaveBeenCalledTimes(1);
     expect(vi.mocked(saveWeek).mock.calls[0][0]).toBe(week);

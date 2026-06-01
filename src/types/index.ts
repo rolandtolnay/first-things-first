@@ -1,8 +1,8 @@
 /**
  * First Things First - Data Model Types
  *
- * Week snapshot model: each week is independent, roles/goals copied forward on new week creation.
- * This enables historical accuracy and matches the original Google Sheets mental model.
+ * Week snapshot model: each week is independent and stores Role Snapshots.
+ * Durable Roles own default identity/color/order for future Week creation.
  */
 
 // ============================================================================
@@ -70,19 +70,31 @@ export type TimeSlotIndex =
 // ============================================================================
 
 /**
- * Role - a life area/responsibility (e.g., "Family", "Work", "Health")
- * Roles are per-week (snapshot model) with auto-assigned colors.
+ * Role - a durable life area/responsibility owned by a User.
+ * Week documents contain Role Snapshots, not durable Role records.
  */
 export interface Role {
-  /** UUID */
+  /** Stable durable Role UUID */
   id: string;
-  /** Display name */
+  /** Default display name */
   name: string;
-  /** Color from palette for visual coding */
+  /** Default color from palette for visual coding */
   color: RoleColor;
-  /** Display order in sidebar (0-indexed) */
+  /** Default display order in sidebar (0-indexed) */
   order: number;
+  /** ISO datetime when archived, or null when active */
+  archivedAt: string | null;
+  /** ISO datetime when durable Role was created */
+  createdAt: string;
+  /** ISO datetime of last durable Role default/archive change */
+  updatedAt: string;
 }
+
+/**
+ * Role Snapshot - the Week-contained display copy of a durable Role.
+ * Uses the durable Role ID so Goals can carry across Weeks by Role identity.
+ */
+export type RoleSnapshot = Pick<Role, "id" | "name" | "color" | "order">;
 
 /**
  * Goal - a weekly objective belonging to a role
@@ -92,7 +104,7 @@ export interface Role {
 export interface Goal {
   /** UUID */
   id: string;
-  /** References Role.id */
+  /** References RoleSnapshot.id (the durable Role ID) */
   roleId: string;
   /** Goal text/description */
   text: string;
@@ -130,7 +142,7 @@ export interface TimeBlock {
   type: "goal" | "freestyle";
   /** References Goal.id (only if type === 'goal') */
   goalId?: string;
-  /** Role ID for color coding (from goal's role or manual assignment) */
+  /** Role ID for goal-linked color coding; Freestyle Blocks stay role-less */
   roleId?: string;
   /** Day index 0-6 (Monday-Sunday) */
   dayIndex: DayOfWeek;
@@ -161,7 +173,7 @@ export interface EveningBlock {
   type: "goal" | "freestyle";
   /** References Goal.id (only if type === 'goal') */
   goalId?: string;
-  /** Role ID for color coding */
+  /** Role ID for goal-linked color coding; Freestyle Blocks stay role-less */
   roleId?: string;
   /** Day index 0-6 (Monday-Sunday) */
   dayIndex: DayOfWeek;
@@ -179,7 +191,7 @@ export interface EveningBlock {
  * Week - the main container for a week's planning data
  *
  * Implements the snapshot model: each week is independent and self-contained.
- * Roles are copied forward when creating a new week (not shared globally).
+ * Role Snapshots are created from active durable Roles when creating a new Week.
  * This enables historical accuracy - past weeks display exactly as they were planned.
  */
 export interface Week {
@@ -187,8 +199,8 @@ export interface Week {
   id: WeekId;
   /** ISO date string of Monday (week start) */
   startDate: string;
-  /** All roles for this week */
-  roles: Role[];
+  /** Role Snapshots for this week */
+  roles: RoleSnapshot[];
   /** All goals for this week */
   goals: Goal[];
   /** Day priority instances */

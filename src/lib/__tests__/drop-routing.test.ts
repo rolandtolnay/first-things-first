@@ -14,7 +14,7 @@ import type {
   EveningDragData,
   DropZoneData,
 } from "@/types/dnd";
-import type { DayPriority, EveningBlock, Role, TimeBlock } from "@/types";
+import type { DayPriority, EveningBlock, RoleSnapshot, TimeBlock } from "@/types";
 
 // ============================================================================
 // Fixtures
@@ -69,7 +69,7 @@ function timeBlock(id: string, startSlot: number, duration: number, roleId = "ro
   };
 }
 
-const roles: Role[] = [{ id: "role-1", name: "Work", color: "teal", order: 0 }];
+const roles: RoleSnapshot[] = [{ id: "role-1", name: "Work", color: "teal", order: 0 }];
 
 // ============================================================================
 // The 12-route table (object equality, no snapshot policy)
