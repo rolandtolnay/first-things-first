@@ -19,11 +19,15 @@ A 30-minute interval on a Day’s time grid from 8:00 to 20:00, where slot `0` i
 _Avoid_: row, cell, timeslot.
 
 **Role**:
-A weekly life area or responsibility that groups Goals and carries the color used for its scheduled work.
+A durable life area or responsibility defined by a User, with a user-controlled default color and order used when planning Weeks.
 _Avoid_: category, project, label.
 
+**Role Snapshot**:
+The Week-contained copy of a Role's name, color, and order used to preserve how that Week was planned and displayed historically.
+_Avoid_: role instance, week role, role copy.
+
 **Goal**:
-A weekly objective belonging to exactly one Role.
+A weekly objective belonging to exactly one Role Snapshot.
 _Avoid_: task, todo, item.
 
 **Day Priority**:
@@ -106,19 +110,26 @@ _Avoid_: primary color palette, highlight color.
 
 ## Relationships
 
-- A **User** owns many **Weeks**; a **Week** belongs to exactly one **User**.
-- A **Week** contains seven **Days**, many **Roles**, many **Goals**, many **Day Priorities**, many **Time Blocks**, and up to seven **Evening Blocks**.
-- **Roles** have user-controlled order within each **Week**; **Weekly Handoff** carries that order into newly created or replaced **Target Week** snapshots.
-- A **Goal** belongs to exactly one **Role**.
+- A **User** owns many **Roles** and many **Weeks**; each **Role** and **Week** belongs to exactly one **User**.
+- A **Week** contains seven **Days**, many **Role Snapshots**, many **Goals**, many **Day Priorities**, many **Time Blocks**, and up to seven **Evening Blocks**.
+- A **Role Snapshot** belongs to exactly one **Role** and preserves that Role's planning display values for one **Week**.
+- A newly created **Week** starts with Role Snapshots for the User's active Roles.
+- **Roles** have user-controlled default order; **Role Snapshots** preserve the order used within each **Week**.
+- A **User** cannot have two active Roles with the same name.
+- Editing a **Role** while planning a **Week** updates that Role's defaults and the current **Week's** Role Snapshot; other existing Week snapshots remain historically unchanged.
+- Deleting a **Role** while planning a **Week** archives the Role for future planning and removes that Role's Snapshot from the current Week; other existing Week snapshots remain historically unchanged.
+- Restoring an archived **Role** reactivates the Role for future planning and adds a Role Snapshot to the current Week; if its name conflicts with an active Role, the restored Role receives a distinct name.
+- A **Goal** belongs to exactly one **Role Snapshot**.
 - A **Day Priority**, **Time Block**, or **Evening Block** may reference one **Goal**; each instance has completion independent from the Goal and from other instances.
 - A **Time Block** occupies one or more contiguous **Slots** on exactly one **Day**.
 - A **Day** has at most one **Evening Block**.
-- A **Freestyle Block** has no **Goal**, but may still carry a **Role** for color and hour accounting.
+- A **Freestyle Block** has no **Goal** and is not assigned to a **Role**.
 - **Weekly Balance** and **Week Metrics** count Time Blocks by slot duration and Evening Blocks as one fixed planned hour.
+- Cross-week Role analytics group historical work by durable **Role** identity and use the Role's current display values for aggregate presentation; individual Week details may show historical Role Snapshots.
 - A **Daily Streak** Day is complete only when it has at least one Day Priority and all of that Day’s Day Priorities are complete.
 - A **Weekly Handoff** considers a **Goal** unfinished when the Goal itself is incomplete; Day Priority, Time Block, and Evening Block completion remain separate instance state.
 - A **Weekly Handoff** creates or replaces a **Target Week** snapshot; it does not move Goals out of the **Source Week**.
-- A **Weekly Handoff** carries Roles and selected unfinished Goals forward; Day Priorities, Time Blocks, and Evening Blocks start empty in the Target Week.
+- A **Weekly Handoff** creates the Target Week's Role Snapshots from active Role defaults and carries selected unfinished Goals forward by Role identity; Goals under archived Roles are not carried forward. Day Priorities, Time Blocks, and Evening Blocks start empty in the Target Week.
 - The **Sidebar** and expanded **Rail** frame the calendar; the collapsed **Rail** remains as a metrics dock.
 
 ## Example dialogue

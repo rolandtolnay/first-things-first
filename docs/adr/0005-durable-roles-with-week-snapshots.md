@@ -1,0 +1,3 @@
+# Durable Roles with Week Snapshots
+
+Roles are promoted to durable user-owned entities because they represent stable life areas whose identity should carry across Weeks for defaults, ordering, colors, restore/archive behavior, and future cross-week analytics. Weeks remain self-contained planning snapshots: each Week stores Role Snapshots using the durable Role ID plus the display values used in that Week, so historical Weeks do not drift when a Role is renamed, recolored, reordered, archived, or restored. This deliberately qualifies ADR-0004 rather than replacing it: Roles cross the threshold for selective first-class durability, while Goals, Day Priorities, Time Blocks, and Evening Blocks stay nested in the Week JSONB document.
