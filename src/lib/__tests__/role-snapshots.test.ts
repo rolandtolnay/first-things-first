@@ -66,6 +66,7 @@ describe("role snapshot rules", () => {
       { id: "work", name: "Work", color: "teal", order: 0 },
       { id: "health", name: "Health", color: "amber", order: 1 },
     ]);
+    expect(appendRoleSnapshot(withHealth, role({ id: "work", name: "Restored Work", color: "violet" }))).toBe(withHealth);
 
     const renamed = updateRoleSnapshot(withHealth, "work", { name: "Deep Work", color: "violet" });
     expect(renamed.roles).toEqual([

@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useRef, useState, type CSSProperties, type PointerEventHandler } from "react";
+import { useCallback, useState, type CSSProperties } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreVertical, Palette, Pencil, Plus, Trash2 } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { InlineInput } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
 import { slotsToHours, EVENING_BLOCK_HOURS } from "@/lib/time-model";
@@ -12,83 +12,26 @@ import { useEditableText } from "@/hooks/useEditableText";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   ContextMenu,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AppContextMenuContent,
-  AppDropdownMenuContent,
-  AppMenuItem,
-  AppMenuSub,
-  AppMenuSubContent,
-} from "@/components/ui/app-menu";
 import { GoalList } from "./GoalList";
-import { RoleColorPicker } from "./RoleColorPicker";
-import type { RoleColor, RoleSnapshot } from "@/types";
+import {
+  RoleArchiveDialog,
+  RoleColorDotMenu,
+  RoleContextMenuContent,
+  RoleOverflowMenu,
+  useRoleMenuController,
+} from "./RoleMenu";
+import type { RoleSnapshot } from "@/types";
 import type { RoleReorderDragData } from "@/types/dnd";
 
 interface RoleSectionProps {
   role: RoleSnapshot;
 }
 
-interface RoleMenuItemsProps {
-  roleColor: RoleColor;
-  onChangeRoleColor: (color: RoleColor) => void;
-  onAddGoal: () => void;
-  onRenameRole: () => void;
-  onArchiveRole: () => void;
-}
-
-function RoleMenuItems({
-  roleColor,
-  onChangeRoleColor,
-  onAddGoal,
-  onRenameRole,
-  onArchiveRole,
-}: RoleMenuItemsProps) {
-  return (
-    <>
-      <AppMenuItem icon={Plus} onSelect={onAddGoal}>
-        Add goal
-      </AppMenuItem>
-      <AppMenuItem icon={Pencil} onSelect={onRenameRole}>
-        Rename role
-      </AppMenuItem>
-      <AppMenuSub>
-        <AppMenuItem icon={Palette} kind="subTrigger">
-          Change color
-        </AppMenuItem>
-        <AppMenuSubContent className="p-2">
-          <RoleColorPicker value={roleColor} onChange={onChangeRoleColor} />
-        </AppMenuSubContent>
-      </AppMenuSub>
-      <AppMenuItem
-        icon={Trash2}
-        variant="destructive"
-        onSelect={onArchiveRole}
-      >
-        Archive role
-      </AppMenuItem>
-    </>
-  );
-}
-
 export function RoleSection({ role }: RoleSectionProps) {
   const updateRole = useWeekStore((state) => state.updateRole);
-  const deleteRole = useWeekStore((state) => state.deleteRole);
   const {
     attributes,
     listeners,
@@ -120,52 +63,10 @@ export function RoleSection({ role }: RoleSectionProps) {
   );
 
   const [addingGoal, setAddingGoal] = useState(false);
-  const [dotColorMenuOpen, setDotColorMenuOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [contextMenuKey, setContextMenuKey] = useState(0);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const shouldOpenGoalInputAfterMenuCloseRef = useRef(false);
-  const shouldRenameRoleAfterMenuCloseRef = useRef(false);
-  const menuTriggerRef = useRef<HTMLButtonElement>(null);
 
   const { isEditing, editValue, setEditValue, inputRef, startEdit, save, handleKeyDown } =
     useEditableText(role.name, handleSaveRole);
-
-  const handleStartAddingGoal = useCallback(() => setAddingGoal(true), []);
-  const handleStartAddingGoalFromDropdownMenu = useCallback(() => {
-    shouldOpenGoalInputAfterMenuCloseRef.current = true;
-  }, []);
-  const handleStartRenameRole = useCallback(() => startEdit(), [startEdit]);
-  const handleStartRenameRoleFromDropdownMenu = useCallback(() => {
-    shouldRenameRoleAfterMenuCloseRef.current = true;
-  }, []);
-  const handleChangeRoleColor = useCallback((color: RoleColor) => {
-    updateRole(role.id, { color });
-    setDotColorMenuOpen(false);
-    setMenuOpen(false);
-    setContextMenuKey((key) => key + 1);
-  }, [updateRole, role.id]);
-
-  const handleDropdownCloseAutoFocus = useCallback((event: Event) => {
-    // Radix restores focus to the trigger after close. Here the trigger is a
-    // hover-revealed control that swaps with the duration label, so restored
-    // focus leaves a visible ring around the duration after pointer/touch use.
-    event.preventDefault();
-
-    if (shouldOpenGoalInputAfterMenuCloseRef.current) {
-      shouldOpenGoalInputAfterMenuCloseRef.current = false;
-      setAddingGoal(true);
-      return;
-    }
-
-    if (shouldRenameRoleAfterMenuCloseRef.current) {
-      shouldRenameRoleAfterMenuCloseRef.current = false;
-      startEdit();
-      return;
-    }
-
-    requestAnimationFrame(() => menuTriggerRef.current?.blur());
-  }, [startEdit]);
+  const menuController = useRoleMenuController({ role, startEdit, setAddingGoal });
 
   const cardStyle: CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -173,12 +74,8 @@ export function RoleSection({ role }: RoleSectionProps) {
     background: `linear-gradient(180deg, ${getRoleColorStyleWithOpacity(role.color, 0.055)}, transparent 52px), var(--card)`,
     boxShadow: `inset 0 1px 0 ${getRoleColorStyleWithOpacity(role.color, 0.12)}`,
   };
-  const pointerListeners: { onPointerDown?: PointerEventHandler<HTMLButtonElement> } = listeners?.onPointerDown
-    ? { onPointerDown: listeners.onPointerDown as PointerEventHandler<HTMLButtonElement> }
-    : {};
-
   return (
-    <ContextMenu key={contextMenuKey}>
+    <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
           ref={setNodeRef}
@@ -199,7 +96,7 @@ export function RoleSection({ role }: RoleSectionProps) {
                 className="-ml-1 size-5 shrink-0 cursor-grab touch-none rounded-[5px] border-0 bg-transparent text-[var(--ds-fg-faint)] hover:bg-[var(--ds-line)] hover:text-foreground active:cursor-grabbing"
                 aria-label={`Reorder ${role.name}`}
                 {...attributes}
-                {...pointerListeners}
+                {...listeners}
               >
                 <GripVertical className="size-3.5" />
               </Button>
@@ -212,26 +109,7 @@ export function RoleSection({ role }: RoleSectionProps) {
                 aria-hidden="true"
               />
             ) : (
-              <DropdownMenu open={dotColorMenuOpen} onOpenChange={setDotColorMenuOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    className="-mx-1 shrink-0 rounded-full border-0 bg-transparent p-0 hover:bg-[var(--ds-line)]"
-                    aria-label={`Change color for ${role.name}`}
-                  >
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: getRoleColorStyle(role.color) }}
-                      aria-hidden="true"
-                    />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-auto min-w-0 p-2">
-                  <RoleColorPicker value={role.color} onChange={handleChangeRoleColor} />
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <RoleColorDotMenu role={role} controller={menuController} />
             )}
 
             {isEditing ? (
@@ -256,47 +134,11 @@ export function RoleSection({ role }: RoleSectionProps) {
             )}
 
             {!isEditing && (
-              <div className="relative h-5 w-8 shrink-0">
-                {roleHours > 0 && (
-                  <span
-                    className={`absolute right-0 top-1/2 -translate-y-1/2 rounded-[var(--ds-r-pill)] border border-[var(--ds-line-soft)] bg-[var(--ds-panel)] px-1.5 py-0.5 font-mono text-[10px] leading-none tracking-[0.04em] text-secondary-foreground tabular-nums transition-opacity ${
-                      menuOpen ? "opacity-0" : "group-hover/role:opacity-0"
-                    }`}
-                  >
-                    {roleHours}h
-                  </span>
-                )}
-
-                {/* Overflow menu — same visual slot, larger tap target. */}
-                <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      ref={menuTriggerRef}
-                      variant="ghost"
-                      size="icon"
-                      className={`absolute -right-1 top-1/2 -translate-y-1/2 rounded-[6px] border-0 bg-transparent text-muted-foreground transition-opacity hover:bg-[var(--ds-line)] hover:text-foreground focus-visible:opacity-100 ${
-                        menuOpen ? "opacity-100" : "opacity-0 group-hover/role:opacity-100"
-                      }`}
-                      aria-label={`Menu for ${role.name}`}
-                    >
-                      <MoreVertical className="size-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <AppDropdownMenuContent
-                    align="start"
-                    className="w-auto min-w-36"
-                    onCloseAutoFocus={handleDropdownCloseAutoFocus}
-                  >
-                    <RoleMenuItems
-                      roleColor={role.color}
-                      onChangeRoleColor={handleChangeRoleColor}
-                      onAddGoal={handleStartAddingGoalFromDropdownMenu}
-                      onRenameRole={handleStartRenameRoleFromDropdownMenu}
-                      onArchiveRole={() => { setDeleteDialogOpen(true); setMenuOpen(false); }}
-                    />
-                  </AppDropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              <RoleOverflowMenu
+                role={role}
+                roleHours={roleHours}
+                controller={menuController}
+              />
             )}
           </div>
 
@@ -305,37 +147,14 @@ export function RoleSection({ role }: RoleSectionProps) {
               roleId={role.id}
               roleColor={role.color}
               addingGoal={addingGoal}
-              onStartAddingGoal={handleStartAddingGoal}
+              onStartAddingGoal={menuController.handleAddGoal}
               onAddingGoalDone={() => setAddingGoal(false)}
             />
           </div>
         </div>
       </ContextMenuTrigger>
-      <AppContextMenuContent>
-        <RoleMenuItems
-          roleColor={role.color}
-          onChangeRoleColor={handleChangeRoleColor}
-          onAddGoal={handleStartAddingGoal}
-          onRenameRole={handleStartRenameRole}
-          onArchiveRole={() => setDeleteDialogOpen(true)}
-        />
-      </AppContextMenuContent>
-
-      {/* Archive confirmation dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogTitle>Archive role</AlertDialogTitle>
-          <AlertDialogDescription>
-            Archive &ldquo;{role.name}&rdquo;? It will be removed from this Week and future planning, while other Weeks keep their existing Role Snapshot.
-          </AlertDialogDescription>
-          <div className="flex justify-end gap-2 mt-4">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteRole(role.id)}>
-              Archive
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+      <RoleContextMenuContent role={role} controller={menuController} />
+      <RoleArchiveDialog role={role} controller={menuController} />
     </ContextMenu>
   );
 }

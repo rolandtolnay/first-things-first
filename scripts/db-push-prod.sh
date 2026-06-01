@@ -52,7 +52,25 @@ printf '%s| First Things First: Prod DB Push |%s\n' "$BOLD" "$RESET"
 printf '%s+--------------------------------------+%s\n' "$BOLD" "$RESET"
 printf '%sDev is the default target. Prod requires password + confirmation.%s\n' "$DIM" "$RESET"
 
-section "1. Safety check"
+section "1. Artifact check"
+if [[ "${ALLOW_DIRTY_PROD_DB_PUSH:-}" != "1" ]]; then
+  artifact_status="$(git status --porcelain --untracked-files=all -- \
+    supabase/migrations \
+    src/lib/supabase/database.types.ts \
+    scripts/db-push-prod.sh)"
+  if [[ -n "$artifact_status" ]]; then
+    fail "Prod DB pushes must promote checked-in migration artifacts."
+    printf '  Commit or stash changes under supabase/migrations, generated DB types, and this script first.\n' >&2
+    print_output "$artifact_status" >&2
+    printf '  Exceptional override: %sALLOW_DIRTY_PROD_DB_PUSH=1 npm run db:push:prod%s\n' "$BOLD" "$RESET" >&2
+    exit 1
+  fi
+  ok "Migration artifacts are clean."
+else
+  warn "ALLOW_DIRTY_PROD_DB_PUSH=1 set; dirty migration artifact gate bypassed."
+fi
+
+section "2. Safety check"
 linked_ref="$(cat supabase/.temp/project-ref 2>/dev/null || true)"
 if [[ "$linked_ref" != "$DEV_REF" ]]; then
   fail "Supabase CLI must be linked to dev before prod migrations."
@@ -63,7 +81,7 @@ if [[ "$linked_ref" != "$DEV_REF" ]]; then
 fi
 ok "Supabase CLI is linked to dev ($DEV_REF)."
 
-section "2. Dev migration preflight"
+section "3. Dev migration preflight"
 info "Checking that dev has already received all local migrations..."
 dev_dry_run_output="$(supabase db push --linked --dry-run 2>&1)"
 print_output "$dev_dry_run_output"
@@ -75,7 +93,7 @@ if ! grep -q "Remote database is up to date" <<<"$dev_dry_run_output"; then
 fi
 ok "Dev is up to date."
 
-section "3. Prod credentials"
+section "4. Prod credentials"
 printf '%sProd Supabase DB password:%s ' "$BOLD" "$RESET"
 read -rs PROD_DB_PASSWORD
 echo
@@ -87,7 +105,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-section "4. Prod dry-run"
+section "5. Prod dry-run"
 info "No changes are applied in this step. Review the output before confirming."
 supabase db push --db-url "$PROD_DB_URL" --dry-run
 
@@ -100,14 +118,6 @@ case "$confirm" in
     exit 0
     ;;
 esac
-
-section "5. Read-only verification grants"
-info "Allowing ftf_prod_readonly to inspect Supabase migration history."
-supabase db query --db-url "$PROD_DB_URL" \
-  "grant usage on schema supabase_migrations to ftf_prod_readonly;" >/dev/null
-supabase db query --db-url "$PROD_DB_URL" \
-  "grant select on table supabase_migrations.schema_migrations to ftf_prod_readonly;" >/dev/null
-ok "Read-only migration metadata access is in place."
 
 section "6. Apply prod migrations"
 supabase db push --db-url "$PROD_DB_URL"

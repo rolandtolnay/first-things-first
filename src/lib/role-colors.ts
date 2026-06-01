@@ -10,17 +10,18 @@ import type { RoleColor } from "@/types";
 
 export const ROLE_COLOR_OPTIONS: readonly {
   value: RoleColor;
+  menuLabel: string;
   ariaLabel: string;
 }[] = [
-  { value: "teal", ariaLabel: "Coral role color" },
-  { value: "violet", ariaLabel: "Golden amber role color" },
-  { value: "orange", ariaLabel: "Fresh lime role color" },
-  { value: "sky", ariaLabel: "Emerald role color" },
-  { value: "rose", ariaLabel: "Turquoise role color" },
-  { value: "emerald", ariaLabel: "Sky blue role color" },
-  { value: "amber", ariaLabel: "Indigo role color" },
-  { value: "fuchsia", ariaLabel: "Orchid role color" },
-  { value: "blue", ariaLabel: "Rose role color" },
+  { value: "teal", menuLabel: "Coral", ariaLabel: "Coral role color" },
+  { value: "violet", menuLabel: "Golden amber", ariaLabel: "Golden amber role color" },
+  { value: "orange", menuLabel: "Fresh lime", ariaLabel: "Fresh lime role color" },
+  { value: "sky", menuLabel: "Emerald", ariaLabel: "Emerald role color" },
+  { value: "rose", menuLabel: "Turquoise", ariaLabel: "Turquoise role color" },
+  { value: "emerald", menuLabel: "Sky blue", ariaLabel: "Sky blue role color" },
+  { value: "amber", menuLabel: "Indigo", ariaLabel: "Indigo role color" },
+  { value: "fuchsia", menuLabel: "Orchid", ariaLabel: "Orchid role color" },
+  { value: "blue", menuLabel: "Rose", ariaLabel: "Rose role color" },
 ];
 
 /**

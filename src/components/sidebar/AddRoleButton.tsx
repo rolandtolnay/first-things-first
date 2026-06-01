@@ -34,7 +34,6 @@ export function AddRoleButton({
   const [archivedMatches, setArchivedMatches] = useState<Role[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const restoreStartedRef = useRef(false);
-  const blurSubmitTimerRef = useRef<number | null>(null);
 
   const previewColor = useMemo(() => getNextRoleColor(roles ?? []), [roles]);
 
@@ -69,14 +68,7 @@ export function AddRoleButton({
     };
   }, [isAdding, searchArchivedRoles, value]);
 
-  function clearBlurSubmitTimer() {
-    if (blurSubmitTimerRef.current === null) return;
-    window.clearTimeout(blurSubmitTimerRef.current);
-    blurSubmitTimerRef.current = null;
-  }
-
   function finish() {
-    clearBlurSubmitTimer();
     setValue("");
     setArchivedMatches([]);
     onDone();
@@ -91,6 +83,8 @@ export function AddRoleButton({
   }
 
   function handleRestore(role: Role) {
+    if (restoreStartedRef.current) return;
+
     restoreStartedRef.current = true;
     void restoreRole(role).finally(() => {
       restoreStartedRef.current = false;
@@ -101,11 +95,6 @@ export function AddRoleButton({
   function handleRestorePointerDown(event: React.PointerEvent<HTMLButtonElement>, role: Role) {
     // Restore must win the input blur race. Without doing the action on pointer
     // down, the input can blur first and create a new Role with the typed query.
-    event.preventDefault();
-    handleRestore(role);
-  }
-
-  function handleRestoreMouseDown(event: React.MouseEvent<HTMLButtonElement>, role: Role) {
     event.preventDefault();
     handleRestore(role);
   }
@@ -178,7 +167,6 @@ export function AddRoleButton({
                 type="button"
                 className="flex items-center gap-2 rounded-[6px] px-1.5 py-1 text-left text-[12px] text-foreground hover:bg-[var(--ds-hover-tint)]"
                 onPointerDown={(event) => handleRestorePointerDown(event, role)}
-                onMouseDown={(event) => handleRestoreMouseDown(event, role)}
                 onClick={() => handleRestore(role)}
               >
                 <span

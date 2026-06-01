@@ -72,27 +72,57 @@ export interface RoleReorderDragData {
  */
 export type DragData = GoalDragData | BlockDragData | PriorityDragData | EveningDragData;
 
+function isRecord(data: unknown): data is Record<string, unknown> {
+  return typeof data === "object" && data !== null;
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+function isOptionalString(value: unknown): value is string | undefined {
+  return value === undefined || isString(value);
+}
+
+function isDayOfWeek(value: unknown): value is DayOfWeek {
+  return Number.isInteger(value) && typeof value === "number" && value >= 0 && value <= 6;
+}
+
+function isTimeSlotIndex(value: unknown): value is TimeSlotIndex {
+  return Number.isInteger(value) && typeof value === "number" && value >= 0 && value <= 23;
+}
+
 export function isRoleReorderDragData(data: unknown): data is RoleReorderDragData {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "type" in data &&
-    data.type === "role-reorder" &&
-    "roleId" in data &&
-    typeof data.roleId === "string"
-  );
+  return isRecord(data) && data.type === "role-reorder" && isString(data.roleId);
 }
 
 export function isCalendarDragData(data: unknown): data is DragData {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "type" in data &&
-    (data.type === "goal" ||
-      data.type === "block" ||
-      data.type === "priority" ||
-      data.type === "evening")
-  );
+  if (!isRecord(data)) return false;
+
+  switch (data.type) {
+    case "goal":
+      return isString(data.goalId) && isString(data.roleId) && isString(data.text);
+    case "block":
+      return isString(data.blockId) && isDayOfWeek(data.sourceDay);
+    case "priority":
+      return (
+        isString(data.priorityId) &&
+        isString(data.goalId) &&
+        isString(data.roleId) &&
+        isString(data.text) &&
+        isDayOfWeek(data.sourceDayIndex)
+      );
+    case "evening":
+      return (
+        isString(data.eveningBlockId) &&
+        isOptionalString(data.goalId) &&
+        isOptionalString(data.roleId) &&
+        isString(data.title) &&
+        isDayOfWeek(data.sourceDayIndex)
+      );
+    default:
+      return false;
+  }
 }
 
 // ============================================================================
@@ -110,4 +140,18 @@ export interface DropZoneData {
   dayIndex: DayOfWeek;
   /** Slot index (only for timegrid zone) */
   slotIndex?: TimeSlotIndex;
+}
+
+export function isCalendarDropZoneData(data: unknown): data is DropZoneData {
+  if (!isRecord(data) || !isDayOfWeek(data.dayIndex)) return false;
+
+  switch (data.zone) {
+    case "priorities":
+    case "evening":
+      return data.slotIndex === undefined;
+    case "timegrid":
+      return isTimeSlotIndex(data.slotIndex);
+    default:
+      return false;
+  }
 }

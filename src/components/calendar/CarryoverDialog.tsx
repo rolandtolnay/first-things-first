@@ -23,7 +23,7 @@ import { Progress } from "@/components/ui/progress";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { TextActionButton } from "@/components/ui/TextActionButton";
 import { WeekSelector } from "./WeekSelector";
-import type { Goal, Week, WeekId } from "@/types";
+import type { Week, WeekId } from "@/types";
 
 interface CarryoverDialogProps {
   open: boolean;
@@ -45,6 +45,7 @@ export function CarryoverDialog({
   const createNewWeek = useWeekStore((s) => s.createNewWeek);
   const navigateToWeek = useWeekStore((s) => s.navigateToWeek);
   const existingWeekIds = useWeekStore((s) => s.availableWeekIds);
+  const activeRoles = useWeekStore((s) => s.activeRoles);
 
   const [targetWeekId, setTargetWeekId] = useState<WeekId>(getCurrentWeekId());
   const [dropdownWeekIds, setDropdownWeekIds] = useState<WeekId[]>([]);
@@ -65,6 +66,7 @@ export function CarryoverDialog({
       sourceWeek,
       viewedWeekId,
       existingWeekIds,
+      activeRoles,
     });
 
     setDropdownWeekIds(openingModel.dropdownWeekIds);
@@ -72,7 +74,7 @@ export function CarryoverDialog({
     setSelectedIds(new Set(openingModel.defaultSelectedGoalIds));
     setSubmitError(null);
     setIsSubmitting(false);
-  }, [open, sourceWeek, viewedWeekId, existingWeekIds]);
+  }, [open, sourceWeek, viewedWeekId, existingWeekIds, activeRoles]);
 
   const model = useMemo(
     () =>
@@ -81,8 +83,9 @@ export function CarryoverDialog({
         targetWeekId,
         existingWeekIds,
         selectedGoalIds: selectedIds,
+        activeRoles,
       }),
-    [sourceWeek, targetWeekId, existingWeekIds, selectedIds]
+    [sourceWeek, targetWeekId, existingWeekIds, selectedIds, activeRoles]
   );
 
   const sourceWeekLabel = sourceWeek
@@ -91,7 +94,7 @@ export function CarryoverDialog({
 
   const targetExplanation = model.isReplacingTargetWeek
     ? "Next week already has a plan. Continuing replaces its current roles, goals, and blocks."
-    : model.isCleanSlate
+    : !model.hasCarryableGoals
       ? "Creates next week with your roles carried over."
       : "Creates next week with your roles and the unfinished goals you pick below.";
 
@@ -130,10 +133,10 @@ export function CarryoverDialog({
         const unfinishedSelectedIds = new Set(
           model.unfinishedGoalIds.filter((id) => selectedIds.has(id))
         );
-        const carryOverGoals: Goal[] = sourceWeek.goals.filter((goal) =>
-          unfinishedSelectedIds.has(goal.id)
-        );
-        await createNewWeek(targetWeekId, { carryOverGoals, sourceWeek });
+        await createNewWeek(targetWeekId, {
+          sourceWeek,
+          carryOverGoalIds: [...unfinishedSelectedIds],
+        });
       } else {
         await createNewWeek(targetWeekId, { sourceWeek });
       }
@@ -146,7 +149,7 @@ export function CarryoverDialog({
     }
   }
 
-  const canCarryForward = !model.isCleanSlate && model.selectedCount > 0;
+  const canCarryForward = model.hasCarryableGoals && model.selectedCount > 0;
 
   return (
     <Dialog
@@ -226,7 +229,7 @@ export function CarryoverDialog({
           <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
             <SectionLabel
               action={
-                !model.isCleanSlate && (
+                model.hasCarryableGoals && (
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-[length:var(--text-label)] uppercase tracking-[0.12em] text-muted-foreground">
                       {model.selectedCount} selected
@@ -250,11 +253,16 @@ export function CarryoverDialog({
               Carry Forward
             </SectionLabel>
 
-            {model.isCleanSlate ? (
+            {!model.hasCarryableGoals ? (
               <div className="rounded-lg border border-[var(--ds-line-soft)] bg-[var(--ds-panel)] p-5 text-sm text-secondary-foreground">
-                <div className="mb-1 font-medium text-foreground">You finished everything this week.</div>
-                So next week starts fresh. Your roles carry over; day priorities, time blocks, and evening
-                blocks start empty.
+                <div className="mb-1 font-medium text-foreground">
+                  {model.isSourceComplete
+                    ? "You finished everything this week."
+                    : "No unfinished goals can be carried forward."}
+                </div>
+                {model.isSourceComplete
+                  ? "So next week starts fresh. Your roles carry over; day priorities, time blocks, and evening blocks start empty."
+                  : "Some goals are under archived roles, so next week starts fresh with your active roles only."}
               </div>
             ) : (
               <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-[var(--ds-line-soft)] bg-[var(--ds-panel)]">

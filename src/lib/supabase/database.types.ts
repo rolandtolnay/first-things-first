@@ -14,7 +14,7 @@ export type Database = {
           id: string;
           user_id: string;
           name: string;
-          color: string;
+          color: Database["public"]["Enums"]["role_color"];
           order_index: number;
           archived_at: string | null;
           created_at: string;
@@ -24,7 +24,7 @@ export type Database = {
           id?: string;
           user_id?: string;
           name: string;
-          color: string;
+          color: Database["public"]["Enums"]["role_color"];
           order_index: number;
           archived_at?: string | null;
           created_at?: string;
@@ -34,7 +34,7 @@ export type Database = {
           id?: string;
           user_id?: string;
           name?: string;
-          color?: string;
+          color?: Database["public"]["Enums"]["role_color"];
           order_index?: number;
           archived_at?: string | null;
           created_at?: string;
@@ -71,8 +71,24 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
+    Functions: {
+      reorder_roles: {
+        Args: { role_ids: string[] };
+        Returns: Database["public"]["Tables"]["roles"]["Row"][];
+      };
+    };
+    Enums: {
+      role_color:
+        | "teal"
+        | "amber"
+        | "rose"
+        | "violet"
+        | "emerald"
+        | "orange"
+        | "sky"
+        | "fuchsia"
+        | "blue";
+    };
     CompositeTypes: Record<string, never>;
   };
 };

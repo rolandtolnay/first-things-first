@@ -6,7 +6,7 @@ import {
   getWeekStartDate,
   parseWeekId,
 } from "@/lib/utils";
-import { seedRoleSnapshots } from "@/lib/role-snapshots";
+import { seedRoleSnapshots, snapshotFromRole } from "@/lib/role-snapshots";
 import type { Goal, Role, RoleSnapshot, Week, WeekId } from "@/types";
 
 export interface WeeklyHandoffModelInput {
@@ -14,6 +14,7 @@ export interface WeeklyHandoffModelInput {
   targetWeekId: WeekId;
   existingWeekIds: readonly WeekId[];
   selectedGoalIds: ReadonlySet<string>;
+  activeRoles: readonly Role[];
 }
 
 export interface WeeklyHandoffSummary {
@@ -34,7 +35,8 @@ export interface WeeklyHandoffModel {
   unfinishedGoalIds: string[];
   selectedCount: number;
   isReplacingTargetWeek: boolean;
-  isCleanSlate: boolean;
+  isSourceComplete: boolean;
+  hasCarryableGoals: boolean;
   primaryActionLabel: string;
 }
 
@@ -42,6 +44,7 @@ export interface WeeklyHandoffOpeningModelInput {
   sourceWeek: Week | null;
   viewedWeekId: WeekId;
   existingWeekIds: readonly WeekId[];
+  activeRoles: readonly Role[];
   currentWeekId?: WeekId;
   horizonWeeks?: number;
 }
@@ -60,10 +63,44 @@ export interface BuildWeekOptions {
 
 export interface BuildTargetWeekOptions {
   targetWeekId: WeekId;
-  activeRoles?: readonly Role[];
-  carryOverGoals?: readonly Goal[];
+  activeRoles: readonly Role[];
+  sourceWeek?: Week | null;
+  selectedGoalIds?: ReadonlySet<string>;
   now?: string;
   createId?: () => string;
+}
+
+function activeRoleIdsForCarryover(activeRoles: readonly Role[]): Set<string> {
+  return new Set(activeRoles.filter((role) => role.archivedAt === null).map((role) => role.id));
+}
+
+function seedTargetRoleSnapshots(
+  activeRoles: readonly Role[],
+  sourceWeek: Week | null | undefined,
+): RoleSnapshot[] {
+  const activeRoleById = new Map(
+    activeRoles
+      .filter((role) => role.archivedAt === null)
+      .map((role) => [role.id, role]),
+  );
+  const usedRoleIds = new Set<string>();
+  const sourceOrderedSnapshots = sourceWeek
+    ? [...sourceWeek.roles]
+        .sort((left, right) => left.order - right.order)
+        .flatMap((snapshot): RoleSnapshot[] => {
+          const activeRole = activeRoleById.get(snapshot.id);
+          if (!activeRole) return [];
+          usedRoleIds.add(activeRole.id);
+          return [snapshotFromRole(activeRole, usedRoleIds.size - 1)];
+        })
+    : [];
+  const missingActiveSnapshots = activeRoles
+    .filter((role) => role.archivedAt === null && !usedRoleIds.has(role.id))
+    .slice()
+    .sort((left, right) => left.order - right.order)
+    .map((role, index) => snapshotFromRole(role, sourceOrderedSnapshots.length + index));
+
+  return [...sourceOrderedSnapshots, ...missingActiveSnapshots];
 }
 
 function getPrimaryActionLabel({
@@ -111,7 +148,8 @@ export function buildEmptyWeek(options: BuildWeekOptions): Week {
 export function buildTargetWeek({
   targetWeekId,
   activeRoles,
-  carryOverGoals,
+  sourceWeek,
+  selectedGoalIds = new Set(),
   now,
   createId,
 }: BuildTargetWeekOptions): Week {
@@ -121,10 +159,11 @@ export function buildTargetWeek({
     activeRoles,
     now,
   });
+  week.roles = seedTargetRoleSnapshots(activeRoles, sourceWeek);
   const activeRoleIds = new Set(week.roles.map((role) => role.id));
 
-  week.goals = (carryOverGoals ?? []).flatMap((goal): Goal[] => {
-    if (!activeRoleIds.has(goal.roleId)) return [];
+  week.goals = (sourceWeek?.goals ?? []).flatMap((goal): Goal[] => {
+    if (goal.completed || !selectedGoalIds.has(goal.id) || !activeRoleIds.has(goal.roleId)) return [];
 
     return [{
       id: nextId(),
@@ -165,6 +204,7 @@ export function buildWeeklyHandoffOpeningModel({
   sourceWeek,
   viewedWeekId,
   existingWeekIds,
+  activeRoles,
   currentWeekId = getCurrentWeekId(),
   horizonWeeks = 11,
 }: WeeklyHandoffOpeningModelInput): WeeklyHandoffOpeningModel {
@@ -180,6 +220,7 @@ export function buildWeeklyHandoffOpeningModel({
     targetWeekId,
     existingWeekIds,
     selectedGoalIds: new Set(),
+    activeRoles,
   });
 
   return {
@@ -194,9 +235,12 @@ export function buildWeeklyHandoffModel({
   targetWeekId,
   existingWeekIds,
   selectedGoalIds,
+  activeRoles,
 }: WeeklyHandoffModelInput): WeeklyHandoffModel {
   const goals = sourceWeek?.goals ?? [];
   const unfinishedGoals = goals.filter((goal) => !goal.completed);
+  const activeRoleIds = activeRoleIdsForCarryover(activeRoles);
+  const carryableUnfinishedGoals = unfinishedGoals.filter((goal) => activeRoleIds.has(goal.roleId));
   const completedGoals = goals.length - unfinishedGoals.length;
   const totalGoals = goals.length;
   const unfinishedGoalGroups =
@@ -205,7 +249,7 @@ export function buildWeeklyHandoffModel({
           .sort((left, right) => left.order - right.order)
           .map((role) => ({
             role,
-            goals: unfinishedGoals.filter((goal) => goal.roleId === role.id),
+            goals: carryableUnfinishedGoals.filter((goal) => goal.roleId === role.id),
           }))
           .filter((group) => group.goals.length > 0)
       : [];
@@ -214,9 +258,10 @@ export function buildWeeklyHandoffModel({
   );
   const selectedCount = unfinishedGoalIds.filter((goalId) => selectedGoalIds.has(goalId)).length;
   const isReplacingTargetWeek = existingWeekIds.includes(targetWeekId);
-  const isCleanSlate = unfinishedGoalIds.length === 0;
+  const isSourceComplete = unfinishedGoals.length === 0;
+  const hasCarryableGoals = unfinishedGoalIds.length > 0;
   const primaryActionLabel = getPrimaryActionLabel({
-    isCleanSlate,
+    isCleanSlate: isSourceComplete,
     isReplacingTargetWeek,
     selectedCount,
   });
@@ -232,7 +277,8 @@ export function buildWeeklyHandoffModel({
     unfinishedGoalIds,
     selectedCount,
     isReplacingTargetWeek,
-    isCleanSlate,
+    isSourceComplete,
+    hasCarryableGoals,
     primaryActionLabel,
   };
 }

@@ -51,7 +51,7 @@ A Time Block or Evening Block with no linked Goal (`type: "freestyle"`, no `goal
 _Avoid_: free block, manual block, custom block.
 
 **Import Metadata**:
-Source calendar details preserved on an imported Freestyle Day Priority or Freestyle Block that are not part of the planner’s visible text/time fields.
+Calendar-event provenance and useful event details preserved on an imported Freestyle Day Priority or Freestyle Block that are not part of the planner’s visible text/time fields.
 _Avoid_: sync state, provider cache, hidden event.
 
 **Source Week**:
@@ -131,6 +131,7 @@ _Avoid_: primary color palette, highlight color.
 - A **Day Priority** may be linked to one **Goal** or may be a **Freestyle Day Priority**; each instance has completion independent from the Goal and from other instances.
 - A **Time Block** or **Evening Block** may reference one **Goal**; each instance has completion independent from the Goal and from other instances.
 - A **Time Block** occupies one or more contiguous **Slots** on exactly one **Day**.
+- A **Day** cannot have overlapping **Time Blocks** on the same **Slots**.
 - A **Day** has at most one **Evening Block**.
 - A **Freestyle Block** has no **Goal** and is not assigned to a **Role**.
 - **Import Metadata** belongs only to imported **Freestyle Day Priorities** and imported **Freestyle Blocks**.

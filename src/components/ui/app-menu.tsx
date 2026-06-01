@@ -27,42 +27,33 @@ type AppMenuKind = "dropdown" | "context";
 type DropdownContentProps = ComponentProps<typeof DropdownMenuContent>;
 type ContextContentProps = ComponentProps<typeof ContextMenuContent>;
 type DropdownItemProps = ComponentProps<typeof DropdownMenuItem>;
-type ContextItemProps = ComponentProps<typeof ContextMenuItem>;
-type DropdownSubTriggerProps = ComponentProps<typeof DropdownMenuSubTrigger>;
-type ContextSubTriggerProps = ComponentProps<typeof ContextMenuSubTrigger>;
-type DropdownSubContentProps = ComponentProps<typeof DropdownMenuSubContent>;
-type ContextSubContentProps = ComponentProps<typeof ContextMenuSubContent>;
 
 type AppMenuItemVariant = "default" | "destructive";
 
 type AppMenuItemBaseProps = {
-  icon: ComponentType<{ className?: string }>;
+  icon?: ComponentType<{ className?: string }>;
+  leading?: ReactNode;
   children: ReactNode;
   variant?: AppMenuItemVariant;
   disabled?: boolean;
   className?: string;
 };
 
-type AppMenuActionItemProps = AppMenuItemBaseProps &
-  Omit<DropdownItemProps, "children" | "className" | "disabled" | "variant" | "inset"> &
-  Omit<ContextItemProps, "children" | "className" | "disabled" | "variant" | "inset"> & {
-    kind?: "item";
-  };
+type AppMenuActionItemProps = AppMenuItemBaseProps & {
+  kind?: "item";
+  onSelect?: DropdownItemProps["onSelect"];
+};
 
-type AppMenuSubTriggerItemProps = AppMenuItemBaseProps &
-  Omit<DropdownSubTriggerProps, "children" | "className" | "disabled" | "inset" | "onSelect"> &
-  Omit<ContextSubTriggerProps, "children" | "className" | "disabled" | "inset" | "onSelect"> & {
-    kind: "subTrigger";
-    onSelect?: never;
-  };
+type AppMenuSubTriggerItemProps = AppMenuItemBaseProps & {
+  kind: "subTrigger";
+};
 
 type AppMenuItemProps = AppMenuActionItemProps | AppMenuSubTriggerItemProps;
 
 type AppMenuSubContentProps = {
   children: ReactNode;
   className?: string;
-} & Omit<DropdownSubContentProps, "children" | "className"> &
-  Omit<ContextSubContentProps, "children" | "className">;
+};
 
 const AppMenuContentContext = createContext<AppMenuKind | null>(null);
 
@@ -92,30 +83,17 @@ function getAppMenuRowClass(variant: AppMenuItemVariant, className?: string) {
 
 function AppMenuItemContent({
   icon: Icon,
+  leading,
   children,
-}: Pick<AppMenuItemBaseProps, "icon" | "children">) {
+}: Pick<AppMenuItemBaseProps, "icon" | "leading" | "children">) {
   return (
     <>
       <span className="flex size-5 shrink-0 items-center justify-center" aria-hidden="true">
-        <Icon className="size-4" />
+        {leading ?? (Icon ? <Icon className="size-4" /> : null)}
       </span>
       <span className="min-w-0 flex-1 text-left">{children}</span>
     </>
   );
-}
-
-function getPrimitiveProps<T extends AppMenuItemProps>(props: T) {
-  const primitiveProps = { ...props };
-  const appProps = primitiveProps as Partial<AppMenuItemBaseProps & { kind: AppMenuItemProps["kind"] }>;
-
-  delete appProps.icon;
-  delete appProps.children;
-  delete appProps.kind;
-  delete appProps.variant;
-  delete appProps.disabled;
-  delete appProps.className;
-
-  return primitiveProps as Omit<T, keyof AppMenuItemBaseProps | "kind">;
 }
 
 export function AppDropdownMenuContent({
@@ -148,61 +126,44 @@ export function AppMenuItem(props: AppMenuItemProps): React.JSX.Element {
   const menuKind = useAppMenuKind("AppMenuItem");
   const {
     icon,
+    leading,
     children,
     variant = "default",
     disabled,
     className,
   } = props;
   const rowClassName = getAppMenuRowClass(variant, className);
-  const content = <AppMenuItemContent icon={icon}>{children}</AppMenuItemContent>;
+  const content = <AppMenuItemContent icon={icon} leading={leading}>{children}</AppMenuItemContent>;
 
   if (props.kind === "subTrigger") {
-    const subTriggerProps = getPrimitiveProps(props);
-
-    if (menuKind === "dropdown") {
-      return (
-        <DropdownMenuSubTrigger
-          disabled={disabled}
-          className={rowClassName}
-          {...subTriggerProps}
-        >
-          {content}
-        </DropdownMenuSubTrigger>
-      );
-    }
-
-    return (
-      <ContextMenuSubTrigger
-        disabled={disabled}
-        className={rowClassName}
-        {...subTriggerProps}
-      >
+    return menuKind === "dropdown" ? (
+      <DropdownMenuSubTrigger disabled={disabled} className={rowClassName}>
+        {content}
+      </DropdownMenuSubTrigger>
+    ) : (
+      <ContextMenuSubTrigger disabled={disabled} className={rowClassName}>
         {content}
       </ContextMenuSubTrigger>
     );
   }
 
-  const itemProps = getPrimitiveProps(props);
+  const { onSelect } = props;
 
-  if (menuKind === "dropdown") {
-    return (
-      <DropdownMenuItem
-        variant={variant}
-        disabled={disabled}
-        className={rowClassName}
-        {...itemProps}
-      >
-        {content}
-      </DropdownMenuItem>
-    );
-  }
-
-  return (
+  return menuKind === "dropdown" ? (
+    <DropdownMenuItem
+      variant={variant}
+      disabled={disabled}
+      className={rowClassName}
+      onSelect={onSelect}
+    >
+      {content}
+    </DropdownMenuItem>
+  ) : (
     <ContextMenuItem
       variant={variant}
       disabled={disabled}
       className={rowClassName}
-      {...itemProps}
+      onSelect={onSelect}
     >
       {content}
     </ContextMenuItem>
@@ -222,14 +183,13 @@ export function AppMenuSub({ children }: { children: ReactNode }): React.JSX.Ele
 export function AppMenuSubContent({
   children,
   className,
-  ...props
 }: AppMenuSubContentProps): React.JSX.Element {
   const menuKind = useAppMenuKind("AppMenuSubContent");
   const subContentClassName = cn(appMenuSubContentClass, className);
 
   return menuKind === "dropdown" ? (
-    <DropdownMenuSubContent className={subContentClassName} {...props}>{children}</DropdownMenuSubContent>
+    <DropdownMenuSubContent className={subContentClassName}>{children}</DropdownMenuSubContent>
   ) : (
-    <ContextMenuSubContent className={subContentClassName} {...props}>{children}</ContextMenuSubContent>
+    <ContextMenuSubContent className={subContentClassName}>{children}</ContextMenuSubContent>
   );
 }

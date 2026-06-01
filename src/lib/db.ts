@@ -13,7 +13,14 @@
  */
 
 import { createClient } from "@/lib/supabase/client";
-import { rowToRole } from "@/lib/role-mapping";
+import {
+  roleArchiveUpdate,
+  roleDefaultUpdatesToRow,
+  roleDefaultsToInsert,
+  roleRestoreUpdate,
+  rowToRole,
+  type RoleDefaultUpdates,
+} from "@/lib/role-mapping";
 import { rowToWeek, weekToRow } from "@/lib/week-mapping";
 import type { Role, RoleColor, Week, WeekId } from "@/types";
 
@@ -142,18 +149,9 @@ export async function createRole(
   options: DbRequestOptions = {},
 ): Promise<Role> {
   const userId = await currentUserId();
-  const now = new Date().toISOString();
   const baseQuery = client()
     .from(ROLES_TABLE)
-    .insert({
-      user_id: userId,
-      name: input.name,
-      color: input.color,
-      order_index: input.order,
-      archived_at: null,
-      created_at: now,
-      updated_at: now,
-    });
+    .insert(roleDefaultsToInsert(input, userId));
   const query = options.signal ? baseQuery.abortSignal(options.signal) : baseQuery;
 
   const { data, error } = await query.select("*").single();
@@ -163,18 +161,12 @@ export async function createRole(
 
 export async function updateRoleDefaults(
   roleId: string,
-  updates: Partial<Pick<Role, "name" | "color" | "order">>,
+  updates: RoleDefaultUpdates,
   options: DbRequestOptions = {},
 ): Promise<Role> {
-  const payload = {
-    ...(updates.name !== undefined ? { name: updates.name } : {}),
-    ...(updates.color !== undefined ? { color: updates.color } : {}),
-    ...(updates.order !== undefined ? { order_index: updates.order } : {}),
-    updated_at: new Date().toISOString(),
-  };
   const baseQuery = client()
     .from(ROLES_TABLE)
-    .update(payload)
+    .update(roleDefaultUpdatesToRow(updates))
     .eq("id", roleId);
   const query = options.signal ? baseQuery.abortSignal(options.signal) : baseQuery;
 
@@ -187,10 +179,9 @@ export async function archiveRole(
   roleId: string,
   options: DbRequestOptions = {},
 ): Promise<Role> {
-  const now = new Date().toISOString();
   const baseQuery = client()
     .from(ROLES_TABLE)
-    .update({ archived_at: now, updated_at: now })
+    .update(roleArchiveUpdate())
     .eq("id", roleId);
   const query = options.signal ? baseQuery.abortSignal(options.signal) : baseQuery;
 
@@ -206,12 +197,7 @@ export async function restoreRole(
 ): Promise<Role> {
   const baseQuery = client()
     .from(ROLES_TABLE)
-    .update({
-      name: updates.name,
-      order_index: updates.order,
-      archived_at: null,
-      updated_at: new Date().toISOString(),
-    })
+    .update(roleRestoreUpdate(updates))
     .eq("id", roleId);
   const query = options.signal ? baseQuery.abortSignal(options.signal) : baseQuery;
 
@@ -224,11 +210,10 @@ export async function persistRoleOrder(
   roleIds: readonly string[],
   options: DbRequestOptions = {},
 ): Promise<Role[]> {
-  const updatedRoles: Role[] = [];
+  const baseQuery = client().rpc("reorder_roles", { role_ids: [...roleIds] });
+  const query = options.signal ? baseQuery.abortSignal(options.signal) : baseQuery;
 
-  for (const [order, roleId] of roleIds.entries()) {
-    updatedRoles.push(await updateRoleDefaults(roleId, { order }, options));
-  }
-
-  return updatedRoles.sort((left, right) => left.order - right.order);
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []).map(rowToRole).sort((left, right) => left.order - right.order);
 }

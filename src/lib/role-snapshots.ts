@@ -18,6 +18,8 @@ export function seedRoleSnapshots(activeRoles: readonly Role[]): RoleSnapshot[] 
 }
 
 export function appendRoleSnapshot(week: Week, role: Role): Week {
+  if (week.roles.some((snapshot) => snapshot.id === role.id)) return week;
+
   const maxOrder = week.roles.reduce((max, snapshot) => Math.max(max, snapshot.order), -1);
   return {
     ...week,

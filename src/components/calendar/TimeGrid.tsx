@@ -12,7 +12,7 @@
 import { useMemo } from "react";
 import { useDndContext } from "@dnd-kit/core";
 import type { TimeSlotIndex, DayOfWeek } from "@/types";
-import { isCalendarDragData, type DropZoneData } from "@/types/dnd";
+import { isCalendarDragData, isCalendarDropZoneData } from "@/types/dnd";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockDraw } from "@/hooks/useBlockDraw";
 import { TOTAL_SLOTS, TIME_GRID_HEIGHT, slotToPixels, durationToPixels } from "@/lib/time-model";
@@ -46,9 +46,12 @@ export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
     const dragData = active?.data.current;
     if (!isCalendarDragData(dragData)) return null;
 
+    const dropData = over?.data.current;
+    if (!isCalendarDropZoneData(dropData)) return null;
+
     return resolveTimeGridDropPreview(
       dragData,
-      over?.data.current as DropZoneData | undefined,
+      dropData,
       dayIndex,
       { timeBlocks: timeBlocks ?? [], roles: roles ?? [] }
     );

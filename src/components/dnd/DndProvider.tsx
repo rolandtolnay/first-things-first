@@ -34,7 +34,12 @@ import {
   rectIntersection,
   type CollisionDetection,
 } from "@dnd-kit/core";
-import { isRoleReorderDragData, type DragData, type DropZoneData } from "@/types/dnd";
+import {
+  isCalendarDragData,
+  isCalendarDropZoneData,
+  isRoleReorderDragData,
+  type DragData,
+} from "@/types/dnd";
 import { useWeekStore } from "@/stores/weekStore";
 import { resolveDrop, dispatchDropIntent } from "@/lib/drop-routing";
 import { DragOverlayContent } from "./DragOverlayContent";
@@ -79,21 +84,37 @@ export function DndProvider({ children }: DndProviderProps) {
   );
 
   const collisionDetection = useCallback<CollisionDetection>((args) => {
-    return isRoleReorderDragData(args.active.data.current)
-      ? closestCenter(args)
-      : rectIntersection(args);
+    if (isRoleReorderDragData(args.active.data.current)) {
+      return closestCenter({
+        ...args,
+        droppableContainers: args.droppableContainers.filter((container) =>
+          isRoleReorderDragData(container.data.current)
+        ),
+      });
+    }
+
+    if (isCalendarDragData(args.active.data.current)) {
+      return rectIntersection({
+        ...args,
+        droppableContainers: args.droppableContainers.filter((container) =>
+          isCalendarDropZoneData(container.data.current)
+        ),
+      });
+    }
+
+    return [];
   }, []);
 
   // Handle drag start - capture active item data and source dimensions
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    if (isRoleReorderDragData(event.active.data.current)) {
+    const data = event.active.data.current;
+    if (!isCalendarDragData(data)) {
       setActiveType(null);
       setActiveData(null);
       setActiveRect(null);
       return;
     }
 
-    const data = event.active.data.current as DragData;
     setActiveType(data.type);
     setActiveData(data);
 
@@ -124,15 +145,16 @@ export function DndProvider({ children }: DndProviderProps) {
       setActiveData(null);
       setActiveRect(null);
 
-      if (isRoleReorderDragData(active.data.current)) return;
+      const dragData = active.data.current;
+      if (!isCalendarDragData(dragData)) return;
 
       // No valid drop target
-      if (!over) return;
+      if (!over || !isCalendarDropZoneData(over.data.current)) return;
 
       const week = useWeekStore.getState().currentWeek;
       const intent = resolveDrop(
-        active.data.current as DragData,
-        over.data.current as DropZoneData,
+        dragData,
+        over.data.current,
         {
           dayPriorities: week?.dayPriorities ?? [],
           eveningBlocks: week?.eveningBlocks ?? [],

@@ -48,7 +48,7 @@ export function DayPriorities({ dayIndex }: DayPrioritiesProps) {
     data: dropData,
   });
 
-  // Show dashed border only for calendar-routable drags, not Sidebar Role sorting.
+  // Show dashed border only for calendar-routable drags.
   const { active } = useDndContext();
   const isCalendarDragging = isCalendarDragData(active?.data.current);
   const isEmpty = priorities.length === 0;

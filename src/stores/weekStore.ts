@@ -51,9 +51,7 @@ import type {
   CreateEveningBlockInput,
 } from "@/types";
 
-// ============================================================================
 // Store Types
-// ============================================================================
 
 interface WeekStore {
   // Current week state
@@ -81,14 +79,14 @@ interface WeekStore {
   createWeek: (weekId: WeekId) => Promise<Week>;
   createNewWeek: (
     weekId: WeekId,
-    options: { carryOverGoals?: Goal[]; sourceWeek?: Week }
+    options: { sourceWeek: Week; carryOverGoalIds?: string[] }
   ) => Promise<Week>;
   saveCurrentWeek: () => Promise<void>;
   clearCurrentWeek: () => Promise<void>;
 
   // Role operations
   addRole: (input: CreateRoleInput) => Promise<Role>;
-  updateRole: (roleId: string, updates: Partial<Pick<Role, "name" | "color" | "order">>) => Promise<void>;
+  updateRole: (roleId: string, updates: Partial<Pick<Role, "name" | "color">>) => Promise<void>;
   deleteRole: (roleId: string) => Promise<void>;
   reorderRoles: (roleIds: string[]) => Promise<void>;
   searchArchivedRoles: (query: string) => Promise<Role[]>;
@@ -118,11 +116,9 @@ interface WeekStore {
   deleteEveningBlock: (blockId: string) => Promise<void>;
   toggleEveningBlockCompleted: (blockId: string) => Promise<void>;
 
-  // -------------------------------------------------------------------------
   // Scheduling operations (placement-aware; route through @/lib/scheduling).
   // Each decides via the pure layer, then mutates via withWeek so persistence
   // semantics match existing CRUD. Rejection is silent: return null, never throw.
-  // -------------------------------------------------------------------------
 
   // Same-zone
   placeTimeBlockAt: (
@@ -144,9 +140,7 @@ interface WeekStore {
   moveEveningToDay: (eveningBlockId: string, dayIndex: DayOfWeek) => Promise<EveningBlock | null>;
 }
 
-// ============================================================================
 // Helper: Update Week Pattern
-// ============================================================================
 
 type StoreGet = () => WeekStore;
 type StoreSet = (partial: Partial<WeekStore>) => void;
@@ -198,6 +192,28 @@ function hasActiveRoleNameConflict(roles: readonly Role[], name: string, exceptR
   return roles.some((role) => role.id !== exceptRoleId && normalizedRoleName(role.name) === normalized);
 }
 
+function isCompleteActiveRoleOrder(roleIds: readonly string[], activeRoles: readonly Role[]): boolean {
+  const activeIds = new Set(activeRoles.map((role) => role.id));
+  const requestedIds = new Set(roleIds);
+  return (
+    roleIds.length === activeRoles.length &&
+    requestedIds.size === roleIds.length &&
+    roleIds.every((roleId) => activeIds.has(roleId))
+  );
+}
+
+function beginRoleMutation(get: StoreGet): { week: Week; weekId: WeekId; epoch: ReturnType<typeof weekPersistence.epoch> } {
+  const week = get().currentWeek;
+  if (!week) throw new Error("No week loaded");
+  return { week, weekId: week.id, epoch: weekPersistence.epoch() };
+}
+
+function latestRoleMutationWeek(get: StoreGet, weekId: WeekId, epoch: ReturnType<typeof weekPersistence.epoch>): Week | null {
+  if (!weekPersistence.isCurrent(epoch) || get().selectedWeekId !== weekId) return null;
+  const week = get().currentWeek;
+  return week?.id === weekId ? week : null;
+}
+
 function roleErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Failed to save role changes";
 }
@@ -242,9 +258,7 @@ async function persistCreatedWeek(
   }
 }
 
-// ============================================================================
 // Week Store Implementation
-// ============================================================================
 
 export const useWeekStore = create<WeekStore>((set, get) => ({
   // Initial state
@@ -255,9 +269,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   isLoading: false,
   error: null,
 
-  // -------------------------------------------------------------------------
   // Session Lifecycle (driven by AuthProvider)
-  // -------------------------------------------------------------------------
 
   bootstrap: async () => {
     const epoch = weekPersistence.epoch();
@@ -326,9 +338,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
 
   clearError: () => set({ error: null }),
 
-  // -------------------------------------------------------------------------
   // Week Operations
-  // -------------------------------------------------------------------------
 
   loadWeek: async (weekId: WeekId) => {
     const epoch = weekPersistence.epoch();
@@ -363,12 +373,13 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
 
   createNewWeek: async (
     weekId: WeekId,
-    options: { carryOverGoals?: Goal[]; sourceWeek?: Week }
+    options: { sourceWeek: Week; carryOverGoalIds?: string[] }
   ) => {
     const week = buildTargetWeek({
       targetWeekId: weekId,
       activeRoles: get().activeRoles,
-      carryOverGoals: options.carryOverGoals,
+      sourceWeek: options.sourceWeek,
+      selectedGoalIds: new Set(options.carryOverGoalIds ?? []),
     });
 
     await persistCreatedWeek(get, set, week);
@@ -392,13 +403,10 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     }));
   },
 
-  // -------------------------------------------------------------------------
   // Role Operations
-  // -------------------------------------------------------------------------
 
   addRole: async (input: CreateRoleInput) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
+    const { weekId, epoch } = beginRoleMutation(get);
 
     const name = input.name.trim();
     if (!name) throw new Error("Role name is required");
@@ -408,32 +416,33 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
       throw new Error(message);
     }
 
-    const maxOrder = Math.max(
-      get().activeRoles.reduce((max, role) => Math.max(max, role.order), -1),
-      week.roles.reduce((max, snapshot) => Math.max(max, snapshot.order), -1),
-    );
+    const maxOrder = get().activeRoles.reduce((max, role) => Math.max(max, role.order), -1);
 
     let role: Role;
     try {
       role = await createRole({
         name,
-        color: getNextRoleColor(week.roles),
+        color: getNextRoleColor(get().activeRoles),
         order: maxOrder + 1,
-      });
+      }, { signal: epoch.signal });
     } catch (error) {
       const message = roleErrorMessage(error);
       set({ error: message });
       throw error;
     }
 
-    set({ activeRoles: [...get().activeRoles, role].sort((left, right) => left.order - right.order) });
-    await commitWeek(get, set, appendRoleSnapshot(week, role));
+    if (weekPersistence.isCurrent(epoch)) {
+      set({ activeRoles: [...get().activeRoles, role].sort((left, right) => left.order - right.order) });
+    }
+
+    const latestWeek = latestRoleMutationWeek(get, weekId, epoch);
+    if (!latestWeek) return role;
+    await commitWeek(get, set, appendRoleSnapshot(latestWeek, role));
     return role;
   },
 
-  updateRole: async (roleId: string, updates: Partial<Pick<Role, "name" | "color" | "order">>) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
+  updateRole: async (roleId: string, updates: Partial<Pick<Role, "name" | "color">>) => {
+    const { weekId, epoch } = beginRoleMutation(get);
 
     const normalizedUpdates = {
       ...updates,
@@ -450,55 +459,71 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
 
     let updatedRole: Role;
     try {
-      updatedRole = await updateRoleDefaults(roleId, normalizedUpdates);
+      updatedRole = await updateRoleDefaults(roleId, normalizedUpdates, { signal: epoch.signal });
     } catch (error) {
       const message = roleErrorMessage(error);
       set({ error: message });
       throw error;
     }
 
-    set({
-      activeRoles: get().activeRoles
-        .map((role) => (role.id === roleId ? updatedRole : role))
-        .sort((left, right) => left.order - right.order),
-    });
-    await commitWeek(get, set, updateRoleSnapshot(week, roleId, normalizedUpdates));
+    if (weekPersistence.isCurrent(epoch)) {
+      set({
+        activeRoles: get().activeRoles
+          .map((role) => (role.id === roleId ? updatedRole : role))
+          .sort((left, right) => left.order - right.order),
+      });
+    }
+
+    const latestWeek = latestRoleMutationWeek(get, weekId, epoch);
+    if (!latestWeek) return;
+    await commitWeek(get, set, updateRoleSnapshot(latestWeek, roleId, normalizedUpdates));
   },
 
   deleteRole: async (roleId: string) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
+    const { weekId, epoch } = beginRoleMutation(get);
 
     try {
-      await archiveRole(roleId);
+      await archiveRole(roleId, { signal: epoch.signal });
     } catch (error) {
       const message = roleErrorMessage(error);
       set({ error: message });
       throw error;
     }
 
-    set({ activeRoles: get().activeRoles.filter((role) => role.id !== roleId) });
-    await commitWeek(get, set, removeRoleSnapshotCascade(week, roleId));
+    if (weekPersistence.isCurrent(epoch)) {
+      set({ activeRoles: get().activeRoles.filter((role) => role.id !== roleId) });
+    }
+
+    const latestWeek = latestRoleMutationWeek(get, weekId, epoch);
+    if (!latestWeek) return;
+    await commitWeek(get, set, removeRoleSnapshotCascade(latestWeek, roleId));
   },
 
   reorderRoles: async (roleIds: string[]) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
+    const { week, weekId, epoch } = beginRoleMutation(get);
 
     const reorderedWeek = reorderRoleSnapshots(week, roleIds);
     if (reorderedWeek === week) return;
+    const shouldPersistDurableOrder = isCompleteActiveRoleOrder(roleIds, get().activeRoles);
 
-    let orderedRoles: Role[];
+    let orderedRoles: Role[] | null = null;
     try {
-      orderedRoles = await persistRoleOrder(roleIds);
+      orderedRoles = shouldPersistDurableOrder
+        ? await persistRoleOrder(roleIds, { signal: epoch.signal })
+        : null;
     } catch (error) {
       const message = roleErrorMessage(error);
       set({ error: message });
       throw error;
     }
 
-    set({ activeRoles: orderedRoles });
-    await commitWeek(get, set, reorderedWeek);
+    if (orderedRoles && weekPersistence.isCurrent(epoch)) set({ activeRoles: orderedRoles });
+
+    const latestWeek = latestRoleMutationWeek(get, weekId, epoch);
+    if (!latestWeek) return;
+    const latestReorderedWeek = reorderRoleSnapshots(latestWeek, roleIds);
+    if (latestReorderedWeek === latestWeek) return;
+    await commitWeek(get, set, latestReorderedWeek);
   },
 
   searchArchivedRoles: async (query: string) => {
@@ -511,35 +536,38 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   restoreRole: async (archivedRole: Role) => {
-    const week = get().currentWeek;
-    if (!week) throw new Error("No week loaded");
+    const { weekId, epoch } = beginRoleMutation(get);
 
     const activeMatch = get().activeRoles.find((role) => role.id === archivedRole.id);
     if (activeMatch) return activeMatch;
 
-    const maxOrder = Math.max(
-      get().activeRoles.reduce((max, role) => Math.max(max, role.order), -1),
-      week.roles.reduce((max, snapshot) => Math.max(max, snapshot.order), -1),
-    );
+    const maxOrder = get().activeRoles.reduce((max, role) => Math.max(max, role.order), -1);
     const restoredName = resolveRestoredRoleName(get().activeRoles, archivedRole);
 
     let restoredRole: Role;
     try {
-      restoredRole = await restoreDurableRole(archivedRole.id, { name: restoredName, order: maxOrder + 1 });
+      restoredRole = await restoreDurableRole(
+        archivedRole.id,
+        { name: restoredName, order: maxOrder + 1 },
+        { signal: epoch.signal },
+      );
     } catch (error) {
       const message = roleErrorMessage(error);
       set({ error: message });
       throw error;
     }
 
-    set({ activeRoles: [...get().activeRoles, restoredRole].sort((left, right) => left.order - right.order) });
-    await commitWeek(get, set, appendRoleSnapshot(week, restoredRole));
+    if (weekPersistence.isCurrent(epoch)) {
+      set({ activeRoles: [...get().activeRoles, restoredRole].sort((left, right) => left.order - right.order) });
+    }
+
+    const latestWeek = latestRoleMutationWeek(get, weekId, epoch);
+    if (!latestWeek) return restoredRole;
+    await commitWeek(get, set, appendRoleSnapshot(latestWeek, restoredRole));
     return restoredRole;
   },
 
-  // -------------------------------------------------------------------------
   // Goal Operations
-  // -------------------------------------------------------------------------
 
   addGoal: async (input: CreateGoalInput) => {
     const week = get().currentWeek;
@@ -578,9 +606,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     }));
   },
 
-  // -------------------------------------------------------------------------
   // Day Priority Operations
-  // -------------------------------------------------------------------------
 
   addDayPriority: async (input: CreateDayPriorityInput) => {
     const week = get().currentWeek;
@@ -623,9 +649,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     }));
   },
 
-  // -------------------------------------------------------------------------
   // Time Block Operations
-  // -------------------------------------------------------------------------
 
   addTimeBlock: async (input: CreateTimeBlockInput) => {
     const week = get().currentWeek;
@@ -658,9 +682,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     }));
   },
 
-  // -------------------------------------------------------------------------
   // Evening Block Operations
-  // -------------------------------------------------------------------------
 
   addEveningBlock: async (input: CreateEveningBlockInput) => {
     const week = get().currentWeek;
@@ -702,9 +724,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     }));
   },
 
-  // -------------------------------------------------------------------------
   // Scheduling Operations (placement-aware)
-  // -------------------------------------------------------------------------
 
   placeTimeBlockAt: async (input, startSlot, requested) => {
     const week = get().currentWeek;
@@ -967,9 +987,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 }));
 
-// ============================================================================
 // Selector Hooks (for performance optimization)
-// ============================================================================
 
 /**
  * Get evening block for a specific day (max 1 per day).
