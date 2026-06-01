@@ -113,7 +113,7 @@ describe("buildEmptyWeek", () => {
         role({ id: "old-health", name: "Health", color: "rose", order: 2 }),
       ],
       now: "2026-03-08T10:00:00.000Z",
-      createId: idSequence("new-work", "new-health"),
+      createId: idSequence("new-health", "new-work"),
     });
 
     expect(target).toMatchObject({
@@ -127,8 +127,8 @@ describe("buildEmptyWeek", () => {
       updatedAt: "2026-03-08T10:00:00.000Z",
     });
     expect(target.roles).toEqual([
-      { id: "new-work", name: "Work", color: "teal", order: 0 },
-      { id: "new-health", name: "Health", color: "rose", order: 1 },
+      { id: "new-health", name: "Health", color: "rose", order: 0 },
+      { id: "new-work", name: "Work", color: "teal", order: 1 },
     ]);
   });
 });
@@ -137,8 +137,8 @@ describe("buildTargetWeek", () => {
   it("carries Roles and selected Goals through an explicit source-role-id map", () => {
     const sourceWeek = week({
       roles: [
-        role({ id: "work-a", name: "Work", color: "teal", order: 0 }),
-        role({ id: "work-b", name: "Work", color: "amber", order: 1 }),
+        role({ id: "work-a", name: "Work", color: "teal", order: 1 }),
+        role({ id: "work-b", name: "Work", color: "amber", order: 0 }),
       ],
     });
 
@@ -150,10 +150,13 @@ describe("buildTargetWeek", () => {
         goal({ id: "budget", roleId: "work-b", text: "Budget", completed: false }),
       ],
       now: "2026-03-08T10:00:00.000Z",
-      createId: idSequence("new-work-a", "new-work-b", "new-ship", "new-budget"),
+      createId: idSequence("new-work-b", "new-work-a", "new-ship", "new-budget"),
     });
 
-    expect(target.roles.map((targetRole) => targetRole.name)).toEqual(["Work", "Work"]);
+    expect(target.roles).toEqual([
+      { id: "new-work-b", name: "Work", color: "amber", order: 0 },
+      { id: "new-work-a", name: "Work", color: "teal", order: 1 },
+    ]);
     expect(target.goals).toEqual([
       {
         id: "new-ship",

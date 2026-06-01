@@ -108,6 +108,7 @@ _Avoid_: primary color palette, highlight color.
 
 - A **User** owns many **Weeks**; a **Week** belongs to exactly one **User**.
 - A **Week** contains seven **Days**, many **Roles**, many **Goals**, many **Day Priorities**, many **Time Blocks**, and up to seven **Evening Blocks**.
+- **Roles** have user-controlled order within each **Week**; **Weekly Handoff** carries that order into newly created or replaced **Target Week** snapshots.
 - A **Goal** belongs to exactly one **Role**.
 - A **Day Priority**, **Time Block**, or **Evening Block** may reference one **Goal**; each instance has completion independent from the Goal and from other instances.
 - A **Time Block** occupies one or more contiguous **Slots** on exactly one **Day**.

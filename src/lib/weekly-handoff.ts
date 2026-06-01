@@ -92,18 +92,19 @@ function buildWeekShell({
 }: BuildWeekOptions): { week: Week; roleIdMap: Map<string, string> } {
   const monday = parseWeekId(weekId);
   const roleIdMap = new Map<string, string>();
-  const roles: Role[] = carryOverRoles
-    ? carryOverRoles.map((role, index) => {
-        const clonedRole = {
-          id: createId(),
-          name: role.name,
-          color: role.color,
-          order: index,
-        } satisfies Role;
-        roleIdMap.set(role.id, clonedRole.id);
-        return clonedRole;
-      })
+  const orderedCarryOverRoles = carryOverRoles
+    ? [...carryOverRoles].sort((left, right) => left.order - right.order)
     : [];
+  const roles: Role[] = orderedCarryOverRoles.map((role, index) => {
+    const clonedRole = {
+      id: createId(),
+      name: role.name,
+      color: role.color,
+      order: index,
+    } satisfies Role;
+    roleIdMap.set(role.id, clonedRole.id);
+    return clonedRole;
+  });
 
   return {
     week: {
