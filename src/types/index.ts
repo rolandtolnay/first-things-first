@@ -26,7 +26,8 @@ export type RoleColor =
   | "emerald"
   | "orange"
   | "sky"
-  | "fuchsia";
+  | "fuchsia"
+  | "blue";
 
 /**
  * Day of week index (0 = Monday through 6 = Sunday)

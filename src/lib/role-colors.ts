@@ -2,14 +2,29 @@
  * Role Color Utilities
  *
  * Maps RoleColor type values to CSS custom properties. Colors are defined as
- * oklch values in globals.css (--role-1..8); opacity modifiers are built with
+ * oklch values in globals.css (--role-1..9); opacity modifiers are built with
  * color-mix() since oklch can't be expressed as rgb triplets (ADR-0002).
  */
 
 import type { RoleColor } from "@/types";
 
+export const ROLE_COLOR_OPTIONS: readonly {
+  value: RoleColor;
+  ariaLabel: string;
+}[] = [
+  { value: "teal", ariaLabel: "Coral role color" },
+  { value: "violet", ariaLabel: "Golden amber role color" },
+  { value: "orange", ariaLabel: "Fresh lime role color" },
+  { value: "sky", ariaLabel: "Emerald role color" },
+  { value: "rose", ariaLabel: "Turquoise role color" },
+  { value: "emerald", ariaLabel: "Sky blue role color" },
+  { value: "amber", ariaLabel: "Indigo role color" },
+  { value: "fuchsia", ariaLabel: "Orchid role color" },
+  { value: "blue", ariaLabel: "Rose role color" },
+];
+
 /**
- * Maps each RoleColor name to a stable, arbitrary slot index (1-8).
+ * Maps each RoleColor name to a stable, arbitrary slot index (1-9).
  *
  * The index is just a slot — the rendered HUE is owned entirely by `--role-N`
  * in globals.css and is intentionally decoupled from the stored name (ADR-0002):
@@ -26,7 +41,16 @@ const COLOR_TO_INDEX: Record<RoleColor, number> = {
   emerald: 6,
   amber: 7,
   fuchsia: 8,
+  blue: 9,
 };
+
+export function getNextRoleColor(
+  existingRoles: ReadonlyArray<{ color: RoleColor }>
+): RoleColor {
+  const usedColors = new Set(existingRoles.map((role) => role.color));
+  return ROLE_COLOR_OPTIONS.find((option) => !usedColors.has(option.value))?.value
+    ?? ROLE_COLOR_OPTIONS[existingRoles.length % ROLE_COLOR_OPTIONS.length].value;
+}
 
 /**
  * Get the Tailwind background class for a role color.
@@ -45,7 +69,7 @@ export function getRoleColorClass(color: RoleColor): string {
  * This allows creating classes like "text-role-1", "border-role-1", etc.
  *
  * @param color - The RoleColor value
- * @returns The role index number (1-8)
+ * @returns The role index number (1-9)
  */
 export function getRoleColorIndex(color: RoleColor): number {
   return COLOR_TO_INDEX[color];

@@ -16,6 +16,7 @@ import {
   resolveResize,
 } from "@/lib/scheduling";
 import { buildEmptyWeek, buildTargetWeek } from "@/lib/weekly-handoff";
+import { getNextRoleColor } from "@/lib/role-colors";
 import { weekPersistence } from "@/stores/weekPersistence";
 import type {
   Week,
@@ -25,7 +26,6 @@ import type {
   DayPriority,
   TimeBlock,
   EveningBlock,
-  RoleColor,
   DayOfWeek,
   TimeSlotIndex,
   CreateRoleInput,
@@ -34,33 +34,6 @@ import type {
   CreateDayPriorityInput,
   CreateEveningBlockInput,
 } from "@/types";
-
-// ============================================================================
-// Role Color Palette
-// ============================================================================
-
-/**
- * Available role colors in assignment order.
- * Colors cycle if more than 8 roles exist.
- */
-const ROLE_COLORS: RoleColor[] = [
-  "teal",
-  "amber",
-  "rose",
-  "violet",
-  "emerald",
-  "orange",
-  "sky",
-  "fuchsia",
-];
-
-/**
- * Get the next available color for a new role.
- * Cycles through the palette based on existing role count.
- */
-export function getNextRoleColor(existingRoles: Role[]): RoleColor {
-  return ROLE_COLORS[existingRoles.length % ROLE_COLORS.length];
-}
 
 // ============================================================================
 // Store Types

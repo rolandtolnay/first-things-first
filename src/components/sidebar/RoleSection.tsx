@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState, type CSSProperties, type PointerEventHandler } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
+import { GripVertical, MoreVertical, Palette, Pencil, Plus, Trash2 } from "lucide-react";
 import { InlineInput } from "@/components/ui/input";
 import { useWeekStore } from "@/stores/weekStore";
 import { slotsToHours, EVENING_BLOCK_HOURS } from "@/lib/time-model";
@@ -23,16 +23,23 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { GoalList } from "./GoalList";
-import type { Role } from "@/types";
+import { RoleColorPicker } from "./RoleColorPicker";
+import type { Role, RoleColor } from "@/types";
 import type { RoleReorderDragData } from "@/types/dnd";
 
 interface RoleSectionProps {
@@ -73,7 +80,9 @@ export function RoleSection({ role }: RoleSectionProps) {
   );
 
   const [addingGoal, setAddingGoal] = useState(false);
+  const [dotColorMenuOpen, setDotColorMenuOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [contextMenuKey, setContextMenuKey] = useState(0);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const shouldOpenGoalInputAfterMenuCloseRef = useRef(false);
   const shouldRenameRoleAfterMenuCloseRef = useRef(false);
@@ -90,6 +99,12 @@ export function RoleSection({ role }: RoleSectionProps) {
   const handleStartRenameRoleFromDropdownMenu = useCallback(() => {
     shouldRenameRoleAfterMenuCloseRef.current = true;
   }, []);
+  const handleChangeRoleColor = useCallback((color: RoleColor) => {
+    updateRole(role.id, { color });
+    setDotColorMenuOpen(false);
+    setMenuOpen(false);
+    setContextMenuKey((key) => key + 1);
+  }, [updateRole, role.id]);
 
   const handleDropdownCloseAutoFocus = useCallback((event: Event) => {
     // Radix restores focus to the trigger after close. Here the trigger is a
@@ -132,6 +147,15 @@ export function RoleSection({ role }: RoleSectionProps) {
         <Pencil className="size-3.5 mr-2" />
         Rename role
       </ContextMenuItem>
+      <ContextMenuSub>
+        <ContextMenuSubTrigger>
+          <Palette className="size-3.5 mr-2" />
+          Change color
+        </ContextMenuSubTrigger>
+        <ContextMenuSubContent className="min-w-0 p-2">
+          <RoleColorPicker value={role.color} onChange={handleChangeRoleColor} />
+        </ContextMenuSubContent>
+      </ContextMenuSub>
       <ContextMenuItem
         className="text-destructive"
         onSelect={() => setDeleteDialogOpen(true)}
@@ -143,7 +167,7 @@ export function RoleSection({ role }: RoleSectionProps) {
   );
 
   return (
-    <ContextMenu>
+    <ContextMenu key={contextMenuKey}>
       <ContextMenuTrigger asChild>
         <div
           ref={setNodeRef}
@@ -170,11 +194,34 @@ export function RoleSection({ role }: RoleSectionProps) {
               </Button>
             )}
 
-            <span
-              className="h-2 w-2 shrink-0 rounded-full"
-              style={{ backgroundColor: getRoleColorStyle(role.color) }}
-              aria-hidden="true"
-            />
+            {isEditing ? (
+              <span
+                className="h-2 w-2 shrink-0 rounded-full"
+                style={{ backgroundColor: getRoleColorStyle(role.color) }}
+                aria-hidden="true"
+              />
+            ) : (
+              <DropdownMenu open={dotColorMenuOpen} onOpenChange={setDotColorMenuOpen}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    className="-mx-1 shrink-0 rounded-full border-0 bg-transparent p-0 hover:bg-[var(--ds-line)]"
+                    aria-label={`Change color for ${role.name}`}
+                  >
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: getRoleColorStyle(role.color) }}
+                      aria-hidden="true"
+                    />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-auto min-w-0 p-2">
+                  <RoleColorPicker value={role.color} onChange={handleChangeRoleColor} />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             {isEditing ? (
               <InlineInput
@@ -237,6 +284,15 @@ export function RoleSection({ role }: RoleSectionProps) {
                       <Pencil className="size-3.5 mr-2" />
                       Rename role
                     </DropdownMenuItem>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Palette className="size-3.5 mr-2" />
+                        Change color
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="min-w-0 p-2">
+                        <RoleColorPicker value={role.color} onChange={handleChangeRoleColor} />
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
                     <DropdownMenuItem
                       className="text-destructive"
                       onSelect={() => { setDeleteDialogOpen(true); setMenuOpen(false); }}

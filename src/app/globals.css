@@ -5,6 +5,7 @@
  ---break---
  */
 @custom-variant dark (&:is(.dark *));
+@source inline("{bg,text,border}-role-{1..9}");
 
 /*
  * First Things First — Dark Workspace tokens.
@@ -163,15 +164,16 @@
   --grid-line: var(--ds-line-soft);
   --grid-line-subtle: var(--ds-line-soft);
 
-  /* ── Role palette — hue varies, L/C shared (ADR-0002) ──────── */
-  --role-1: oklch(0.78 0.14 78);    /* amber */
-  --role-2: oklch(0.72 0.11 295);   /* violet */
-  --role-3: oklch(0.72 0.12 25);    /* rose */
-  --role-4: oklch(0.74 0.10 230);   /* sky */
-  --role-5: oklch(0.78 0.10 160);   /* mint */
-  --role-6: oklch(0.74 0.06 60);    /* sand */
-  --role-7: oklch(0.74 0.10 195);   /* teal */
-  --role-8: oklch(0.74 0.10 330);   /* magenta */
+  /* ── Role palette — clear, distinct life-role hues (ADR-0002) */
+  --role-1: oklch(0.74 0.15 25);    /* coral */
+  --role-2: oklch(0.78 0.15 75);    /* golden amber */
+  --role-3: oklch(0.80 0.14 125);   /* fresh lime */
+  --role-4: oklch(0.76 0.13 155);   /* emerald */
+  --role-5: oklch(0.76 0.13 190);   /* turquoise */
+  --role-6: oklch(0.74 0.13 235);   /* sky blue */
+  --role-7: oklch(0.73 0.14 275);   /* indigo */
+  --role-8: oklch(0.74 0.14 315);   /* orchid */
+  --role-9: oklch(0.75 0.15 350);   /* rose */
 
   /* ── Radii (raw aliases for var() consumers) ──────────────── */
   --radius-sm: var(--ds-r-sm);
@@ -246,14 +248,15 @@
   --primary-hover: oklch(0.58 0.16 var(--ds-accent-h));
 
   /* Role palette — darkened for light bg, hue preserved */
-  --role-1: oklch(0.66 0.16 78);    /* amber */
-  --role-2: oklch(0.58 0.16 295);   /* violet */
-  --role-3: oklch(0.60 0.16 25);    /* rose */
-  --role-4: oklch(0.60 0.13 230);   /* sky */
-  --role-5: oklch(0.62 0.13 160);   /* mint */
-  --role-6: oklch(0.60 0.07 60);    /* sand */
-  --role-7: oklch(0.60 0.13 195);   /* teal */
-  --role-8: oklch(0.58 0.16 330);   /* magenta */
+  --role-1: oklch(0.58 0.18 25);    /* coral */
+  --role-2: oklch(0.62 0.17 75);    /* golden amber */
+  --role-3: oklch(0.58 0.15 125);   /* fresh lime */
+  --role-4: oklch(0.55 0.15 155);   /* emerald */
+  --role-5: oklch(0.55 0.15 190);   /* turquoise */
+  --role-6: oklch(0.54 0.16 235);   /* sky blue */
+  --role-7: oklch(0.53 0.16 275);   /* indigo */
+  --role-8: oklch(0.55 0.16 315);   /* orchid */
+  --role-9: oklch(0.57 0.18 350);   /* rose */
 }
 
 /* Tailwind theme bridge — CSS-first (v4). Utility names → --ds-* tokens.
@@ -310,6 +313,7 @@
   --color-role-6: var(--role-6);
   --color-role-7: var(--role-7);
   --color-role-8: var(--role-8);
+  --color-role-9: var(--role-9);
 
   /* Radii */
   --radius-xs: var(--ds-r-xs);

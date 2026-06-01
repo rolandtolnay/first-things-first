@@ -9,9 +9,9 @@ vi.mock("@/lib/db", () => ({
   getAllWeekIds: vi.fn().mockResolvedValue([]),
 }));
 
-import { useWeekStore, getNextRoleColor } from "@/stores/weekStore";
+import { useWeekStore } from "@/stores/weekStore";
 import { getWeek, saveWeek } from "@/lib/db";
-import type { Week, WeekId, Role, EveningBlock, CreateDayPriorityInput } from "@/types";
+import type { Week, WeekId, EveningBlock, CreateDayPriorityInput } from "@/types";
 
 function makeWeek(): Week {
   return {
@@ -409,25 +409,6 @@ function seed(week: Week) {
 // B1 — Role / Goal / Priority / Block CRUD + cascades
 // ============================================================================
 
-describe("getNextRoleColor", () => {
-  it("returns the palette in order for the first roles", () => {
-    expect(getNextRoleColor([])).toBe("teal");
-    expect(
-      getNextRoleColor([{ id: "r0", name: "R", color: "teal", order: 0 }])
-    ).toBe("amber");
-  });
-
-  it("cycles back to teal after 8 roles", () => {
-    const eight: Role[] = Array.from({ length: 8 }, (_, i) => ({
-      id: `r${i}`,
-      name: `R${i}`,
-      color: "teal",
-      order: i,
-    }));
-    expect(getNextRoleColor(eight)).toBe("teal"); // 8 % 8 === 0 → palette[0]
-  });
-});
-
 describe("addRole", () => {
   it("appends at maxOrder + 1 despite post-deletion order gaps, assigns the next color, one persist", async () => {
     // Two roles but with an order gap (a deletion left order 0 and order 3).
@@ -444,18 +425,28 @@ describe("addRole", () => {
 
     expect(saveWeek).toHaveBeenCalledTimes(1);
     expect(role.order).toBe(4); // maxOrder(3) + 1, not roles.length(2)
-    expect(role.color).toBe("rose"); // getNextRoleColor: index 2 → "rose"
+    expect(role.color).toBe("violet"); // first unused palette color, despite the order gap
     expect(useWeekStore.getState().currentWeek!.roles).toHaveLength(3);
   });
 });
 
 describe("updateRole", () => {
-  it("merges updates and persists once", async () => {
-    await useWeekStore.getState().updateRole("role-1", { name: "Career", color: "violet" });
+  it("persists one Week update and changes only the targeted Role color", async () => {
+    seed(makeRichWeek());
+    vi.clearAllMocks();
+
+    await useWeekStore.getState().updateRole("role-1", { color: "violet" });
 
     expect(saveWeek).toHaveBeenCalledTimes(1);
-    const role = useWeekStore.getState().currentWeek!.roles.find((r) => r.id === "role-1")!;
-    expect(role).toMatchObject({ name: "Career", color: "violet" });
+    const week = useWeekStore.getState().currentWeek!;
+    expect(week.roles).toEqual([
+      { id: "role-1", name: "Work", color: "violet", order: 0 },
+      { id: "role-2", name: "Health", color: "amber", order: 1 },
+    ]);
+    expect(week.goals).toEqual(makeRichWeek().goals);
+    expect(week.dayPriorities).toEqual(makeRichWeek().dayPriorities);
+    expect(week.timeBlocks).toEqual(makeRichWeek().timeBlocks);
+    expect(week.eveningBlocks).toEqual(makeRichWeek().eveningBlocks);
   });
 });
 

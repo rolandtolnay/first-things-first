@@ -5,8 +5,7 @@ import { Plus } from "lucide-react";
 import { InlineInput } from "@/components/ui/input";
 import { TextActionButton } from "@/components/ui/TextActionButton";
 import { useWeekStore } from "@/stores/weekStore";
-import { getNextRoleColor } from "@/stores/weekStore";
-import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
+import { getNextRoleColor, getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 
 interface AddRoleButtonProps {
   /** Controlled "currently adding" state, owned by RoleList. */
