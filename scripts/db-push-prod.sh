@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEV_REF="debzwdzhkcbsvgkhucsa"
 PROD_REF="oftgmjfgaycavrurnfsk"
 PROD_POOLER_HOST="aws-1-eu-central-1.pooler.supabase.com"
 
@@ -50,50 +49,42 @@ print_output() {
 printf '%s+--------------------------------------+%s\n' "$BOLD" "$RESET"
 printf '%s| First Things First: Prod DB Push |%s\n' "$BOLD" "$RESET"
 printf '%s+--------------------------------------+%s\n' "$BOLD" "$RESET"
-printf '%sDev is the default target. Prod requires password + confirmation.%s\n' "$DIM" "$RESET"
+printf '%sLocal Supabase is the dev rehearsal target. Prod requires password + confirmation.%s\n' "$DIM" "$RESET"
 
 section "1. Artifact check"
 if [[ "${ALLOW_DIRTY_PROD_DB_PUSH:-}" != "1" ]]; then
   artifact_status="$(git status --porcelain --untracked-files=all -- \
     supabase/migrations \
+    supabase/seed.sql \
     src/lib/supabase/database.types.ts \
-    scripts/db-push-prod.sh)"
+    scripts/db-push-prod.sh \
+    scripts/dev-setup-local.sh)"
   if [[ -n "$artifact_status" ]]; then
-    fail "Prod DB pushes must promote checked-in migration artifacts."
-    printf '  Commit or stash changes under supabase/migrations, generated DB types, and this script first.\n' >&2
+    fail "Prod DB pushes must promote checked-in migration workflow artifacts."
+    printf '  Commit or stash changes under migrations, generated DB types, seed, and DB scripts first.\n' >&2
     print_output "$artifact_status" >&2
     printf '  Exceptional override: %sALLOW_DIRTY_PROD_DB_PUSH=1 npm run db:push:prod%s\n' "$BOLD" "$RESET" >&2
     exit 1
   fi
-  ok "Migration artifacts are clean."
+  ok "Migration workflow artifacts are clean."
 else
   warn "ALLOW_DIRTY_PROD_DB_PUSH=1 set; dirty migration artifact gate bypassed."
 fi
 
-section "2. Safety check"
-linked_ref="$(cat supabase/.temp/project-ref 2>/dev/null || true)"
-if [[ "$linked_ref" != "$DEV_REF" ]]; then
-  fail "Supabase CLI must be linked to dev before prod migrations."
-  printf '  expected: %s\n' "$DEV_REF" >&2
-  printf '  current:  %s\n' "${linked_ref:-none}" >&2
-  printf '  fix:      supabase link --project-ref %s\n' "$DEV_REF" >&2
-  exit 1
-fi
-ok "Supabase CLI is linked to dev ($DEV_REF)."
+section "2. Local migration preflight"
+info "Resetting local Supabase with checked-in migrations and supabase/seed.sql..."
+supabase db reset
+ok "Local database reset succeeded."
 
-section "3. Dev migration preflight"
-info "Checking that dev has already received all local migrations..."
-dev_dry_run_output="$(supabase db push --linked --dry-run 2>&1)"
-print_output "$dev_dry_run_output"
+info "Running tests against the checked-in app code..."
+npm run test:run
+ok "Tests passed."
 
-if ! grep -q "Remote database is up to date" <<<"$dev_dry_run_output"; then
-  fail "Dev is not up to date with local migrations."
-  printf '  Run and verify dev first: %ssupabase db push --linked%s\n' "$BOLD" "$RESET" >&2
-  exit 1
-fi
-ok "Dev is up to date."
+info "Running lint..."
+npm run lint
+ok "Lint passed."
 
-section "4. Prod credentials"
+section "3. Prod credentials"
 printf '%sProd Supabase DB password:%s ' "$BOLD" "$RESET"
 read -rs PROD_DB_PASSWORD
 echo
@@ -105,7 +96,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-section "5. Prod dry-run"
+section "4. Prod dry-run"
 info "No changes are applied in this step. Review the output before confirming."
 supabase db push --db-url "$PROD_DB_URL" --dry-run
 
@@ -119,11 +110,11 @@ case "$confirm" in
     ;;
 esac
 
-section "6. Apply prod migrations"
+section "5. Apply prod migrations"
 supabase db push --db-url "$PROD_DB_URL"
 ok "Prod migration push finished."
 
-section "7. Read-only verification"
+section "6. Read-only verification"
 if [[ -n "${FTF_PROD_READONLY_DB_URL:-}" ]]; then
   supabase migration list --db-url "$FTF_PROD_READONLY_DB_URL"
   ok "Verified migration history via read-only prod role."
