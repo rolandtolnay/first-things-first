@@ -54,8 +54,9 @@ next-env.d.ts
 .planning/phases/**/*.html
 .planning/phases/**/screenshots/
 
-# Agent browser auth state (local only)
+# Agent-local auth state and transient goal evidence
 .agents/browser-state/
+.agents/goal-work/
 
 # Audit logs
 etc/audit/

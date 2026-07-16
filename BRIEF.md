@@ -1,5 +1,7 @@
 # Project Brief: Habit 3 Weekly Planner
 
+> **Historical discovery brief.** This captures the project’s original MVP framing and contains superseded assumptions (including local-only persistence and unresolved feature questions). Use [`PROJECT.md`](PROJECT.md) for current product intent, [`CONTEXT.md`](CONTEXT.md) for canonical language, and the live source/ADRs for implemented behavior.
+
 ## Overview
 
 A web-based weekly planning tool implementing Stephen Covey's Habit 3 ("Put First Things First") principles from *The 7 Habits of Highly Effective People*. The application enables role-based goal setting and time-block scheduling to help users focus on Quadrant II activities (important but not urgent).

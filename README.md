@@ -4,6 +4,8 @@ Help users focus on what matters by making the connection between life roles, we
 
 Built with Next.js, React, Zustand, dnd-kit, and Supabase.
 
+Product intent and autonomous-run guidance live in [`PROJECT.md`](PROJECT.md) and [`AGENTS.md`](AGENTS.md). The complete local build and verification method is in [`etc/playbook.md`](etc/playbook.md).
+
 ## Getting Started
 
 Prerequisites:
@@ -48,9 +50,9 @@ Local login:
 After making changes, verify the following as relevant:
 
 - **Auth**: Sign in locally with `dev@example.com` through Inbucket
-- **Sidebar**: Add, edit (double-click), and delete Roles and Goals
+- **Sidebar**: Add and edit Roles and Goals; archive and restore Roles; delete Goals
 - **Calendar**: Drag Goals to Day Priorities, Time Blocks, and Evening Blocks
 - **Calendar**: Drag Time Blocks and Day Priorities between Days
 - **Evening**: Drag Evening Blocks between Days
-- **Delete**: Delete buttons work on all item types (Roles, Goals, Day Priorities, Time Blocks, Evening Blocks)
+- **Remove**: Role archive and item delete actions work for Roles, Goals, Day Priorities, Time Blocks, and Evening Blocks
 - **Dark mode**: Toggle works without visual issues
