@@ -2,6 +2,9 @@
 -- Production is never seeded from this file by the app's prod migration workflow.
 
 -- Deterministic local User used by README/docs: dev@example.com.
+-- GoTrue scans several token columns as non-null strings; leaving them NULL
+-- makes /otp fail with "converting NULL to string is unsupported", so seed
+-- them as empty strings exactly like GoTrue-created users.
 insert into auth.users (
   instance_id,
   id,
@@ -15,7 +18,15 @@ insert into auth.users (
   raw_app_meta_data,
   raw_user_meta_data,
   is_super_admin,
-  is_sso_user
+  is_sso_user,
+  confirmation_token,
+  recovery_token,
+  email_change,
+  email_change_token_new,
+  email_change_token_current,
+  phone_change,
+  phone_change_token,
+  reauthentication_token
 )
 values (
   '00000000-0000-0000-0000-000000000000',
@@ -30,7 +41,15 @@ values (
   '{"provider":"email","providers":["email"]}'::jsonb,
   '{"name":"Local Developer"}'::jsonb,
   false,
-  false
+  false,
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  ''
 )
 on conflict (id) do update set
   email = excluded.email,

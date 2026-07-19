@@ -248,6 +248,18 @@ otp_expiry = 3600
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
 
+# Local mirror of the production magic-link template (see
+# docs/supabase-magic-link-email.md). Keeps local sign-in on the same
+# /auth/confirm token-hash contract as production instead of GoTrue's
+# default PKCE verify link, which the app's route does not handle.
+[auth.email.template.magic_link]
+subject = "Your First Things First sign-in link"
+content_path = "./supabase/templates/magic-link.html"
+
+[auth.email.template.confirmation]
+subject = "Your First Things First sign-in link"
+content_path = "./supabase/templates/magic-link.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true
