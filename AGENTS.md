@@ -56,6 +56,10 @@ A durable Role lives in `public.roles`; each Week contains Role Snapshots. Histo
 
 Weeks are the primary saved plan. Failure to load durable Role defaults must not block existing Week bootstrap: retain the Week list/current Week, use `activeRoles: []`, and surface a non-fatal error.
 
+### Week-id is the calendar-day source of truth
+
+`Week.startDate` is produced by local-midnight math, so its ISO date component is the **Sunday before** the week in positive-UTC-offset timezones. Never derive calendar days from `startDate`'s string; derive them from the canonical `week.id` via `parseWeekId` (this shifted every `.ics` import by a day before the 2026-07-19 fix). Several older utils tests share this latent timezone sensitivity and only pass in positive-offset zones.
+
 ## Stack and boundaries
 
 Next.js 16 + React 19 + TypeScript render the app; Zustand owns optimistic Week state; pure planning rules live under `src/lib/`; `src/lib/db.ts` is the Supabase seam; dnd-kit owns scheduling interactions. Weeks remain JSONB snapshots (ADR-0004); Roles are the deliberate selective normalization (ADR-0005).

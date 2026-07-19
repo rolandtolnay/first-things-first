@@ -43,20 +43,24 @@ A single after-hours block attached to a Day outside the Slot grid.
 _Avoid_: night slot, evening task, after-hours event.
 
 **Freestyle Block**:
-A Time Block or Evening Block with no linked Goal (`type: "freestyle"`, no `goalId`).
+A Time Block or Evening Block with no linked Goal (`type: "freestyle"`, no `goalId`). It may carry an optional Role assignment for color coding and Weekly Balance without creating a Goal.
 _Avoid_: free block, manual block, custom block.
 
-### Planned manual calendar import vocabulary
-
-These terms are canonical for `etc/prd/manual-ics-calendar-import.md` but are **not implemented in the current data model or UI**.
-
 **Freestyle Day Priority**:
-A planned Day Priority variant with its own text and no linked Goal.
+A Day Priority with its own text and no linked Goal (`type: "freestyle"`). It may carry an optional Role assignment, completes independently, and counts toward Daily Streak like any Day Priority.
 _Avoid_: loose task, imported goal, unassigned goal.
 
+**Repeating Block**:
+A Freestyle Block marked `recurrence: "weekly"`. Weekly Handoff copies Repeating Blocks into the Target Week with completion reset; nothing repeats into existing Weeks.
+_Avoid_: recurring event, template block, series.
+
 **Import Metadata**:
-Planned calendar-event provenance and useful event details preserved on an imported Freestyle Day Priority or Freestyle Block that are not part of the planner’s visible text/time fields.
+Calendar-event provenance and useful event details preserved on an imported Freestyle Day Priority or Freestyle Block (fingerprint, UID, original times, notes, location, URL, meeting link) that are not part of the planner’s visible text/time fields.
 _Avoid_: sync state, provider cache, hidden event.
+
+**Import Review**:
+The selection screen produced by manual `.ics` import: candidates for the viewed Week classified as importable, skipped, conflict, or duplicate. Nothing persists until the User confirms.
+_Avoid_: sync preview, staging area.
 
 ### Weekly transition
 
@@ -134,26 +138,27 @@ _Avoid_: primary color palette, highlight color.
 - Deleting a **Role** while planning a **Week** archives the Role for future planning and removes that Role's Snapshot from the current Week; other existing Week snapshots remain historically unchanged.
 - Restoring an archived **Role** reactivates the Role for future planning and adds a Role Snapshot to the current Week; if its name conflicts with an active Role, the restored Role receives a distinct name.
 - A **Goal** belongs to exactly one **Role Snapshot**.
-- A **Day Priority** is linked to one **Goal** and has completion independent from the Goal and from other instances.
+- A **Day Priority** is either goal-linked (references one **Goal**) or a **Freestyle Day Priority** (own text, optional **Role**); completion is independent from the Goal and from other instances.
 - A **Time Block** or **Evening Block** may reference one **Goal**; each instance has completion independent from the Goal and from other instances.
 - A **Time Block** occupies one or more contiguous **Slots** on exactly one **Day**.
 - A **Day** cannot have overlapping **Time Blocks** on the same **Slots**.
 - A **Day** has at most one **Evening Block**.
-- A **Freestyle Block** has no **Goal** and is not assigned to a **Role**.
+- A **Freestyle Block** or **Freestyle Day Priority** has no **Goal**; it may carry an optional **Role** assignment that affects color coding and **Weekly Balance** but never adds anything to the Sidebar goal list.
+- Archiving a **Role** clears that Role's assignment from freestyle items in the current Week instead of deleting them.
+- A **Repeating Block** must be a **Freestyle Block**; goal-linked blocks carry forward only through Goal selection in **Weekly Handoff**.
 - **Weekly Balance** and **Week Metrics** count Time Blocks by slot duration and Evening Blocks as one fixed planned hour.
 - Cross-week Role analytics group historical work by durable **Role** identity and use the Role's current display values for aggregate presentation; individual Week details may show historical Role Snapshots.
 - A **Daily Streak** Day is complete only when it has at least one **Day Priority** and all of that Day’s Day Priorities are complete.
 - A **Weekly Handoff** considers a **Goal** unfinished when the Goal itself is incomplete; Day Priority, Time Block, and Evening Block completion remain separate instance state.
 - A **Weekly Handoff** creates or replaces a **Target Week** snapshot; it does not move Goals out of the **Source Week**.
-- A **Weekly Handoff** creates the Target Week's Role Snapshots from active Role defaults and carries selected unfinished Goals forward by Role identity; Goals under archived Roles are not carried forward. Day Priorities, Time Blocks, and Evening Blocks start empty in the Target Week.
+- A **Weekly Handoff** creates the Target Week's Role Snapshots from active Role defaults and carries selected unfinished Goals forward by Role identity; Goals under archived Roles are not carried forward. Day Priorities start empty; Time Blocks and Evening Blocks start empty except for **Repeating Blocks**, which are copied with completion reset (Role assignments survive only for still-active Roles).
 - The **Sidebar** and expanded **Rail** frame the calendar; the collapsed **Rail** remains as a metrics dock.
 
-### Planned manual calendar import relationships
+### Manual calendar import relationships
 
-These relationships apply only if `etc/prd/manual-ics-calendar-import.md` is implemented:
-
-- A **Day Priority** may instead be a **Freestyle Day Priority** with no Goal.
-- **Import Metadata** belongs only to imported **Freestyle Day Priorities** and imported **Freestyle Blocks**.
+- Manual `.ics` import targets only the currently viewed **Week** and persists nothing until the User confirms the **Import Review**.
+- Imported timed entries become unassigned **Freestyle Blocks** on the Slot grid; imported all-day entries become **Freestyle Day Priorities**.
+- **Import Metadata** belongs only to imported **Freestyle Day Priorities** and imported **Freestyle Blocks**, and follows the item through conversions between planner surfaces.
 
 ## Example dialogue
 
@@ -169,7 +174,7 @@ These relationships apply only if `etc/prd/manual-ics-calendar-import.md` is imp
 ## Flagged ambiguities
 
 - “free block” vs “freestyle block” — same concept for scheduled blocks; **Freestyle Block** is canonical, and code uses `type: "freestyle"`.
-- In the planned manual import vocabulary, “freestyle priority” means **Freestyle Day Priority**, not a **Freestyle Block**; neither Freestyle Day Priorities nor Import Metadata are currently implemented.
+- “freestyle priority” means **Freestyle Day Priority**, not a **Freestyle Block**; both are implemented, and Day Priority documents persisted before the split normalize to goal-linked on load.
 - “Donut” vs “PieChart” — same component; **Donut** is canonical, while `PieChart` remains a legacy filename/import name.
 - “right sidebar” vs “Rail” — **Rail** is canonical; it is collapsed by default but still the same right-side surface.
 - “Slot height” vs “Slot duration” — a **Slot** is always 30 minutes; the current rendering scale is `SLOT_HEIGHT = 24` pixels.

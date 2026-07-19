@@ -16,6 +16,8 @@ When requirements conflict, protect deliberate weekly planning over task volume,
 
 An individual who plans across several life responsibilities—often in a spreadsheet or calendar—and wants a focused weekly ritual rather than another general-purpose task manager. They value seeing the whole Week, balancing Roles, and deciding explicitly what deserves time.
 
+They use this as their full-time scheduler, every day, not as an occasional experiment. The quality bar is a $50–200 commercial product: every planning surface should support the obvious everyday actions (create, edit, assign, repeat, import) without dead ends, silent limitations, or “only works if it came from a Goal” asymmetries.
+
 ## Core Problem
 
 Spreadsheets expose the whole Week but are cumbersome to edit and use across devices. Calendars show commitments but not why they matter. Task managers collect work but rarely connect life Roles, weekly outcomes, and allocated time in one planning surface.
@@ -33,6 +35,8 @@ Spreadsheets expose the whole Week but are cumbersome to edit and use across dev
 - Create, rename, reorder, archive, and restore durable Roles from the Sidebar.
 - Define weekly Goals under Role Snapshots.
 - Place Goals into Day Priorities, Time Blocks, or Evening Blocks and add Freestyle Blocks when needed.
+- Capture real-life commitments directly: create Freestyle Day Priorities and freestyle Evening Blocks in place, assign any freestyle item to a Role without creating a Goal, and mark routine blocks as repeating weekly.
+- Import external calendar commitments into the viewed Week through explicit `.ics` review.
 - Review Weekly Balance, Week Metrics, and the current Week’s Daily Streak while planning.
 - Start a Target Week through Weekly Handoff, deliberately carrying selected unfinished Goals from the viewed Source Week.
 - Return on another device and continue from the same private cloud-backed plan.
@@ -45,10 +49,10 @@ Spreadsheets expose the whole Week but are cumbersome to edit and use across dev
 - Durable Roles with historical Role Snapshots in each Week.
 - Weekly Goals, Day Priorities, Time Blocks, Evening Blocks, completion state, drag-and-drop scheduling, and Weekly Handoff.
 - Desktop-first seven-Day workspace with Sidebar, calendar, and collapsible Rail.
+- Table-stakes completeness (shipped 2026-07-19): Freestyle Day Priorities and freestyle Evening Blocks created in place, Role assignment on freestyle items without goal-list involvement, weekly Repeating Blocks carried at Weekly Handoff, and manual `.ics` calendar import with review per `etc/prd/manual-ics-calendar-import.md`. The eval set is `etc/loop/table-stakes-eval.md`.
 
 ### Not part of the current shipped baseline
 
-- Manual ICS import and Freestyle Day Priorities are designed in `etc/prd/manual-ics-calendar-import.md` but are not implemented.
 - Sharpen the Saw and a dedicated mobile single-Day experience appear in the original brief but are not implemented. They require an explicit goal and current product decision before work begins.
 
 ## Out of Scope by Default
@@ -78,6 +82,9 @@ Spreadsheets expose the whole Week but are cumbersome to edit and use across dev
 - Prefer customer-friendly UI copy over internal domain jargon; keep canonical domain terms in code and technical docs.
 - Prefer behavior tests around pure rules and persistence boundaries; verify interaction and visual quality in the real browser.
 - Prefer graceful recovery and visible errors over silently dropping or “fixing” User planning data.
+- Prefer symmetric capability: when goal-linked items support an interaction (drag, edit, complete, convert), their freestyle counterparts should support it too — no dead-end item types.
+- Freestyle items with a Role affect color coding and Weekly Balance, but never the Sidebar goal list; the goal list stays a deliberate weekly commitment surface.
+- Recurrence stays snapshot-friendly: repeating items are copied forward at explicit Week creation (Weekly Handoff), never retroactively injected into existing Weeks.
 
 ## Technical Context
 
@@ -96,7 +103,10 @@ Spreadsheets expose the whole Week but are cumbersome to edit and use across dev
 | Role identity is durable while each Week preserves Role display snapshots | Supports stable defaults and future aggregation without rewriting history | Implemented |
 | The primary experience is the seven-Day desktop workspace | Whole-Week visibility is the product’s main advantage over mobile/task-list tools | Implemented |
 | Dark Workspace is the default visual language, with light mode available | Provides a focused, coherent planning environment without replacing accessible primitives | Implemented |
-| Calendar import, if built, begins as local `.ics` review rather than live sync | Preserves privacy and explicit planning control while avoiding provider complexity | Planned; not implemented |
+| Calendar import, if built, begins as local `.ics` review rather than live sync | Preserves privacy and explicit planning control while avoiding provider complexity | Implemented |
+| Freestyle items may carry a Role without creating a Goal | Real commitments deserve color/balance accounting, but the goal list stays a deliberate weekly commitment surface | Implemented |
+| Recurring events are weekly-repeating Freestyle Blocks carried forward at Weekly Handoff | Fits the Week-snapshot model; no background mutation of existing Weeks, and goal-linked blocks already have carryover semantics via Goals | Implemented |
+| Freestyle Day Priorities exist as first-class peers of goal-linked priorities | All-day commitments and one-off must-dos belong in the priorities surface without inventing fake Goals | Implemented |
 
 ---
-*Last updated: 2026-07-16 — goal-driven project foundation established from the live code, ADRs, PRDs, and original brief.*
+*Last updated: 2026-07-19 — table-stakes completion shipped: freestyle priorities/evening creation, role assignment on freestyle items, weekly Repeating Blocks, and manual `.ics` import are part of the verified baseline.*

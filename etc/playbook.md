@@ -57,7 +57,9 @@ agent-browser --session ftf-debug close
 agent-browser --session ftf-debug --profile .agents/browser-state/ftf-debug-profile --headed open http://localhost:3000
 ```
 
-Ask the User to complete magic-link auth. Once confirmed, close the headed session and reopen the same profile headless for routine verification.
+Magic-link auth can complete without the User: submit `dev@example.com` on `/login`, then read the newest message from local Mailpit (`http://127.0.0.1:54324/api/v1/messages` → `/api/v1/message/<ID>`), extract the `http://localhost:3000/auth/confirm?...` URL from the body, and open it in the session. Fall back to asking the User only if Mailpit or the template link is unavailable.
+
+Known harness quirks on this host (not app bugs; observed 2026-07-19): CSS animations can be frozen in CDP-driven Chromium, so closed Radix dialogs/menus linger in the DOM at `data-state="closed"`/opacity 0 and can intercept or fail coordinate hit-tests — reload the page to clear them, never `.remove()` nodes under React (it crashes reconciliation); ref-based `click` still dispatches correctly to menu items that fail `elementFromPoint`. `hover` immediately before `click` fixes silent no-ops on hover-revealed affordances. Real drag-and-drop works via manual `mouse move`(steps)→`down`→`move`(paused)→`up`. `agent-browser screenshot` may hang indefinitely — verify via `snapshot -i`, `read`, and `eval` instead.
 
 ## Verification gate
 

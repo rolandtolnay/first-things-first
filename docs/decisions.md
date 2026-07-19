@@ -27,3 +27,27 @@ Lightweight, non-obvious implementation choices future runs should not repeatedl
 **Decision:** Extend built-in Tailwind utilities with their matching `@theme inline` namespace: `--text-*`, `--color-*`, `--radius-*`, and `--shadow-*`.
 
 **Why:** Tailwind v4 silently ignores unknown namespaces such as `--font-size-*`; builds can pass while the intended utility is absent. Confirm new utilities in compiled CSS when token behavior changes.
+
+## 2026-07-19 — Legacy Day Priorities normalize at the mapping boundary
+
+**Decision:** `rowToWeek` runs `normalizeWeek` (`src/lib/priorities.ts`), which fills the missing `type` discriminant on Day Priorities persisted before Freestyle Day Priorities existed (missing `type` + `goalId` ⇒ `"goal"`). No migration or backfill of stored JSONB documents.
+
+**Why:** ADR-0004 keeps Weeks as verbatim snapshots; a read-time normalization is the one seam every load already passes through, keeps historical documents untouched, and returns the same reference when nothing needs fixing.
+
+## 2026-07-19 — Recurrence is a per-block flag applied only at Week creation
+
+**Decision:** `recurrence: "weekly"` lives on Freestyle Blocks (time + evening). `buildTargetWeek` copies repeating freestyle blocks into the Target Week with fresh ids, completion reset, recurrence kept, and Role assignments dropped when the Role is no longer active. Goal-linked blocks never carry via recurrence.
+
+**Why:** The Week-snapshot model forbids background mutation of existing Weeks; Weekly Handoff is the single explicit moment a new Week is derived. Goal-linked blocks would dangle because `buildTargetWeek` re-ids Goals.
+
+## 2026-07-19 — Freestyle role assignment clears on Role archive (cascade)
+
+**Decision:** `removeRoleSnapshotCascade` deletes goal-linked items with their Goals but keeps freestyle items, clearing a `roleId` that points at the removed snapshot.
+
+**Why:** Freestyle items are the User's own entries, not Goal derivatives; deleting them on archive would destroy planning data, while a dangling `roleId` would silently count hours under a Role the Week no longer shows.
+
+## 2026-07-19 — ICS parsing uses ical.js with window-scan recurrence expansion
+
+**Decision:** `src/lib/ics-import.ts` wraps `ical.js` 2.x: register embedded VTIMEZONEs, relate exceptions to parents, iterate recurrences from DTSTART (never seed the iterator with the window start — that corrupts occurrence times), filter to the viewed Week by local calendar day, and additionally include exception instances moved into the window. Classification (out-of-grid, misalignment, overlap, cap, duplicates-by-fingerprint) is sequential in day/time order so earlier importable candidates reserve their span/cap.
+
+**Why:** Hand-rolling RRULE/timezone handling is the classic ICS correctness trap; ical.js is browser-capable and testable. The iterator-seeding pitfall was observed directly (occurrences inherit the seed's time-of-day).
