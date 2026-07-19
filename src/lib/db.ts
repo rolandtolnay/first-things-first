@@ -107,6 +107,23 @@ export async function getAllWeekIds(
   return (data ?? []).map((row) => row.id as WeekId);
 }
 
+/**
+ * All of the current user's Weeks, ascending by id. Used by cross-week Role
+ * trends (Rail); fetched lazily on demand, not part of bootstrap.
+ */
+export async function getAllWeeks(
+  options: DbRequestOptions = {},
+): Promise<Week[]> {
+  const baseQuery = client().from(WEEKS_TABLE).select("*");
+  const query = options.signal
+    ? baseQuery.abortSignal(options.signal)
+    : baseQuery;
+
+  const { data, error } = await query.order("id", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(rowToWeek);
+}
+
 export async function getActiveRoles(
   options: DbRequestOptions = {},
 ): Promise<Role[]> {

@@ -52,6 +52,14 @@ class WeekPersistenceCoordinator {
     return this.pendingWeekSnapshots.get(weekId);
   }
 
+  /**
+   * Resolve once every save queued so far has settled. Never rejects. Used to
+   * let the last optimistic edit land before tearing down the Session.
+   */
+  flush(): Promise<void> {
+    return this.saveQueue.catch(() => undefined);
+  }
+
   async listWeekIds(
     epoch: PersistenceEpoch = this.epoch(),
   ): Promise<PersistenceResult<WeekId[]>> {

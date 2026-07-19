@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * TimeGrid - Time slot grid for 8:00-20:00
+ * TimeGrid - Time slot grid for the week's planning-day window (default 8:00-20:00)
  *
- * Renders 24 TimeSlot components (30-minute intervals).
+ * Renders one TimeSlot component per 30-minute interval.
  * TimeBlocks overlay the slot column with absolute positioning.
  * Supports click-drag-draw for freestyle block creation.
  * Time labels are rendered separately by TimeLabelsColumn.
@@ -15,7 +15,7 @@ import type { TimeSlotIndex, DayOfWeek } from "@/types";
 import { isCalendarDragData, isCalendarDropZoneData } from "@/types/dnd";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockDraw } from "@/hooks/useBlockDraw";
-import { TOTAL_SLOTS, TIME_GRID_HEIGHT, slotToPixels, durationToPixels } from "@/lib/time-model";
+import { gridHeight, totalSlots, slotToPixels, durationToPixels, weekDayBounds } from "@/lib/time-model";
 import { getRoleColorStyle, getRoleColorStyleWithOpacity } from "@/lib/role-colors";
 import { resolveTimeGridDropPreview } from "@/lib/drop-routing";
 import { TimeSlot } from "./TimeSlot";
@@ -27,14 +27,18 @@ interface TimeGridProps {
   isToday?: boolean;
 }
 
-// 24 slots: 0-23 representing 8:00-19:30. Constant — hoisted out of render.
-const SLOTS = Array.from({ length: TOTAL_SLOTS }, (_, i) => i as TimeSlotIndex);
-
 export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
   // Get raw time blocks from store (stable reference)
   const timeBlocks = useWeekStore((state) => state.currentWeek?.timeBlocks);
   const roles = useWeekStore((state) => state.currentWeek?.roles);
+  const dayBounds = useWeekStore((state) => weekDayBounds(state.currentWeek));
   const { active, over } = useDndContext();
+
+  // Slot list follows the week's configured planning-day window.
+  const slots = useMemo(
+    () => Array.from({ length: totalSlots(dayBounds) }, (_, i) => i as TimeSlotIndex),
+    [dayBounds]
+  );
 
   // Filter blocks for this day in useMemo (avoids infinite loop)
   const blocks = useMemo(() => {
@@ -53,9 +57,9 @@ export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
       dragData,
       dropData,
       dayIndex,
-      { timeBlocks: timeBlocks ?? [], roles: roles ?? [] }
+      { timeBlocks: timeBlocks ?? [], roles: roles ?? [], dayBounds }
     );
-  }, [active, over, dayIndex, timeBlocks, roles]);
+  }, [active, over, dayIndex, timeBlocks, roles, dayBounds]);
 
   // Click-drag-draw hook for freestyle block creation
   const {
@@ -72,12 +76,12 @@ export function TimeGrid({ dayIndex, isToday }: TimeGridProps) {
       data-slots-column
       {...containerProps}
       style={{
-        height: `${TIME_GRID_HEIGHT}px`,
+        height: `${gridHeight(dayBounds)}px`,
         ...(isDrawing ? { touchAction: "none", userSelect: "none" } : {}),
       }}
     >
       {/* Grid of slots */}
-      {SLOTS.map((slotIndex) => (
+      {slots.map((slotIndex) => (
         <TimeSlot key={slotIndex} slotIndex={slotIndex} dayIndex={dayIndex} />
       ))}
 

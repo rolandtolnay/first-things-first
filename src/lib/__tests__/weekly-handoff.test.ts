@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildEmptyWeek,
+  buildRoleRecaps,
   buildTargetWeek,
   buildWeeklyHandoffModel,
   buildWeeklyHandoffOpeningModel,
@@ -136,7 +137,9 @@ describe("buildEmptyWeek", () => {
 
     expect(target).toMatchObject({
       id: defaultTargetWeekId,
-      startDate: "2026-03-08T22:00:00.000Z",
+      // startDate is intentionally local-midnight of the week's Monday
+      // (2026-03-09), so the expected ISO string is timezone-relative.
+      startDate: new Date(2026, 2, 9).toISOString(),
       goals: [],
       dayPriorities: [],
       timeBlocks: [],
@@ -419,5 +422,31 @@ describe("buildWeeklyHandoffModel", () => {
     expect(model.unfinishedGoalIds).toEqual([]);
     expect(model.selectedCount).toBe(0);
     expect(model.primaryActionLabel).toBe("Replace week");
+  });
+});
+
+describe("buildRoleRecaps", () => {
+  it("recaps completion per role in role order, omitting goal-less roles", () => {
+    const source = week({
+      roles: [
+        { id: "b", name: "Beta", color: "teal", order: 1 },
+        { id: "a", name: "Alpha", color: "rose", order: 0 },
+        { id: "empty", name: "Empty", color: "amber", order: 2 },
+      ],
+      goals: [
+        { id: "g1", roleId: "a", text: "One", completed: true },
+        { id: "g2", roleId: "a", text: "Two", completed: false },
+        { id: "g3", roleId: "b", text: "Three", completed: true },
+      ],
+    });
+
+    expect(buildRoleRecaps(source)).toEqual([
+      { role: expect.objectContaining({ id: "a" }), completedGoals: 1, totalGoals: 2 },
+      { role: expect.objectContaining({ id: "b" }), completedGoals: 1, totalGoals: 1 },
+    ]);
+  });
+
+  it("returns an empty recap for a missing source week", () => {
+    expect(buildRoleRecaps(null)).toEqual([]);
   });
 });

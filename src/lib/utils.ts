@@ -18,9 +18,15 @@ export function generateId(): string {
 // Week Calculations
 // ============================================================================
 
+/**
+ * ISO week id for a date's UTC calendar day. UTC-pure so week navigation and
+ * `parseWeekId` round-trip identically in every runner timezone; callers with a
+ * local "now" (see getCurrentWeekId) lift their local calendar day into UTC
+ * before calling.
+ */
 export function getWeekId(date: Date): WeekId {
   const d = new Date(
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
   );
 
   const dayNum = d.getUTCDay() || 7;
@@ -90,7 +96,10 @@ export function formatWeekId(weekId: WeekId): string {
 }
 
 export function getCurrentWeekId(): WeekId {
-  return getWeekId(new Date());
+  // Anchor to the LOCAL calendar day: late Sunday in a negative-offset zone is
+  // already Monday in UTC, but the user is still finishing this week.
+  const now = new Date();
+  return getWeekId(new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())));
 }
 
 export function getWeekNumber(weekId: WeekId): number {

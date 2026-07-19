@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { getRoleColorStyle } from "@/lib/role-colors";
+import { GoalNotesPopover } from "@/components/sidebar/GoalNotesPopover";
 import { cn } from "@/lib/utils";
 import type { Goal, RoleColor } from "@/types";
 import type { GoalDragData } from "@/types/dnd";
@@ -128,6 +129,8 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
           </span>
         )}
 
+        {!isEditing && <GoalNotesPopover goal={goal} />}
+
         {!isEditing && (
           <button
             onClick={() => setAlertOpen(true)}
@@ -144,7 +147,8 @@ export function GoalItem({ goal, roleColor }: GoalItemProps) {
         <AlertDialogContent>
           <AlertDialogTitle>Delete goal</AlertDialogTitle>
           <AlertDialogDescription>
-            Delete &ldquo;{goal.text}&rdquo;? This cannot be undone.
+            Delete &ldquo;{goal.text}&rdquo;? Its priorities and scheduled time this
+            week go with it. You can undo right afterwards.
           </AlertDialogDescription>
           <div className="flex justify-end gap-2 mt-4">
             <AlertDialogCancel>Cancel</AlertDialogCancel>

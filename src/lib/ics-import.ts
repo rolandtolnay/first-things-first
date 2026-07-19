@@ -8,7 +8,8 @@
  * `importWeekItems`.
  *
  * Timed entries become unassigned Freestyle Block candidates when they fit the
- * 8:00–20:00 Slot grid on 30-minute boundaries without overlaps. All-day
+ * viewed Week's Slot grid (its configured day bounds; default 8:00–20:00) on
+ * 30-minute boundaries without overlaps. All-day
  * entries become Freestyle Day Priority candidates under the per-day cap.
  * Everything else stays visible in review with a reason and defaults to
  * skipped. Nothing here mutates the Week.
@@ -24,13 +25,12 @@ import type {
   CreateTimeBlockInput,
 } from "@/types";
 import {
-  DAY_START_HOUR,
-  DAY_END_HOUR,
   MINUTES_PER_SLOT,
   MAX_BLOCK_SLOTS,
+  weekDayBounds,
 } from "@/lib/time-model";
 import { MAX_PRIORITIES_PER_DAY } from "@/lib/constants";
-import { parseWeekId } from "@/lib/utils";
+import { DAY_NAMES_SHORT, parseWeekId } from "@/lib/utils";
 
 // ============================================================================
 // Public shapes
@@ -38,9 +38,23 @@ import { parseWeekId } from "@/lib/utils";
 
 export type ImportCandidateStatus =
   | "importable"
+  | "update"
   | "unsupported"
   | "conflict"
   | "duplicate";
+
+/**
+ * How an "update" candidate maps onto the already-planned item it refreshes
+ * (matched by ICS UID + recurrence id).
+ */
+export interface ImportUpdateTarget {
+  targetKind: "timeBlock" | "dayPriority";
+  targetId: string;
+  /** What the planned item currently says, e.g. "Mon 10:00–11:30". */
+  previousLabel: string;
+  /** Time/day moved (defaults to selected) vs title-only (defaults to unselected). */
+  change: "time" | "title";
+}
 
 export interface ImportCandidate {
   /** Stable key for selection state in the review UI. */
@@ -52,6 +66,8 @@ export interface ImportCandidate {
   startSlot?: TimeSlotIndex;
   duration?: number;
   status: ImportCandidateStatus;
+  /** Present when status is "update": the planned item this refreshes. */
+  update?: ImportUpdateTarget;
   /** Customer-facing reason when not importable. */
   reason?: string;
   /** Customer-facing time label, e.g. "10:00–11:30" or "All day". */
@@ -68,6 +84,7 @@ export interface ImportCandidate {
 export interface ImportReviewCounts {
   total: number;
   importable: number;
+  updates: number;
   unsupported: number;
   conflicts: number;
   duplicates: number;
@@ -92,8 +109,6 @@ export interface BuildImportReviewInput {
 // Small pure helpers
 // ============================================================================
 
-const DAY_START_MIN = DAY_START_HOUR * 60;
-const DAY_END_MIN = DAY_END_HOUR * 60;
 const MS_PER_DAY = 86_400_000;
 /** Recurrence iteration guard: a weekly rule spanning ~40 years. */
 const MAX_RECURRENCE_ITERATIONS = 2000;
@@ -133,6 +148,71 @@ function extractMeetingLink(
     if (match) return match[0];
   }
   return undefined;
+}
+
+interface UpdateTargetEntry {
+  kind: "timeBlock" | "dayPriority" | "evening";
+  id: string;
+  dayIndex: DayOfWeek;
+  title: string;
+  fingerprint: string;
+  /** Planned span in minutes-of-day (time blocks only). */
+  startMin?: number;
+  endMin?: number;
+}
+
+function uidKeyOf(uid: string | undefined, recurrenceId: string | undefined): string | null {
+  return uid ? `${uid}|${recurrenceId ?? ""}` : null;
+}
+
+/**
+ * Index of previously imported items by UID + recurrence id, so a re-import can
+ * recognize a moved or renamed event and refresh the planned item in place.
+ */
+function existingUpdateTargets(
+  week: Week,
+  dayStartMin: number
+): Map<string, UpdateTargetEntry> {
+  const targets = new Map<string, UpdateTargetEntry>();
+
+  for (const block of week.timeBlocks) {
+    const key = uidKeyOf(block.importMeta?.uid, block.importMeta?.recurrenceId);
+    if (!key || targets.has(key)) continue;
+    const startMin = dayStartMin + block.startSlot * MINUTES_PER_SLOT;
+    targets.set(key, {
+      kind: "timeBlock",
+      id: block.id,
+      dayIndex: block.dayIndex,
+      title: block.title,
+      fingerprint: block.importMeta!.fingerprint,
+      startMin,
+      endMin: startMin + block.duration * MINUTES_PER_SLOT,
+    });
+  }
+  for (const priority of week.dayPriorities) {
+    const key = uidKeyOf(priority.importMeta?.uid, priority.importMeta?.recurrenceId);
+    if (!key || targets.has(key)) continue;
+    targets.set(key, {
+      kind: "dayPriority",
+      id: priority.id,
+      dayIndex: priority.dayIndex,
+      title: priority.text ?? "",
+      fingerprint: priority.importMeta!.fingerprint,
+    });
+  }
+  for (const block of week.eveningBlocks) {
+    const key = uidKeyOf(block.importMeta?.uid, block.importMeta?.recurrenceId);
+    if (!key || targets.has(key)) continue;
+    // Converted to the evening surface: recognized, but not auto-updatable.
+    targets.set(key, {
+      kind: "evening",
+      id: block.id,
+      dayIndex: block.dayIndex,
+      title: block.title,
+      fingerprint: block.importMeta!.fingerprint,
+    });
+  }
+  return targets;
 }
 
 /** Fingerprints of everything previously imported into this Week. */
@@ -380,6 +460,11 @@ export function buildImportReview({
   );
   const mondayValue = localDayValue(windowStart);
 
+  // Grid classification uses the viewed Week's configured planning-day window.
+  const bounds = weekDayBounds(week);
+  const dayStartMin = bounds.startHour * 60;
+  const dayEndMin = bounds.endHour * 60;
+
   const { occurrences, calendarName } = extractOccurrences(
     icsText,
     windowStart,
@@ -435,12 +520,13 @@ export function buildImportReview({
 
   // Classification state: existing Week content plus earlier accepted seeds.
   const knownFingerprints = existingFingerprints(week);
+  const updateTargets = existingUpdateTargets(week, dayStartMin);
   const seenFingerprints = new Set<string>();
-  const occupiedSpans = new Map<number, Array<{ start: number; end: number }>>();
+  const occupiedSpans = new Map<number, Array<{ start: number; end: number; blockId?: string }>>();
   for (const block of week.timeBlocks) {
     const spans = occupiedSpans.get(block.dayIndex) ?? [];
-    const start = DAY_START_MIN + block.startSlot * MINUTES_PER_SLOT;
-    spans.push({ start, end: start + block.duration * MINUTES_PER_SLOT });
+    const start = dayStartMin + block.startSlot * MINUTES_PER_SLOT;
+    spans.push({ start, end: start + block.duration * MINUTES_PER_SLOT, blockId: block.id });
     occupiedSpans.set(block.dayIndex, spans);
   }
   const prioritiesPerDay = new Map<number, number>();
@@ -482,6 +568,133 @@ export function buildImportReview({
       return reject("unsupported", "Cancelled in the source calendar");
     }
 
+    // Refresh matching: the same UID (+ recurrence id) already planned in this
+    // week means this entry describes an item we imported before. A different
+    // fingerprint is a moved/resized event; the same fingerprint with a
+    // different title is a rename. Everything is only ever applied through the
+    // explicit review confirmation.
+    const uidKey = uidKeyOf(meta.uid, meta.recurrenceId);
+    const target = uidKey ? updateTargets.get(uidKey) : undefined;
+    const previousLabel = target
+      ? target.kind === "timeBlock"
+        ? `${DAY_NAMES_SHORT[target.dayIndex]} ${formatClock(target.startMin!)}–${formatClock(target.endMin!)}`
+        : `${DAY_NAMES_SHORT[target.dayIndex]} · ${target.kind === "dayPriority" ? "all day" : "evening"}`
+      : "";
+    const asUpdate = (
+      entry: UpdateTargetEntry,
+      change: "time" | "title",
+      extras: Partial<ImportCandidate> = {}
+    ): ImportCandidate => ({
+      ...base,
+      status: "update",
+      update: {
+        targetKind: entry.kind as "timeBlock" | "dayPriority",
+        targetId: entry.id,
+        previousLabel,
+        change,
+      },
+      ...extras,
+    });
+
+    if (target) {
+      const changed = target.fingerprint !== meta.fingerprint;
+      const renamed = !changed && target.title.trim() !== occurrence.title.trim();
+
+      if (!changed && !renamed) {
+        return reject("duplicate", "Already imported into this week");
+      }
+      if (target.kind === "evening") {
+        return reject(
+          "unsupported",
+          `Changed in the source calendar, but you moved it to the evening (${previousLabel}) — adjust it there`
+        );
+      }
+      if (changed && target.kind === "dayPriority" && kind === "timed") {
+        return reject(
+          "unsupported",
+          `Now a timed event, but it's planned as a day priority (${previousLabel}) — delete it to re-import`
+        );
+      }
+      if (changed && target.kind === "timeBlock" && kind === "allday") {
+        return reject(
+          "unsupported",
+          `Now an all-day event, but it's planned on the calendar (${previousLabel}) — delete it to re-import`
+        );
+      }
+
+      updateTargets.delete(uidKey!);
+      seenFingerprints.add(meta.fingerprint);
+
+      if (renamed) {
+        // Title-only difference could also be the user's own rename of the
+        // planned item, so it never applies by default. Position comes from the
+        // PLANNED item (the user may have moved it since import) — a title
+        // refresh must never relocate anything.
+        return asUpdate(target, "title", {
+          reason: `Was “${target.title}” — updates the title`,
+          dayIndex: target.dayIndex,
+          ...(target.kind === "timeBlock"
+            ? {
+                startSlot: ((target.startMin! - dayStartMin) / MINUTES_PER_SLOT) as TimeSlotIndex,
+                duration: (target.endMin! - target.startMin!) / MINUTES_PER_SLOT,
+              }
+            : {}),
+        });
+      }
+
+      // Moved/resized: the new placement must fit the grid like any import.
+      if (kind === "allday") {
+        if (target.dayIndex !== dayIndex) {
+          const used = prioritiesPerDay.get(dayIndex) ?? 0;
+          if (used >= MAX_PRIORITIES_PER_DAY) {
+            return reject("conflict", "This day's priorities are already full");
+          }
+          prioritiesPerDay.set(dayIndex, used + 1);
+        }
+        return asUpdate(target, "time", {
+          reason: `Was ${previousLabel} — updates the planned priority`,
+        });
+      }
+
+      const startMin = seed.startMin!;
+      const endMin = seed.endMin!;
+      const durationMin = endMin - startMin;
+      if (durationMin <= 0) {
+        return reject("unsupported", "Has no duration");
+      }
+      if (startMin < dayStartMin || endMin > dayEndMin) {
+        return reject(
+          "unsupported",
+          `Moved outside the ${formatClock(dayStartMin)}–${formatClock(dayEndMin)} planner day`
+        );
+      }
+      if (startMin % MINUTES_PER_SLOT !== 0 || durationMin % MINUTES_PER_SLOT !== 0) {
+        return reject("unsupported", "Doesn't align to 30-minute slots");
+      }
+      if (durationMin / MINUTES_PER_SLOT > MAX_BLOCK_SLOTS) {
+        return reject("unsupported", "Longer than the 8-hour block limit");
+      }
+      const spans = occupiedSpans.get(dayIndex) ?? [];
+      // The planned block's own span doesn't collide with its update. Its old
+      // span stays reserved for later candidates, so a deselected update can
+      // never leave a confirmed overlap behind.
+      const overlaps = spans.some(
+        (span) =>
+          span.blockId !== target.id && startMin < span.end && endMin > span.start
+      );
+      if (overlaps) {
+        return reject("conflict", "Overlaps a block already on this day");
+      }
+      spans.push({ start: startMin, end: endMin });
+      occupiedSpans.set(dayIndex, spans);
+
+      return asUpdate(target, "time", {
+        reason: `Was ${previousLabel} — updates the planned event`,
+        startSlot: ((startMin - dayStartMin) / MINUTES_PER_SLOT) as TimeSlotIndex,
+        duration: durationMin / MINUTES_PER_SLOT,
+      });
+    }
+
     if (knownFingerprints.has(meta.fingerprint)) {
       return reject("duplicate", "Already imported into this week");
     }
@@ -506,8 +719,11 @@ export function buildImportReview({
     if (durationMin <= 0) {
       return reject("unsupported", "Has no duration");
     }
-    if (startMin < DAY_START_MIN || endMin > DAY_END_MIN) {
-      return reject("unsupported", "Outside the 8:00–20:00 planner day");
+    if (startMin < dayStartMin || endMin > dayEndMin) {
+      return reject(
+        "unsupported",
+        `Outside the ${formatClock(dayStartMin)}–${formatClock(dayEndMin)} planner day`
+      );
     }
     if (startMin % MINUTES_PER_SLOT !== 0 || durationMin % MINUTES_PER_SLOT !== 0) {
       return reject("unsupported", "Doesn't align to 30-minute slots");
@@ -532,7 +748,7 @@ export function buildImportReview({
     return {
       ...base,
       status: "importable",
-      startSlot: ((startMin - DAY_START_MIN) / MINUTES_PER_SLOT) as TimeSlotIndex,
+      startSlot: ((startMin - dayStartMin) / MINUTES_PER_SLOT) as TimeSlotIndex,
       duration: durationSlots,
     };
   });
@@ -540,6 +756,7 @@ export function buildImportReview({
   const counts: ImportReviewCounts = {
     total: candidates.length,
     importable: candidates.filter((candidate) => candidate.status === "importable").length,
+    updates: candidates.filter((candidate) => candidate.status === "update").length,
     unsupported: candidates.filter((candidate) => candidate.status === "unsupported").length,
     conflicts: candidates.filter((candidate) => candidate.status === "conflict").length,
     duplicates: candidates.filter((candidate) => candidate.status === "duplicate").length,
@@ -552,15 +769,35 @@ export function buildImportReview({
 // Confirmation payload
 // ============================================================================
 
+/** In-place refresh of a previously imported Freestyle Block. */
+export interface ImportTimeBlockUpdate {
+  id: string;
+  dayIndex: DayOfWeek;
+  startSlot: TimeSlotIndex;
+  duration: number;
+  title: string;
+  importMeta: ImportMetadata;
+}
+
+/** In-place refresh of a previously imported Freestyle Day Priority. */
+export interface ImportDayPriorityUpdate {
+  id: string;
+  dayIndex: DayOfWeek;
+  text: string;
+  importMeta: ImportMetadata;
+}
+
 export interface ImportPayload {
   timeBlocks: CreateTimeBlockInput[];
   dayPriorities: Omit<DayPriority, "id" | "order">[];
+  updateTimeBlocks: ImportTimeBlockUpdate[];
+  updateDayPriorities: ImportDayPriorityUpdate[];
 }
 
 /**
- * Map the selected importable candidates onto store inputs. The confirmation
- * time replaces the review-time `importedAt` so metadata records when the
- * items actually entered the Week.
+ * Map the selected importable + update candidates onto store inputs. The
+ * confirmation time replaces the review-time `importedAt` so metadata records
+ * when the items actually entered (or last refreshed in) the Week.
  */
 export function buildImportPayload(
   candidates: ImportCandidate[],
@@ -570,6 +807,10 @@ export function buildImportPayload(
   const selected = candidates.filter(
     (candidate) =>
       candidate.status === "importable" && selectedKeys.has(candidate.key)
+  );
+  const selectedUpdates = candidates.filter(
+    (candidate) =>
+      candidate.status === "update" && selectedKeys.has(candidate.key)
   );
 
   return {
@@ -591,6 +832,24 @@ export function buildImportPayload(
         text: candidate.title,
         dayIndex: candidate.dayIndex,
         completed: false,
+        importMeta: { ...candidate.importMeta, importedAt },
+      })),
+    updateTimeBlocks: selectedUpdates
+      .filter((candidate) => candidate.update?.targetKind === "timeBlock")
+      .map((candidate) => ({
+        id: candidate.update!.targetId,
+        dayIndex: candidate.dayIndex,
+        startSlot: candidate.startSlot!,
+        duration: candidate.duration!,
+        title: candidate.title,
+        importMeta: { ...candidate.importMeta, importedAt },
+      })),
+    updateDayPriorities: selectedUpdates
+      .filter((candidate) => candidate.update?.targetKind === "dayPriority")
+      .map((candidate) => ({
+        id: candidate.update!.targetId,
+        dayIndex: candidate.dayIndex,
+        text: candidate.title,
         importMeta: { ...candidate.importMeta, importedAt },
       })),
   };

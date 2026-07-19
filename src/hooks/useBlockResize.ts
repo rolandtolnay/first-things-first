@@ -12,7 +12,7 @@ import { useState, useRef, useCallback } from "react";
 import type { TimeBlock } from "@/types";
 import { resolveResize } from "@/lib/scheduling";
 import { useWeekStore } from "@/stores/weekStore";
-import { pixelToSlotRound } from "@/lib/time-model";
+import { pixelToSlotRound, weekDayBounds } from "@/lib/time-model";
 
 interface UseBlockResizeResult {
   handleProps: {
@@ -33,6 +33,7 @@ export function useBlockResize(
   const containerRectRef = useRef<DOMRect | null>(null);
 
   const resizeTimeBlock = useWeekStore((state) => state.resizeTimeBlock);
+  const dayBounds = useWeekStore((state) => weekDayBounds(state.currentWeek));
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -67,11 +68,11 @@ export function useBlockResize(
       const newDuration = newEndSlot - block.startSlot;
 
       // Clamp with overlap prevention (excludes self)
-      const clamped = resolveResize(newDuration, block.startSlot, dayBlocks, block.id);
+      const clamped = resolveResize(newDuration, block.startSlot, dayBlocks, block.id, dayBounds);
 
       setPreviewDuration(clamped);
     },
-    [isResizing, block.startSlot, block.id, dayBlocks]
+    [isResizing, block.startSlot, block.id, dayBlocks, dayBounds]
   );
 
   const onPointerUp = useCallback(

@@ -13,10 +13,12 @@ import type { TimeBlock } from "@/types";
 import { hasOverlap, getClampedDuration } from "./overlap";
 import {
   DEFAULT_BLOCK_SLOTS,
+  DEFAULT_DAY_BOUNDS,
   MAX_BLOCK_SLOTS,
   MIN_BLOCK_SLOTS,
-  MAX_SLOT_INDEX,
-  TOTAL_SLOTS,
+  maxSlotIndex,
+  totalSlots,
+  type DayBounds,
 } from "./time-model";
 
 /** Outcome of a placement decision for a new block or a move. */
@@ -41,9 +43,13 @@ function clampPlacementDuration(duration: number): number {
 }
 
 /** Clamp a requested start upward when needed so the full duration fits in the Day. */
-export function clampStartToFitDuration(startSlot: number, duration: number): number {
+export function clampStartToFitDuration(
+  startSlot: number,
+  duration: number,
+  bounds: DayBounds = DEFAULT_DAY_BOUNDS
+): number {
   const fittedDuration = clampPlacementDuration(duration);
-  const maxStart = TOTAL_SLOTS - fittedDuration;
+  const maxStart = totalSlots(bounds) - fittedDuration;
   return Math.min(startSlot, maxStart);
 }
 
@@ -56,14 +62,15 @@ export function clampStartToFitDuration(startSlot: number, duration: number): nu
 export function resolveNewPlacement(
   startSlot: number,
   dayBlocks: TimeBlock[],
-  requested: number = DEFAULT_BLOCK_SLOTS
+  requested: number = DEFAULT_BLOCK_SLOTS,
+  bounds: DayBounds = DEFAULT_DAY_BOUNDS
 ): PlacementResult {
-  if (startSlot < 0 || startSlot > MAX_SLOT_INDEX) {
+  if (startSlot < 0 || startSlot > maxSlotIndex(bounds)) {
     return { ok: false, reason: "out-of-range" };
   }
 
   const requestedDuration = clampPlacementDuration(requested);
-  const fittedStart = clampStartToFitDuration(startSlot, requestedDuration);
+  const fittedStart = clampStartToFitDuration(startSlot, requestedDuration, bounds);
 
   if (!canStartAt(fittedStart, dayBlocks)) {
     return { ok: false, reason: "occupied" };
@@ -71,7 +78,13 @@ export function resolveNewPlacement(
   return {
     ok: true,
     startSlot: fittedStart,
-    duration: getClampedDuration(requestedDuration, fittedStart, dayBlocks),
+    duration: getClampedDuration(
+      requestedDuration,
+      fittedStart,
+      dayBlocks,
+      undefined,
+      totalSlots(bounds)
+    ),
   };
 }
 
@@ -84,9 +97,10 @@ export function resolveMovePlacement(
   startSlot: number,
   duration: number,
   dayBlocks: TimeBlock[],
-  excludeId: string
+  excludeId: string,
+  bounds: DayBounds = DEFAULT_DAY_BOUNDS
 ): PlacementResult {
-  if (startSlot < 0 || startSlot > MAX_SLOT_INDEX) {
+  if (startSlot < 0 || startSlot > maxSlotIndex(bounds)) {
     return { ok: false, reason: "out-of-range" };
   }
 
@@ -94,7 +108,7 @@ export function resolveMovePlacement(
     return { ok: false, reason: "out-of-range" };
   }
 
-  const fittedStart = clampStartToFitDuration(startSlot, duration);
+  const fittedStart = clampStartToFitDuration(startSlot, duration, bounds);
 
   if (hasOverlap(fittedStart, fittedStart + duration, dayBlocks, excludeId)) {
     return { ok: false, reason: "occupied" };
@@ -107,9 +121,10 @@ export function resolveResize(
   requested: number,
   startSlot: number,
   dayBlocks: TimeBlock[],
-  excludeId: string
+  excludeId: string,
+  bounds: DayBounds = DEFAULT_DAY_BOUNDS
 ): number {
-  return getClampedDuration(requested, startSlot, dayBlocks, excludeId);
+  return getClampedDuration(requested, startSlot, dayBlocks, excludeId, totalSlots(bounds));
 }
 
 /**
@@ -120,12 +135,15 @@ export function resolveResize(
 export function resolveDrawCommit(
   drawnDuration: number,
   startSlot: number,
-  dayBlocks: TimeBlock[]
+  dayBlocks: TimeBlock[],
+  bounds: DayBounds = DEFAULT_DAY_BOUNDS
 ): number {
   return getClampedDuration(
     Math.max(MIN_BLOCK_SLOTS, drawnDuration),
     startSlot,
-    dayBlocks
+    dayBlocks,
+    undefined,
+    totalSlots(bounds)
   );
 }
 
@@ -133,7 +151,8 @@ export function resolveDrawCommit(
 export function resolveDrawPreview(
   requested: number,
   startSlot: number,
-  dayBlocks: TimeBlock[]
+  dayBlocks: TimeBlock[],
+  bounds: DayBounds = DEFAULT_DAY_BOUNDS
 ): number {
-  return getClampedDuration(requested, startSlot, dayBlocks);
+  return getClampedDuration(requested, startSlot, dayBlocks, undefined, totalSlots(bounds));
 }

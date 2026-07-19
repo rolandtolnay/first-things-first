@@ -7,17 +7,21 @@ import {
   TIME_LABELS_WIDTH,
 } from "@/lib/constants";
 import {
-  TOTAL_SLOTS,
-  TIME_GRID_HEIGHT,
+  gridHeight,
   slotIsHourStart,
   slotToHourLabel,
   slotToPixels,
+  totalSlots,
+  weekDayBounds,
 } from "@/lib/time-model";
+import { useWeekStore } from "@/stores/weekStore";
 
 export function TimeLabelsColumn() {
+  const dayBounds = useWeekStore((state) => weekDayBounds(state.currentWeek));
+
   // Only hour-start slots carry a label; positioned absolutely against the grid
   // so they stay in lockstep with the day-column hour lines.
-  const hourSlots = Array.from({ length: TOTAL_SLOTS }, (_, i) => i).filter(
+  const hourSlots = Array.from({ length: totalSlots(dayBounds) }, (_, i) => i).filter(
     slotIsHourStart
   );
 
@@ -54,10 +58,10 @@ export function TimeLabelsColumn() {
       {/* Time labels — absolutely positioned over a slot-height grid */}
       <div
         className="relative flex-none"
-        style={{ height: `${TIME_GRID_HEIGHT}px` }}
+        style={{ height: `${gridHeight(dayBounds)}px` }}
       >
         {hourSlots.map((slotIndex) => {
-          const hour = slotToHourLabel(slotIndex);
+          const hour = slotToHourLabel(slotIndex, dayBounds);
           return (
             <div
               key={slotIndex}

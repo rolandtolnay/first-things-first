@@ -90,7 +90,10 @@ function isDayOfWeek(value: unknown): value is DayOfWeek {
 }
 
 function isTimeSlotIndex(value: unknown): value is TimeSlotIndex {
-  return Number.isInteger(value) && typeof value === "number" && value >= 0 && value <= 23;
+  // Structural guard only: the true upper bound depends on the week's day
+  // bounds and is enforced by the scheduling placement resolvers. 38 slots is
+  // the widest supported window (5:00-24:00).
+  return Number.isInteger(value) && typeof value === "number" && value >= 0 && value < 38;
 }
 
 export function isRoleReorderDragData(data: unknown): data is RoleReorderDragData {

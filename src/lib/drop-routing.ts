@@ -34,7 +34,7 @@ import type {
 } from "@/types";
 import type { DragData, DropZoneData } from "@/types/dnd";
 import { MAX_PRIORITIES_PER_DAY } from "@/lib/constants";
-import { DEFAULT_BLOCK_SLOTS } from "@/lib/time-model";
+import { DEFAULT_BLOCK_SLOTS, DEFAULT_DAY_BOUNDS, type DayBounds } from "@/lib/time-model";
 import { resolveMovePlacement, resolveNewPlacement } from "@/lib/scheduling";
 
 // ============================================================================
@@ -71,6 +71,8 @@ export interface TimeGridDropPreview {
 }
 
 interface TimeGridDropPreviewSnapshot {
+  /** The week's planning-day window (defaults to 8:00–20:00). */
+  dayBounds?: DayBounds;
   timeBlocks: TimeBlock[];
   roles: RoleSnapshot[];
 }
@@ -261,7 +263,8 @@ export function resolveTimeGridDropPreview(
       intent.slotIndex,
       block.duration,
       dayBlocks,
-      block.id
+      block.id,
+      snapshot.dayBounds ?? DEFAULT_DAY_BOUNDS
     );
     return placement.ok
       ? {
@@ -280,7 +283,8 @@ export function resolveTimeGridDropPreview(
     const placement = resolveNewPlacement(
       intent.slotIndex,
       dayBlocks,
-      DEFAULT_BLOCK_SLOTS
+      DEFAULT_BLOCK_SLOTS,
+      snapshot.dayBounds ?? DEFAULT_DAY_BOUNDS
     );
     return placement.ok
       ? {

@@ -398,9 +398,299 @@ describe("malformed input", () => {
     expect(result.counts).toEqual({
       total: 0,
       importable: 0,
+      updates: 0,
       unsupported: 0,
       conflicts: 0,
       duplicates: 0,
     });
+  });
+});
+
+// ============================================================================
+// Import refresh — moved/renamed events update the planned item in place
+// ============================================================================
+
+describe("import refresh", () => {
+  const originalTimed = vevent([
+    "UID:mtg",
+    "DTSTART:20260721T100000",
+    "DTEND:20260721T110000",
+    "SUMMARY:Sync",
+  ]);
+  const originalAllDay = vevent([
+    "UID:offsite",
+    "DTSTART;VALUE=DATE:20260722",
+    "SUMMARY:Offsite",
+  ]);
+
+  /** A week that already confirmed the original import (real payload mapping). */
+  function importedWeek(...events: string[]): Week {
+    const first = review(ics(...events));
+    const payload = buildImportPayload(
+      first.candidates,
+      new Set(first.candidates.map((c) => c.key)),
+      "2026-07-19T12:00:00.000Z"
+    );
+    return week({
+      timeBlocks: payload.timeBlocks.map((input, i) => ({ ...input, id: `tb-${i}` })),
+      dayPriorities: payload.dayPriorities.map((input, i) => ({
+        ...input,
+        id: `dp-${i}`,
+        order: i,
+      })),
+    });
+  }
+
+  it("classifies a moved timed event as an update onto the planned block", () => {
+    const planned = importedWeek(originalTimed);
+    const moved = vevent([
+      "UID:mtg",
+      "DTSTART:20260723T140000",
+      "DTEND:20260723T153000",
+      "SUMMARY:Sync",
+    ]);
+
+    const result = buildImportReview({
+      icsText: ics(moved),
+      filename: "calendar.ics",
+      week: planned,
+      now: "2026-07-20T12:00:00.000Z",
+    });
+
+    expect(result.counts).toMatchObject({ total: 1, updates: 1, duplicates: 0 });
+    expect(result.candidates[0]).toMatchObject({
+      status: "update",
+      dayIndex: 3,
+      startSlot: 12, // 14:00
+      duration: 3,
+      update: {
+        targetKind: "timeBlock",
+        targetId: "tb-0",
+        change: "time",
+        previousLabel: "Tue 10:00–11:00",
+      },
+    });
+
+    const payload = buildImportPayload(
+      result.candidates,
+      new Set([result.candidates[0].key]),
+      "2026-07-20T12:00:00.000Z"
+    );
+    expect(payload.timeBlocks).toHaveLength(0);
+    expect(payload.updateTimeBlocks).toEqual([
+      expect.objectContaining({
+        id: "tb-0",
+        dayIndex: 3,
+        startSlot: 12,
+        duration: 3,
+        title: "Sync",
+      }),
+    ]);
+  });
+
+  it("still marks an unchanged event as a duplicate", () => {
+    const planned = importedWeek(originalTimed);
+    const result = buildImportReview({
+      icsText: ics(originalTimed),
+      filename: "calendar.ics",
+      week: planned,
+      now: "2026-07-20T12:00:00.000Z",
+    });
+
+    expect(result.candidates[0]).toMatchObject({
+      status: "duplicate",
+      reason: "Already imported into this week",
+    });
+  });
+
+  it("classifies a title-only change as an update that keeps the planned position", () => {
+    const planned = importedWeek(originalTimed);
+    // The user moved the planned block to Friday 9:00 since importing.
+    planned.timeBlocks[0] = { ...planned.timeBlocks[0], dayIndex: 4, startSlot: 2 };
+    const renamed = vevent([
+      "UID:mtg",
+      "DTSTART:20260721T100000",
+      "DTEND:20260721T110000",
+      "SUMMARY:Sync (renamed)",
+    ]);
+
+    const result = buildImportReview({
+      icsText: ics(renamed),
+      filename: "calendar.ics",
+      week: planned,
+      now: "2026-07-20T12:00:00.000Z",
+    });
+
+    expect(result.candidates[0]).toMatchObject({
+      status: "update",
+      dayIndex: 4,
+      startSlot: 2,
+      duration: 2,
+      update: { change: "title", targetKind: "timeBlock", targetId: "tb-0" },
+    });
+  });
+
+  it("marks a move onto an occupied span as a conflict and leaves the old block alone", () => {
+    const planned = importedWeek(originalTimed);
+    planned.timeBlocks.push({ ...existingBlock, id: "other", dayIndex: 3, startSlot: 12, duration: 2 });
+    const moved = vevent([
+      "UID:mtg",
+      "DTSTART:20260723T140000",
+      "DTEND:20260723T150000",
+      "SUMMARY:Sync",
+    ]);
+
+    const result = buildImportReview({
+      icsText: ics(moved),
+      filename: "calendar.ics",
+      week: planned,
+      now: "2026-07-20T12:00:00.000Z",
+    });
+
+    expect(result.candidates[0]).toMatchObject({ status: "conflict" });
+    const payload = buildImportPayload(result.candidates, new Set(["anything"]));
+    expect(payload.updateTimeBlocks).toHaveLength(0);
+  });
+
+  it("keeps the old span reserved so a swap into it conflicts instead of overlapping", () => {
+    const planned = importedWeek(originalTimed);
+    const movedOntoOldSpan = vevent([
+      "UID:other-mtg",
+      "DTSTART:20260721T100000",
+      "DTEND:20260721T110000",
+      "SUMMARY:New meeting",
+    ]);
+    const movedAway = vevent([
+      "UID:mtg",
+      "DTSTART:20260721T150000",
+      "DTEND:20260721T160000",
+      "SUMMARY:Sync",
+    ]);
+
+    const result = buildImportReview({
+      icsText: ics(movedAway, movedOntoOldSpan),
+      filename: "calendar.ics",
+      week: planned,
+      now: "2026-07-20T12:00:00.000Z",
+    });
+
+    const byTitle = Object.fromEntries(result.candidates.map((c) => [c.title, c.status]));
+    expect(byTitle["Sync"]).toBe("update");
+    expect(byTitle["New meeting"]).toBe("conflict");
+  });
+
+  it("updates only the moved instance of a recurring event", () => {
+    const recurring = vevent([
+      "UID:standup",
+      "DTSTART:20260720T090000",
+      "DTEND:20260720T093000",
+      "RRULE:FREQ=DAILY;COUNT=2",
+      "SUMMARY:Standup",
+    ]);
+    const planned = importedWeek(recurring);
+    expect(planned.timeBlocks).toHaveLength(2);
+
+    const exception = vevent([
+      "UID:standup",
+      "RECURRENCE-ID:20260721T090000",
+      "DTSTART:20260721T110000",
+      "DTEND:20260721T113000",
+      "SUMMARY:Standup",
+    ]);
+
+    const result = buildImportReview({
+      icsText: ics(recurring, exception),
+      filename: "calendar.ics",
+      week: planned,
+      now: "2026-07-20T12:00:00.000Z",
+    });
+
+    const statuses = result.candidates.map((c) => c.status).sort();
+    expect(statuses).toEqual(["duplicate", "update"]);
+    const update = result.candidates.find((c) => c.status === "update")!;
+    expect(update).toMatchObject({ dayIndex: 1, startSlot: 6 });
+  });
+
+  it("refuses to auto-update an item the user converted to the evening", () => {
+    const planned = importedWeek(originalTimed);
+    const [block] = planned.timeBlocks;
+    planned.timeBlocks = [];
+    planned.eveningBlocks = [
+      {
+        id: "ev-1",
+        type: "freestyle",
+        dayIndex: block.dayIndex,
+        title: block.title,
+        completed: false,
+        importMeta: block.importMeta,
+      },
+    ];
+    const moved = vevent([
+      "UID:mtg",
+      "DTSTART:20260723T140000",
+      "DTEND:20260723T150000",
+      "SUMMARY:Sync",
+    ]);
+
+    const result = buildImportReview({
+      icsText: ics(moved),
+      filename: "calendar.ics",
+      week: planned,
+      now: "2026-07-20T12:00:00.000Z",
+    });
+
+    expect(result.candidates[0].status).toBe("unsupported");
+    expect(result.candidates[0].reason).toContain("evening");
+  });
+
+  it("updates a moved all-day priority in place", () => {
+    const planned = importedWeek(originalAllDay);
+    const moved = vevent([
+      "UID:offsite",
+      "DTSTART;VALUE=DATE:20260724",
+      "SUMMARY:Offsite",
+    ]);
+
+    const result = buildImportReview({
+      icsText: ics(moved),
+      filename: "calendar.ics",
+      week: planned,
+      now: "2026-07-20T12:00:00.000Z",
+    });
+
+    expect(result.candidates[0]).toMatchObject({
+      status: "update",
+      kind: "allday",
+      dayIndex: 4,
+      update: { targetKind: "dayPriority", targetId: "dp-0", change: "time" },
+    });
+
+    const payload = buildImportPayload(
+      result.candidates,
+      new Set([result.candidates[0].key])
+    );
+    expect(payload.updateDayPriorities).toEqual([
+      expect.objectContaining({ id: "dp-0", dayIndex: 4, text: "Offsite" }),
+    ]);
+  });
+
+  it("marks an event moved outside the planner day as unsupported without touching the plan", () => {
+    const planned = importedWeek(originalTimed);
+    const moved = vevent([
+      "UID:mtg",
+      "DTSTART:20260723T060000",
+      "DTEND:20260723T070000",
+      "SUMMARY:Sync",
+    ]);
+
+    const result = buildImportReview({
+      icsText: ics(moved),
+      filename: "calendar.ics",
+      week: planned,
+      now: "2026-07-20T12:00:00.000Z",
+    });
+
+    expect(result.candidates[0].status).toBe("unsupported");
+    expect(result.candidates[0].reason).toContain("planner day");
   });
 });

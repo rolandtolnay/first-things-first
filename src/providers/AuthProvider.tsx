@@ -12,6 +12,7 @@ import type { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
+import { weekPersistence } from "@/stores/weekPersistence";
 import { useWeekStore } from "@/stores/weekStore";
 
 interface AuthContextValue {
@@ -119,6 +120,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase, bootstrap, reset, leavePrivateShell]);
 
   const signOut = useCallback(async () => {
+    // Let in-flight optimistic Week saves land before the Session is torn down;
+    // reset() aborts the queue, so signing out mid-save would silently drop the
+    // user's last edits (observed from the mobile Today view).
+    await weekPersistence.flush();
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     leavePrivateShell();

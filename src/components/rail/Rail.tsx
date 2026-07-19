@@ -1,5 +1,7 @@
 import { WeekMetrics } from "./WeekMetrics";
 import { StreakCard } from "./StreakCard";
+import { ReflectionCard } from "./ReflectionCard";
+import { RoleTrendsCard } from "./RoleTrendsCard";
 
 /**
  * Rail — the right column (CONTEXT.md → Rail). A scrollable, hairline-bordered
@@ -13,6 +15,8 @@ export function Rail() {
       <WeekMetrics />
       <hr className="border-border" />
       <StreakCard />
+      <RoleTrendsCard />
+      <ReflectionCard />
     </aside>
   );
 }

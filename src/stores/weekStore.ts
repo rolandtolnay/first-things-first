@@ -16,7 +16,17 @@ import {
   resolveResize,
 } from "@/lib/scheduling";
 import { buildEmptyWeek, buildTargetWeek } from "@/lib/weekly-handoff";
+import {
+  SLOTS_PER_HOUR,
+  isValidDayBounds,
+  slotToTime,
+  totalSlots,
+  weekDayBounds,
+  type DayBounds,
+} from "@/lib/time-model";
+import { DAY_NAMES } from "@/lib/utils";
 import { priorityRoleId, priorityText } from "@/lib/priorities";
+import { hasOverlap } from "@/lib/overlap";
 import { MAX_PRIORITIES_PER_DAY } from "@/lib/constants";
 import { getNextRoleColor } from "@/lib/role-colors";
 import {
@@ -55,6 +65,23 @@ import type {
 
 // Store Types
 
+/**
+ * The most recent destructive action, held for toast-based undo. Single-level
+ * and most-recent-wins: every new deletion replaces the previous entry. Restore
+ * is data-based (the removed entities), never a whole-Week rollback, so edits
+ * made after the deletion survive an undo.
+ */
+export interface UndoEntry {
+  id: string;
+  weekId: WeekId;
+  /** Customer-facing toast label, e.g. "Deleted “Gym”". */
+  label: string;
+  goals?: Goal[];
+  dayPriorities?: DayPriority[];
+  timeBlocks?: TimeBlock[];
+  eveningBlocks?: EveningBlock[];
+}
+
 interface WeekStore {
   // Current week state
   currentWeek: Week | null;
@@ -65,6 +92,8 @@ interface WeekStore {
   availableWeekIds: WeekId[];
   isLoading: boolean;
   error: string | null;
+  /** Pending toast-undo entry for the latest deletion (single-level). */
+  lastUndo: UndoEntry | null;
 
   // Session lifecycle (driven by AuthProvider)
   /** Load the user's week list + an initial week (today's, else latest, else a
@@ -74,6 +103,13 @@ interface WeekStore {
   reset: () => void;
   /** Dismiss the current error banner. */
   clearError: () => void;
+  /**
+   * Restore the latest deletion. Pass the entry id from the toast so a stale
+   * toast can never undo a newer deletion. Returns a customer-facing message
+   * when something could not (fully) come back, null on clean success or when
+   * the entry expired.
+   */
+  undoLastDelete: (entryId?: string) => Promise<string | null>;
 
   // Week operations
   loadWeek: (weekId: WeekId) => Promise<void>;
@@ -85,6 +121,14 @@ interface WeekStore {
   ) => Promise<Week>;
   saveCurrentWeek: () => Promise<void>;
   clearCurrentWeek: () => Promise<void>;
+  /**
+   * Change the viewed Week's planning-day window. Existing blocks keep their
+   * wall-clock times (slots re-index); returns a customer-facing refusal
+   * message when a block would fall outside the new window, null on success.
+   */
+  updateDayBounds: (bounds: DayBounds) => Promise<string | null>;
+  /** Save the viewed Week's closing reflection (empty text clears it). */
+  saveReflection: (text: string) => Promise<void>;
 
   // Role operations
   addRole: (input: CreateRoleInput) => Promise<Role>;
@@ -118,10 +162,16 @@ interface WeekStore {
   deleteTimeBlock: (blockId: string) => Promise<void>;
   toggleTimeBlockCompleted: (blockId: string) => Promise<void>;
 
-  // Calendar import (single-commit bulk append; see etc/prd/manual-ics-calendar-import.md)
+  // Calendar import (single-commit bulk append + in-place refresh;
+  // see etc/prd/manual-ics-calendar-import.md)
   importWeekItems: (input: {
     timeBlocks: CreateTimeBlockInput[];
     dayPriorities: Omit<DayPriority, "id" | "order">[];
+    /** In-place refreshes of previously imported items (import refresh). */
+    updateTimeBlocks?: Array<
+      Pick<TimeBlock, "id" | "dayIndex" | "startSlot" | "duration" | "title" | "importMeta">
+    >;
+    updateDayPriorities?: Array<Pick<DayPriority, "id" | "dayIndex" | "text" | "importMeta">>;
   }) => Promise<void>;
 
   // Evening block operations
@@ -320,6 +370,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   availableWeekIds: [],
   isLoading: false,
   error: null,
+  lastUndo: null,
 
   // Session Lifecycle (driven by AuthProvider)
 
@@ -390,10 +441,84 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
       availableWeekIds: [],
       isLoading: false,
       error: null,
+      lastUndo: null,
     });
   },
 
   clearError: () => set({ error: null }),
+
+  undoLastDelete: async (entryId?: string) => {
+    const entry = get().lastUndo;
+    if (!entry || (entryId !== undefined && entry.id !== entryId)) return null;
+    set({ lastUndo: null });
+
+    const week = get().currentWeek;
+    // Week-scoped: a stale undo never mutates a different Week. Checking the
+    // SELECTED id too closes the navigation race where currentWeek still holds
+    // the old Week while the newly selected one is loading.
+    if (!week || week.id !== entry.weekId || get().selectedWeekId !== entry.weekId) {
+      return null;
+    }
+
+    // Planning integrity first: anything whose place has been retaken since the
+    // deletion stays out, reported honestly, instead of overlapping.
+    const skipped: string[] = [];
+
+    const restoredBlocks = (entry.timeBlocks ?? []).filter((block) => {
+      const fits =
+        block.startSlot >= 0 &&
+        block.startSlot + block.duration <= totalSlots(weekDayBounds(week)) &&
+        !hasOverlap(
+          block.startSlot,
+          block.startSlot + block.duration,
+          week.timeBlocks.filter((b) => b.dayIndex === block.dayIndex)
+        );
+      if (!fits) skipped.push(block.title.trim() || "a scheduled block");
+      return fits;
+    });
+
+    const occupiedEvenings = new Set(week.eveningBlocks.map((b) => b.dayIndex));
+    const restoredEvenings = (entry.eveningBlocks ?? []).filter((block) => {
+      const fits = !occupiedEvenings.has(block.dayIndex);
+      if (fits) occupiedEvenings.add(block.dayIndex);
+      else skipped.push(block.title.trim() || "an evening plan");
+      return fits;
+    });
+
+    const priorityCounts = new Map<number, number>();
+    for (const priority of week.dayPriorities) {
+      priorityCounts.set(priority.dayIndex, (priorityCounts.get(priority.dayIndex) ?? 0) + 1);
+    }
+    const restoredPriorities = (entry.dayPriorities ?? []).filter((priority) => {
+      const count = priorityCounts.get(priority.dayIndex) ?? 0;
+      const fits = count < MAX_PRIORITIES_PER_DAY;
+      if (fits) priorityCounts.set(priority.dayIndex, count + 1);
+      else skipped.push(priorityText(priority, week.goals).trim() || "a priority");
+      return fits;
+    });
+
+    const restoredGoals = entry.goals ?? [];
+    const restoredAnything =
+      restoredGoals.length > 0 ||
+      restoredBlocks.length > 0 ||
+      restoredEvenings.length > 0 ||
+      restoredPriorities.length > 0;
+
+    if (!restoredAnything) {
+      return "Couldn’t undo — that space has been filled since";
+    }
+
+    await withWeek(get, set, (w) => ({
+      goals: [...w.goals, ...restoredGoals],
+      dayPriorities: [...w.dayPriorities, ...restoredPriorities],
+      timeBlocks: [...w.timeBlocks, ...restoredBlocks],
+      eveningBlocks: [...w.eveningBlocks, ...restoredEvenings],
+    }));
+
+    return skipped.length > 0
+      ? `Brought back what still fits — no room left for ${skipped.join(", ")}`
+      : null;
+  },
 
   // Week Operations
 
@@ -418,7 +543,9 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   navigateToWeek: async (weekId: WeekId) => {
-    set({ selectedWeekId: weekId });
+    // Undo is week-scoped; leaving the week expires the pending entry so a
+    // still-visible toast can no longer restore into a week the user left.
+    set({ selectedWeekId: weekId, ...(get().lastUndo ? { lastUndo: null } : {}) });
     await get().loadWeek(weekId);
   },
 
@@ -458,6 +585,51 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
       timeBlocks: [],
       eveningBlocks: [],
     }));
+  },
+
+  saveReflection: async (text: string) => {
+    const week = get().currentWeek;
+    if (!week) return;
+    const next = text.trim() ? text : undefined;
+    if (week.reflection === next) return;
+    await withWeek(get, set, () => ({ reflection: next }));
+  },
+
+  updateDayBounds: async (bounds: DayBounds) => {
+    const week = get().currentWeek;
+    if (!week) return "No week loaded";
+    if (!isValidDayBounds(bounds)) return "Choose a start before the end of the day";
+
+    const previous = weekDayBounds(week);
+    if (previous.startHour === bounds.startHour && previous.endHour === bounds.endHour) {
+      return null;
+    }
+
+    // Slot 0 means "day start", so blocks shift by the start-hour delta to keep
+    // their wall-clock times. Narrowing is refused (never silently moved) when
+    // any block would fall outside the new window.
+    const slotDelta = (previous.startHour - bounds.startHour) * SLOTS_PER_HOUR;
+    const newTotal = totalSlots(bounds);
+
+    for (const block of week.timeBlocks) {
+      const shiftedStart = block.startSlot + slotDelta;
+      if (shiftedStart < 0 || shiftedStart + block.duration > newTotal) {
+        const title = block.title.trim() || "an untitled block";
+        const time = slotToTime(block.startSlot, previous);
+        return `${DAY_NAMES[block.dayIndex]}’s “${title}” at ${time} would fall outside those hours — move or delete it first`;
+      }
+    }
+
+    await withWeek(get, set, (w) => ({
+      dayBounds: bounds,
+      timeBlocks: w.timeBlocks.map((b) => ({
+        ...b,
+        startSlot: b.startSlot + slotDelta,
+      })),
+    }));
+    // Pending undo entries hold pre-shift slot indices; expire them.
+    if (get().lastUndo) set({ lastUndo: null });
+    return null;
   },
 
   // Role Operations
@@ -687,12 +859,29 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   deleteGoal: async (goalId: string) => {
-    await withWeek(get, set, (week) => ({
-      goals: week.goals.filter((g) => g.id !== goalId),
-      dayPriorities: week.dayPriorities.filter((p) => p.goalId !== goalId),
-      timeBlocks: week.timeBlocks.filter((b) => b.type === "freestyle" || b.goalId !== goalId),
-      eveningBlocks: week.eveningBlocks.filter((b) => b.type === "freestyle" || b.goalId !== goalId),
+    const week = get().currentWeek;
+    const goal = week?.goals.find((g) => g.id === goalId);
+
+    await withWeek(get, set, (w) => ({
+      goals: w.goals.filter((g) => g.id !== goalId),
+      dayPriorities: w.dayPriorities.filter((p) => p.goalId !== goalId),
+      timeBlocks: w.timeBlocks.filter((b) => b.type === "freestyle" || b.goalId !== goalId),
+      eveningBlocks: w.eveningBlocks.filter((b) => b.type === "freestyle" || b.goalId !== goalId),
     }));
+
+    if (week && goal) {
+      set({
+        lastUndo: {
+          id: generateId(),
+          weekId: week.id,
+          label: `Deleted goal “${goal.text}”`,
+          goals: [goal],
+          dayPriorities: week.dayPriorities.filter((p) => p.goalId === goalId),
+          timeBlocks: week.timeBlocks.filter((b) => b.type !== "freestyle" && b.goalId === goalId),
+          eveningBlocks: week.eveningBlocks.filter((b) => b.type !== "freestyle" && b.goalId === goalId),
+        },
+      });
+    }
   },
 
   toggleGoalCompleted: async (goalId: string) => {
@@ -745,9 +934,25 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   removeDayPriority: async (priorityId: string) => {
-    await withWeek(get, set, (week) => ({
-      dayPriorities: week.dayPriorities.filter((p) => p.id !== priorityId),
+    const week = get().currentWeek;
+    const priority = week?.dayPriorities.find((p) => p.id === priorityId);
+
+    await withWeek(get, set, (w) => ({
+      dayPriorities: w.dayPriorities.filter((p) => p.id !== priorityId),
     }));
+
+    // Abandoned inline creations (empty freestyle text) are not undoable noise.
+    const text = week && priority ? priorityText(priority, week.goals).trim() : "";
+    if (week && priority && text) {
+      set({
+        lastUndo: {
+          id: generateId(),
+          weekId: week.id,
+          label: `Removed “${text}”`,
+          dayPriorities: [priority],
+        },
+      });
+    }
   },
 
   toggleDayPriorityCompleted: async (priorityId: string) => {
@@ -788,9 +993,24 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   deleteTimeBlock: async (blockId: string) => {
-    await withWeek(get, set, (week) => ({
-      timeBlocks: week.timeBlocks.filter((b) => b.id !== blockId),
+    const week = get().currentWeek;
+    const block = week?.timeBlocks.find((b) => b.id === blockId);
+
+    await withWeek(get, set, (w) => ({
+      timeBlocks: w.timeBlocks.filter((b) => b.id !== blockId),
     }));
+
+    // Abandoned draws (empty title) are not undoable noise.
+    if (week && block && block.title.trim()) {
+      set({
+        lastUndo: {
+          id: generateId(),
+          weekId: week.id,
+          label: `Deleted “${block.title}”`,
+          timeBlocks: [block],
+        },
+      });
+    }
   },
 
   toggleTimeBlockCompleted: async (blockId: string) => {
@@ -801,12 +1021,47 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
 
   // Calendar Import
 
-  importWeekItems: async ({ timeBlocks, dayPriorities }) => {
-    if (timeBlocks.length === 0 && dayPriorities.length === 0) return;
+  importWeekItems: async ({
+    timeBlocks,
+    dayPriorities,
+    updateTimeBlocks = [],
+    updateDayPriorities = [],
+  }) => {
+    if (
+      timeBlocks.length === 0 &&
+      dayPriorities.length === 0 &&
+      updateTimeBlocks.length === 0 &&
+      updateDayPriorities.length === 0
+    ) {
+      return;
+    }
 
     // One Week update for the whole confirmation so a failure never leaves the
-    // Week partially imported (PRD: single-commit bulk append).
+    // Week partially imported (PRD: single-commit bulk append). Updates refresh
+    // day/time/title and Import Metadata in place; completion, Role assignment,
+    // and recurrence on the planned item are preserved.
     await withWeek(get, set, (week) => {
+      const blockUpdatesById = new Map(updateTimeBlocks.map((u) => [u.id, u]));
+      const updatedBlocks = week.timeBlocks.map((block) => {
+        const update = blockUpdatesById.get(block.id);
+        return update ? { ...block, ...update } : block;
+      });
+
+      const priorityUpdatesById = new Map(updateDayPriorities.map((u) => [u.id, u]));
+      const updatedPriorities = week.dayPriorities.map((priority) => {
+        const update = priorityUpdatesById.get(priority.id);
+        if (!update) return priority;
+        const movedDay = update.dayIndex !== priority.dayIndex;
+        return {
+          ...priority,
+          ...update,
+          // A day move re-appends at the end of the new day's list.
+          order: movedDay
+            ? week.dayPriorities.filter((p) => p.dayIndex === update.dayIndex).length
+            : priority.order,
+        };
+      });
+
       const perDayCounts = new Map<number, number>();
       const appendedPriorities = dayPriorities.map((input) => {
         const offset = perDayCounts.get(input.dayIndex) ?? 0;
@@ -814,16 +1069,18 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
         return {
           ...input,
           id: generateId(),
-          order: nextPriorityOrder(week, input.dayIndex) + offset,
+          order:
+            updatedPriorities.filter((p) => p.dayIndex === input.dayIndex).length +
+            offset,
         };
       });
 
       return {
         timeBlocks: [
-          ...week.timeBlocks,
+          ...updatedBlocks,
           ...timeBlocks.map((input) => ({ ...input, id: generateId() })),
         ],
-        dayPriorities: [...week.dayPriorities, ...appendedPriorities],
+        dayPriorities: [...updatedPriorities, ...appendedPriorities],
       };
     });
   },
@@ -859,9 +1116,23 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
   },
 
   deleteEveningBlock: async (blockId: string) => {
-    await withWeek(get, set, (week) => ({
-      eveningBlocks: week.eveningBlocks.filter((b) => b.id !== blockId),
+    const week = get().currentWeek;
+    const block = week?.eveningBlocks.find((b) => b.id === blockId);
+
+    await withWeek(get, set, (w) => ({
+      eveningBlocks: w.eveningBlocks.filter((b) => b.id !== blockId),
     }));
+
+    if (week && block && block.title.trim()) {
+      set({
+        lastUndo: {
+          id: generateId(),
+          weekId: week.id,
+          label: `Deleted “${block.title}”`,
+          eveningBlocks: [block],
+        },
+      });
+    }
   },
 
   toggleEveningBlockCompleted: async (blockId: string) => {
@@ -877,7 +1148,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     if (!week) return null;
 
     const dayBlocks = week.timeBlocks.filter((b) => b.dayIndex === input.dayIndex);
-    const placement = resolveNewPlacement(startSlot, dayBlocks, requested);
+    const placement = resolveNewPlacement(startSlot, dayBlocks, requested, weekDayBounds(week));
     if (!placement.ok) return null;
 
     const block: TimeBlock = {
@@ -900,7 +1171,13 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
 
     const dayBlocks = week.timeBlocks.filter((b) => b.dayIndex === dayIndex);
     // Exclude self so the block doesn't collide with its own footprint.
-    const placement = resolveMovePlacement(startSlot, block.duration, dayBlocks, blockId);
+    const placement = resolveMovePlacement(
+      startSlot,
+      block.duration,
+      dayBlocks,
+      blockId,
+      weekDayBounds(week)
+    );
     if (!placement.ok) return null;
 
     const moved: TimeBlock = {
@@ -922,7 +1199,13 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     if (!block) return;
 
     const dayBlocks = week.timeBlocks.filter((b) => b.dayIndex === block.dayIndex);
-    const duration = resolveResize(requested, block.startSlot, dayBlocks, blockId);
+    const duration = resolveResize(
+      requested,
+      block.startSlot,
+      dayBlocks,
+      blockId,
+      weekDayBounds(week)
+    );
 
     await withWeek(get, set, (w) => ({
       timeBlocks: w.timeBlocks.map((b) => (b.id === blockId ? { ...b, duration } : b)),
@@ -998,7 +1281,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     if (!priority) return null;
 
     const dayBlocks = week.timeBlocks.filter((b) => b.dayIndex === dayIndex);
-    const placement = resolveNewPlacement(startSlot, dayBlocks);
+    const placement = resolveNewPlacement(startSlot, dayBlocks, undefined, weekDayBounds(week));
     if (!placement.ok) return null;
 
     const block: TimeBlock = {
@@ -1077,7 +1360,7 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     if (!evening) return null;
 
     const dayBlocks = week.timeBlocks.filter((b) => b.dayIndex === dayIndex);
-    const placement = resolveNewPlacement(startSlot, dayBlocks);
+    const placement = resolveNewPlacement(startSlot, dayBlocks, undefined, weekDayBounds(week));
     if (!placement.ok) return null;
 
     const block: TimeBlock = {

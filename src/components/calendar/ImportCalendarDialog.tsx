@@ -80,10 +80,16 @@ export function ImportCalendarDialog({ open, onClose, week }: ImportCalendarDial
       }
 
       setReviewState({ review, filename: file.name });
+      // New events and moved events start selected; title-only updates start
+      // unselected (they could be overwriting the user's own rename).
       setSelectedKeys(
         new Set(
           review.candidates
-            .filter((candidate) => candidate.status === "importable")
+            .filter(
+              (candidate) =>
+                candidate.status === "importable" ||
+                (candidate.status === "update" && candidate.update?.change === "time")
+            )
             .map((candidate) => candidate.key)
         )
       );
@@ -118,11 +124,17 @@ export function ImportCalendarDialog({ open, onClose, week }: ImportCalendarDial
   }
 
   const review = reviewState?.review;
-  const importableSelected = review
+  const addSelected = review
     ? review.candidates.filter(
         (candidate) => candidate.status === "importable" && selectedKeys.has(candidate.key)
       ).length
     : 0;
+  const updateSelected = review
+    ? review.candidates.filter(
+        (candidate) => candidate.status === "update" && selectedKeys.has(candidate.key)
+      ).length
+    : 0;
+  const totalSelected = addSelected + updateSelected;
 
   const candidatesByDay = useMemo(() => {
     if (!review) return [];
@@ -217,7 +229,8 @@ export function ImportCalendarDialog({ open, onClose, week }: ImportCalendarDial
 
             <div className="flex shrink-0 flex-wrap gap-x-4 gap-y-1 font-mono text-[length:var(--text-label)] uppercase tracking-[0.12em] text-muted-foreground">
               <span>{review.counts.total} this week</span>
-              <span className="text-foreground">{importableSelected} selected</span>
+              <span className="text-foreground">{totalSelected} selected</span>
+              {review.counts.updates > 0 && <span>{review.counts.updates} changed</span>}
               {review.counts.conflicts > 0 && <span>{review.counts.conflicts} conflicts</span>}
               {review.counts.duplicates > 0 && <span>{review.counts.duplicates} duplicates</span>}
               {review.counts.unsupported > 0 && <span>{review.counts.unsupported} skipped</span>}
@@ -272,18 +285,23 @@ export function ImportCalendarDialog({ open, onClose, week }: ImportCalendarDial
             Cancel
           </Button>
           {review && review.counts.total > 0 && (
-            <Button onClick={submit} disabled={isSubmitting || importableSelected === 0}>
-              {isSubmitting
-                ? "Adding…"
-                : importableSelected === 1
-                  ? "Add 1 event to this week"
-                  : `Add ${importableSelected} events to this week`}
+            <Button onClick={submit} disabled={isSubmitting || totalSelected === 0}>
+              {isSubmitting ? "Saving…" : confirmLabel(addSelected, updateSelected)}
             </Button>
           )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
+}
+
+function confirmLabel(adds: number, updates: number): string {
+  const eventNoun = (count: number) => (count === 1 ? "event" : "events");
+  if (adds > 0 && updates > 0) {
+    return `Add ${adds} and update ${updates} ${eventNoun(updates)}`;
+  }
+  if (updates > 0) return `Update ${updates} ${eventNoun(updates)} in this week`;
+  return adds === 1 ? "Add 1 event to this week" : `Add ${adds} events to this week`;
 }
 
 interface CandidateRowProps {
@@ -294,7 +312,8 @@ interface CandidateRowProps {
 }
 
 function CandidateRow({ candidate, checked, disabled, onToggle }: CandidateRowProps) {
-  const selectable = candidate.status === "importable";
+  const selectable =
+    candidate.status === "importable" || candidate.status === "update";
   const detailParts: React.ReactNode[] = [];
 
   if (candidate.details.location) {

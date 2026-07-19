@@ -9,7 +9,11 @@ import {
   getWeekNumber,
 } from "@/lib/utils";
 import { getRoleColorStyle } from "@/lib/role-colors";
-import { buildWeeklyHandoffModel, buildWeeklyHandoffOpeningModel } from "@/lib/weekly-handoff";
+import {
+  buildRoleRecaps,
+  buildWeeklyHandoffModel,
+  buildWeeklyHandoffOpeningModel,
+} from "@/lib/weekly-handoff";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import { Textarea } from "@/components/ui/textarea";
 import { TextActionButton } from "@/components/ui/TextActionButton";
 import { WeekSelector } from "./WeekSelector";
 import type { Week, WeekId } from "@/types";
@@ -47,7 +52,10 @@ export function CarryoverDialog({
   const navigateToWeek = useWeekStore((s) => s.navigateToWeek);
   const existingWeekIds = useWeekStore((s) => s.availableWeekIds);
   const activeRoles = useWeekStore((s) => s.activeRoles);
+  const saveReflection = useWeekStore((s) => s.saveReflection);
 
+  const [step, setStep] = useState<"reflect" | "carry">("reflect");
+  const [reflectionDraft, setReflectionDraft] = useState("");
   const [targetWeekId, setTargetWeekId] = useState<WeekId>(getCurrentWeekId());
   const [dropdownWeekIds, setDropdownWeekIds] = useState<WeekId[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -75,7 +83,18 @@ export function CarryoverDialog({
     setSelectedIds(new Set(openingModel.defaultSelectedGoalIds));
     setSubmitError(null);
     setIsSubmitting(false);
+    setStep(sourceWeek ? "reflect" : "carry");
+    setReflectionDraft(sourceWeek?.reflection ?? "");
   }, [open, sourceWeek, viewedWeekId, existingWeekIds, activeRoles]);
+
+  const roleRecaps = useMemo(() => buildRoleRecaps(sourceWeek), [sourceWeek]);
+
+  async function continueToCarry() {
+    // Persist onto the Source Week at the step transition, so cancelling later
+    // never loses what was written.
+    await saveReflection(reflectionDraft);
+    setStep("carry");
+  }
 
   const model = useMemo(
     () =>
@@ -166,10 +185,60 @@ export function CarryoverDialog({
         <DialogHeader className="shrink-0 gap-2 pr-8">
           <DialogTitle className="text-[length:var(--text-h5)]">Start a new week</DialogTitle>
           <DialogDescription>
-            Close out this week and pick what carries into the next.
+            {step === "reflect"
+              ? "Take a moment to close out this week, then pick what carries into the next."
+              : "Pick what carries into next week."}
           </DialogDescription>
         </DialogHeader>
 
+        {step === "reflect" ? (
+          <div className="grid min-h-0 flex-1 content-start gap-4 overflow-y-auto">
+            <section className="rounded-lg border border-[var(--ds-line-soft)] bg-[var(--ds-panel)] p-4">
+              <SectionLabel className="mb-3">This week</SectionLabel>
+              <div className="mb-4 text-sm font-medium text-foreground">{sourceWeekLabel}</div>
+              {roleRecaps.length > 0 ? (
+                <ul className="m-0 grid list-none gap-2 p-0">
+                  {roleRecaps.map(({ role, completedGoals, totalGoals }) => (
+                    <li key={role.id} className="flex items-center gap-2 text-sm">
+                      <span
+                        className="size-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: getRoleColorStyle(role.color) }}
+                      />
+                      <span className="min-w-0 flex-1 truncate text-foreground">{role.name}</span>
+                      <span className="shrink-0 font-mono text-[length:var(--text-caption)] tabular-nums text-muted-foreground">
+                        {completedGoals}/{totalGoals} goals
+                      </span>
+                      <Progress
+                        value={totalGoals === 0 ? 0 : (completedGoals / totalGoals) * 100}
+                        className="h-1 w-16 shrink-0"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="m-0 text-sm text-secondary-foreground">
+                  No goals were set this week.
+                </p>
+              )}
+            </section>
+
+            <section className="grid gap-2">
+              <SectionLabel>Reflection</SectionLabel>
+              <Textarea
+                value={reflectionDraft}
+                onChange={(event) => setReflectionDraft(event.target.value)}
+                placeholder="How did the week go? A sentence or two is plenty."
+                rows={4}
+                className="resize-none"
+                aria-label="Weekly reflection"
+              />
+              <p className="m-0 text-caption leading-relaxed text-muted-foreground">
+                Optional — it stays with the week you&rsquo;re closing, and you can revisit
+                it from the right sidebar.
+              </p>
+            </section>
+          </div>
+        ) : (
         <div className="grid min-h-0 flex-1 gap-4 overflow-hidden">
           <div className="grid shrink-0 gap-3 md:grid-cols-2">
             <section className="rounded-lg border border-[var(--ds-line-soft)] bg-[var(--ds-panel)] p-4">
@@ -315,22 +384,44 @@ export function CarryoverDialog({
             </p>
           )}
         </div>
+        )}
 
         <DialogFooter className="shrink-0">
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          {canCarryForward && (
-            <Button variant="outline" onClick={() => submit("fresh")} disabled={isSubmitting}>
-              Start fresh
-            </Button>
+          {step === "reflect" ? (
+            <>
+              <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button onClick={() => void continueToCarry()}>Continue</Button>
+            </>
+          ) : (
+            <>
+              {sourceWeek && (
+                <Button
+                  variant="ghost"
+                  onClick={() => setStep("reflect")}
+                  disabled={isSubmitting}
+                  className="mr-auto"
+                >
+                  Back
+                </Button>
+              )}
+              <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              {canCarryForward && (
+                <Button variant="outline" onClick={() => submit("fresh")} disabled={isSubmitting}>
+                  Start fresh
+                </Button>
+              )}
+              <Button
+                onClick={() => submit(canCarryForward ? "carry-forward" : "fresh")}
+                disabled={isSubmitting || !sourceWeek}
+              >
+                {isSubmitting ? "Starting…" : model.primaryActionLabel}
+              </Button>
+            </>
           )}
-          <Button
-            onClick={() => submit(canCarryForward ? "carry-forward" : "fresh")}
-            disabled={isSubmitting || !sourceWeek}
-          >
-            {isSubmitting ? "Starting…" : model.primaryActionLabel}
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

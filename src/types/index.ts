@@ -1,4 +1,5 @@
 import type { Database } from "@/lib/supabase/database.types";
+import type { DayBounds } from "@/lib/time-model";
 
 /**
  * First Things First - Data Model Types
@@ -28,35 +29,19 @@ export type RoleColor = Database["public"]["Enums"]["role_color"];
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 /**
- * Time slot index for the day schedule.
- * 0 = 8:00, 1 = 8:30, 2 = 9:00, ..., 23 = 19:30
- * (24 slots covering 8:00-20:00 in 30-minute increments)
+ * Time slot index for the day schedule: a 30-minute interval counted from the
+ * Week's day-start hour (slot 0 = day start). Under the default 8:00–20:00
+ * bounds, 0 = 8:00 and 23 = 19:30; configurable bounds change the valid range,
+ * so validity is enforced at runtime against the Week's `dayBounds`.
  */
-export type TimeSlotIndex =
-  | 0
-  | 1
-  | 2
-  | 3
-  | 4
-  | 5
-  | 6
-  | 7
-  | 8
-  | 9
-  | 10
-  | 11
-  | 12
-  | 13
-  | 14
-  | 15
-  | 16
-  | 17
-  | 18
-  | 19
-  | 20
-  | 21
-  | 22
-  | 23;
+export type TimeSlotIndex = number;
+
+/**
+ * A Week's planning-day window in whole hours (`endHour` exclusive). Canonical
+ * definition and helpers live in `@/lib/time-model` (`weekDayBounds`,
+ * `totalSlots`); re-exported here so domain types stay importable from one place.
+ */
+export type { DayBounds };
 
 // ============================================================================
 // Core Data Types
@@ -191,10 +176,7 @@ export interface TimeBlock {
   roleId?: string;
   /** Day index 0-6 (Monday-Sunday) */
   dayIndex: DayOfWeek;
-  /**
-   * Starting slot index (0-23)
-   * 0 = 8:00, 1 = 8:30, 2 = 9:00, ..., 23 = 19:30
-   */
+  /** Starting slot index, counted from the Week's day-start hour. */
   startSlot: TimeSlotIndex;
   /**
    * Duration in 30-minute slots
@@ -262,6 +244,17 @@ export interface Week {
   timeBlocks: TimeBlock[];
   /** Evening slot blocks (max 7, one per day) */
   eveningBlocks: EveningBlock[];
+  /**
+   * This Week's planning-day window. Absent on Weeks created before the field
+   * existed — read through `weekDayBounds`, which falls back to 8:00–20:00.
+   * Carried from the Source Week at Weekly Handoff (snapshot model).
+   */
+  dayBounds?: DayBounds;
+  /**
+   * Closing reflection written during Weekly Handoff (or later from the Rail).
+   * Lives on the Source Week being closed out; never copied to the Target Week.
+   */
+  reflection?: string;
   /** ISO datetime when week was created */
   createdAt: string;
   /** ISO datetime of last modification */

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DAY_START_HOUR, DAY_END_HOUR, timeToPixels } from "@/lib/time-model";
+import { timeToPixels, weekDayBounds } from "@/lib/time-model";
+import { useWeekStore } from "@/stores/weekStore";
 
 export function CurrentTimeIndicator() {
+  const dayBounds = useWeekStore((state) => weekDayBounds(state.currentWeek));
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -14,10 +16,10 @@ export function CurrentTimeIndicator() {
   const hours = now.getHours();
   const minutes = now.getMinutes();
 
-  // Only render between 8:00 and 20:00
-  if (hours < DAY_START_HOUR || hours >= DAY_END_HOUR) return null;
+  // Only render inside the week's planning-day window
+  if (hours < dayBounds.startHour || hours >= dayBounds.endHour) return null;
 
-  const top = timeToPixels(hours, minutes);
+  const top = timeToPixels(hours, minutes, dayBounds);
 
   return (
     <div

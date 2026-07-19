@@ -9,7 +9,7 @@ import { useBlockResize } from "@/hooks/useBlockResize";
 import { BlockCard } from "@/components/ui/BlockCard";
 import { AssignRoleMenuItems, RepeatMenuItem } from "./BlockMenuExtras";
 import { cn } from "@/lib/utils";
-import { formatBlockMetaParts, slotToPixels, durationToPixels } from "@/lib/time-model";
+import { formatBlockMetaParts, slotToPixels, durationToPixels, weekDayBounds } from "@/lib/time-model";
 
 interface TimeBlockProps {
   block: TimeBlockType;
@@ -54,6 +54,7 @@ export function TimeBlock({
       ? state.currentWeek?.roles.find((r) => r.id === block.roleId)?.color
       : undefined
   );
+  const dayBounds = useWeekStore((state) => weekDayBounds(state.currentWeek));
 
   function handleEdit(newText: string) {
     updateTimeBlock(block.id, { title: newText });
@@ -97,7 +98,7 @@ export function TimeBlock({
         height={height}
         autoEdit={isNewFreestyle}
         metaItems={[
-          ...formatBlockMetaParts(block.startSlot, displayDuration),
+          ...formatBlockMetaParts(block.startSlot, displayDuration, dayBounds),
           ...(isRecurring
             ? [
                 <span key="repeat" className="flex items-center gap-1">

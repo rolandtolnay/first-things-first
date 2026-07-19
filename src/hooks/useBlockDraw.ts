@@ -15,7 +15,7 @@ import { useState, useCallback } from "react";
 import type { DayOfWeek, TimeBlock, TimeSlotIndex } from "@/types";
 import { canStartAt, resolveDrawPreview, resolveDrawCommit } from "@/lib/scheduling";
 import { useWeekStore } from "@/stores/weekStore";
-import { pixelToSlotFloor, pixelToSlotRound, MAX_SLOT_INDEX } from "@/lib/time-model";
+import { maxSlotIndex, pixelToSlotFloor, pixelToSlotRound, weekDayBounds } from "@/lib/time-model";
 
 // Module-level flag shared across all useBlockDraw instances (all days).
 // Tracks whether ANY day column currently has a freestyle block being edited.
@@ -76,6 +76,7 @@ export function useBlockDraw(
   const [newBlockId, setNewBlockId] = useState<string | null>(null);
 
   const addTimeBlock = useWeekStore((state) => state.addTimeBlock);
+  const dayBounds = useWeekStore((state) => weekDayBounds(state.currentWeek));
 
   const clearNewBlockId = useCallback(() => {
     setNewBlockId(null);
@@ -105,7 +106,7 @@ export function useBlockDraw(
       const startSlot = pixelToSlotFloor(e.clientY - rect.top);
 
       // Validate range
-      if (startSlot < 0 || startSlot > MAX_SLOT_INDEX) return;
+      if (startSlot < 0 || startSlot > maxSlotIndex(dayBounds)) return;
 
       // Check if starting slot overlaps existing blocks
       if (!canStartAt(startSlot, dayBlocks)) return;
@@ -122,7 +123,7 @@ export function useBlockDraw(
         containerRect: rect,
       });
     },
-    [dayBlocks]
+    [dayBlocks, dayBounds]
   );
 
   const onPointerMove = useCallback(
@@ -141,7 +142,8 @@ export function useBlockDraw(
       const clampedDuration = resolveDrawPreview(
         requestedDuration,
         drawState.startSlot,
-        dayBlocks
+        dayBlocks,
+        dayBounds
       );
 
       setDrawState((prev) =>
@@ -150,7 +152,7 @@ export function useBlockDraw(
           : null
       );
     },
-    [isDrawing, drawState, dayBlocks]
+    [isDrawing, drawState, dayBlocks, dayBounds]
   );
 
   const onPointerUp = useCallback(
@@ -163,7 +165,8 @@ export function useBlockDraw(
       const duration = resolveDrawCommit(
         drawState.currentEndSlot - drawState.startSlot,
         drawState.startSlot,
-        dayBlocks
+        dayBlocks,
+        dayBounds
       );
 
       // Create the freestyle block
@@ -184,7 +187,7 @@ export function useBlockDraw(
       setIsDrawing(false);
       setDrawState(null);
     },
-    [isDrawing, drawState, dayIndex, dayBlocks, addTimeBlock]
+    [isDrawing, drawState, dayIndex, dayBlocks, dayBounds, addTimeBlock]
   );
 
   // Compute preview block from draw state

@@ -3,7 +3,6 @@ import {
   getCurrentWeekId,
   getNextWeekId,
   getWeekIdRange,
-  getWeekStartDate,
   parseWeekId,
 } from "@/lib/utils";
 import { seedRoleSnapshots, snapshotFromRole } from "@/lib/role-snapshots";
@@ -29,6 +28,32 @@ export interface WeeklyHandoffSummary {
 export interface WeeklyHandoffGoalGroup {
   role: RoleSnapshot;
   goals: Goal[];
+}
+
+/** Per-role completion recap of the Source Week (reflection step). */
+export interface WeeklyHandoffRoleRecap {
+  role: RoleSnapshot;
+  completedGoals: number;
+  totalGoals: number;
+}
+
+/**
+ * Per-role goals recap for the Source Week, in Role order, roles without goals
+ * omitted. Pure input for the Weekly Handoff reflection step.
+ */
+export function buildRoleRecaps(sourceWeek: Week | null | undefined): WeeklyHandoffRoleRecap[] {
+  if (!sourceWeek) return [];
+  return [...sourceWeek.roles]
+    .sort((left, right) => left.order - right.order)
+    .map((role) => {
+      const goals = sourceWeek.goals.filter((goal) => goal.roleId === role.id);
+      return {
+        role,
+        completedGoals: goals.filter((goal) => goal.completed).length,
+        totalGoals: goals.length,
+      };
+    })
+    .filter((recap) => recap.totalGoals > 0);
 }
 
 export interface WeeklyHandoffModel {
@@ -146,11 +171,20 @@ function buildWeekShell({
   activeRoles = [],
   now = new Date().toISOString(),
 }: BuildWeekOptions): Week {
+  // parseWeekId yields the Monday at UTC midnight; startDate is that calendar
+  // day at LOCAL midnight. Snapping through getWeekStartDate's local-day math
+  // instead would land a week early in negative-UTC-offset timezones (the UTC
+  // Monday midnight is still Sunday locally).
   const monday = parseWeekId(weekId);
+  const localMondayMidnight = new Date(
+    monday.getUTCFullYear(),
+    monday.getUTCMonth(),
+    monday.getUTCDate()
+  );
 
   return {
     id: weekId,
-    startDate: getWeekStartDate(monday).toISOString(),
+    startDate: localMondayMidnight.toISOString(),
     roles: seedRoleSnapshots(activeRoles),
     goals: [],
     dayPriorities: [],
@@ -180,6 +214,10 @@ export function buildTargetWeek({
     now,
   });
   week.roles = seedTargetRoleSnapshots(activeRoles, sourceWeek);
+  // The planning-day window travels with the ritual: the Target Week keeps the
+  // Source Week's bounds (repeating blocks below stay on the same wall-clock
+  // times because slot indexing is bounds-relative and the bounds match).
+  if (sourceWeek?.dayBounds) week.dayBounds = sourceWeek.dayBounds;
   const activeRoleIds = new Set(week.roles.map((role) => role.id));
 
   week.goals = (sourceWeek?.goals ?? []).flatMap((goal): Goal[] => {

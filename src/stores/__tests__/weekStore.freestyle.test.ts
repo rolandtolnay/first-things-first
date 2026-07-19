@@ -280,3 +280,95 @@ describe("importWeekItems", () => {
     expect(saveWeek).not.toHaveBeenCalled();
   });
 });
+
+describe("importWeekItems updates (import refresh)", () => {
+  it("moves a previously imported block in place, preserving completion, role, and recurrence", async () => {
+    seed(
+      makeWeek({
+        timeBlocks: [
+          {
+            id: "tb-1",
+            type: "freestyle",
+            dayIndex: 1,
+            startSlot: 4,
+            duration: 2,
+            title: "Sync",
+            completed: true,
+            roleId: "role-1",
+            recurrence: "weekly",
+            importMeta: meta,
+          },
+        ],
+      })
+    );
+
+    const refreshedMeta = { ...meta, fingerprint: "def456" };
+    await useWeekStore.getState().importWeekItems({
+      timeBlocks: [],
+      dayPriorities: [],
+      updateTimeBlocks: [
+        {
+          id: "tb-1",
+          dayIndex: 3,
+          startSlot: 12,
+          duration: 3,
+          title: "Sync",
+          importMeta: refreshedMeta,
+        },
+      ],
+    });
+
+    const [block] = useWeekStore.getState().currentWeek!.timeBlocks;
+    expect(block).toMatchObject({
+      id: "tb-1",
+      dayIndex: 3,
+      startSlot: 12,
+      duration: 3,
+      completed: true,
+      roleId: "role-1",
+      recurrence: "weekly",
+    });
+    expect(block.importMeta?.fingerprint).toBe("def456");
+    expect(useWeekStore.getState().currentWeek!.timeBlocks).toHaveLength(1);
+    expect(saveWeek).toHaveBeenCalledTimes(1);
+  });
+
+  it("moves an updated priority to the end of its new day and keeps completion", async () => {
+    seed(
+      makeWeek({
+        dayPriorities: [
+          {
+            id: "dp-1",
+            type: "freestyle",
+            text: "Offsite",
+            dayIndex: 2,
+            order: 0,
+            completed: true,
+            importMeta: meta,
+          },
+          {
+            id: "dp-2",
+            type: "freestyle",
+            text: "Existing on Friday",
+            dayIndex: 4,
+            order: 0,
+            completed: false,
+          },
+        ],
+      })
+    );
+
+    await useWeekStore.getState().importWeekItems({
+      timeBlocks: [],
+      dayPriorities: [],
+      updateDayPriorities: [
+        { id: "dp-1", dayIndex: 4, text: "Offsite", importMeta: { ...meta, fingerprint: "x" } },
+      ],
+    });
+
+    const moved = useWeekStore
+      .getState()
+      .currentWeek!.dayPriorities.find((p) => p.id === "dp-1")!;
+    expect(moved).toMatchObject({ dayIndex: 4, order: 1, completed: true });
+  });
+});

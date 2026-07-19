@@ -1,9 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { Eraser, LogOut, X } from "lucide-react";
+import { ChevronDown, Eraser, LogOut, X } from "lucide-react";
 
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  EARLIEST_DAY_END_HOUR,
+  EARLIEST_DAY_START_HOUR,
+  LATEST_DAY_END_HOUR,
+  LATEST_DAY_START_HOUR,
+  weekDayBounds,
+} from "@/lib/time-model";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,12 +46,72 @@ interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/** Range of whole hours, inclusive. */
+function hourRange(from: number, to: number): number[] {
+  return Array.from({ length: to - from + 1 }, (_, i) => from + i);
+}
+
+function formatHour(hour: number): string {
+  return `${hour}:00`;
+}
+
+/** Compact hour picker composed from the shared dropdown-menu primitives. */
+function HourSelect({
+  label,
+  value,
+  options,
+  onSelect,
+  disabled,
+}: {
+  label: string;
+  value: number;
+  options: number[];
+  onSelect: (hour: number) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          className="min-w-[122px] justify-between font-normal"
+        >
+          <span className="text-muted-foreground">{label}</span>
+          <span className="ml-2 tabular-nums">{formatHour(value)}</span>
+          <ChevronDown className="ml-1 size-3.5 shrink-0" strokeWidth={1.4} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="max-h-56 min-w-[122px] overflow-y-auto">
+        {options.map((hour) => (
+          <DropdownMenuItem
+            key={hour}
+            onSelect={() => onSelect(hour)}
+            className={cn("tabular-nums", hour === value && "bg-muted")}
+          >
+            {formatHour(hour)}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isClearingWeek, setIsClearingWeek] = useState(false);
+  const [boundsMessage, setBoundsMessage] = useState<string | null>(null);
   const { user, signOut } = useAuth();
   const clearCurrentWeek = useWeekStore((state) => state.clearCurrentWeek);
   const currentWeek = useWeekStore((state) => state.currentWeek);
+  const updateDayBounds = useWeekStore((state) => state.updateDayBounds);
+  const dayBounds = weekDayBounds(currentWeek);
+
+  async function handleBoundsChange(next: { startHour: number; endHour: number }) {
+    const message = await updateDayBounds(next);
+    setBoundsMessage(message);
+  }
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -85,6 +159,43 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         </DialogClose>
 
         <div className="grid gap-7 px-8 py-8">
+          <section className="grid gap-4">
+            <div className="flex items-center justify-between gap-6">
+              <div className="grid gap-2">
+                <SectionLabel>Planning day</SectionLabel>
+                <p className="m-0 max-w-[36ch] text-[var(--ds-t-body-l)] leading-6 text-foreground">
+                  The hours this week&rsquo;s schedule covers. Starting next week from
+                  this one keeps these hours.
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <HourSelect
+                  label="Starts"
+                  value={dayBounds.startHour}
+                  options={hourRange(EARLIEST_DAY_START_HOUR, LATEST_DAY_START_HOUR)}
+                  onSelect={(hour) =>
+                    handleBoundsChange({ startHour: hour, endHour: dayBounds.endHour })
+                  }
+                  disabled={!currentWeek}
+                />
+                <HourSelect
+                  label="Ends"
+                  value={dayBounds.endHour}
+                  options={hourRange(EARLIEST_DAY_END_HOUR, LATEST_DAY_END_HOUR)}
+                  onSelect={(hour) =>
+                    handleBoundsChange({ startHour: dayBounds.startHour, endHour: hour })
+                  }
+                  disabled={!currentWeek}
+                />
+              </div>
+            </div>
+            {boundsMessage && (
+              <p className="m-0 text-sm leading-5 text-destructive">{boundsMessage}</p>
+            )}
+          </section>
+
+          <div className="h-px bg-[var(--ds-line-soft)]" aria-hidden="true" />
+
           <section className="grid gap-4">
             <div className="flex items-center justify-between gap-6">
               <div className="grid gap-2">
