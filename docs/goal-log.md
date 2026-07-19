@@ -213,3 +213,74 @@ Round out the existing planning surfaces to commercial completeness so the app s
 - Final verdict: `GOAL MET`
 - Commit/deploy/release: not requested; working tree left uncommitted for User review. Production Supabase remains paused/untouched; local Supabase + dev server left running for User testing.
 - Follow-up explicitly left out: manual Safari spot-check of the rightmost-column role submenu; pre-existing timezone-sensitive utils/weekly-handoff tests (fail under negative-UTC-offset TZs on the old baseline too); Import Metadata display popover and imported-item indicator (PRD V1 exclusions); Sharpen the Saw and mobile single-Day experience (unchanged).
+
+## 2026-07-19 — Daily-execution milestone: undo, goal notes, import refresh, day bounds, reflection, trends, mobile today
+
+**Goal and outcome**
+
+User-selected scope from the post-table-stakes proposal: toast-based undo for destructive actions; surface Goal notes (editable + placement summary); `.ics` import refresh (moved/renamed events update in place by UID + recurrence-id); configurable day bounds per Week; weekly reflection step in Weekly Handoff stored on the Source Week; cross-week role trends in the Rail; a mobile single-day "Today" companion at phone viewports; and fixing the pre-existing timezone-sensitive tests. Eval set: `etc/loop/daily-execution-eval.md` (written before implementation). Everything verified against the real local app including Safari.
+
+**Working-tree baseline**
+
+- Initial `git status --short`: the uncommitted table-stakes milestone (see 2026-07-19 entry above) — many modified/new files across src, docs, supabase.
+- Pre-existing changes and ownership: previous run's shipped, judged work left uncommitted for User review; the User explicitly instructed building on it ("same as previous work").
+- Overlap risk: none blocking — this milestone extends that baseline deliberately.
+
+**Assumptions and defaults**
+
+- Day bounds live on the Week snapshot (`dayBounds`, default 8–20), carried forward at Weekly Handoff; no durable settings table/migration. Changing bounds re-indexes block slots to preserve wall-clock times and refuses narrowing that would strand a block (explicit over automatic).
+- Undo is single-level, most-recent-wins, week-scoped, and restores deleted entities (not a whole-week rollback); restore refuses when planning integrity would break.
+- Import refresh defaults updates to selected in review (a moved meeting is the point of a refresh) but still requires explicit confirmation of the review as a whole.
+- Reflection is optional and skippable; it saves to the Source Week at the step transition and is never copied to the Target Week.
+- The mobile Today view is a companion for executing the plan (complete, review, quick-add priority), not a planning surface; the desktop seven-Day workspace stays primary.
+- Role trends group by durable Role identity with current display values (per CONTEXT.md), lazy-loaded, planning-support-sized.
+
+**Persona, flow, and guardrails**
+
+- Persona and moment: the daily driver mid-week, inside a day that isn't going to plan, sometimes away from the desk.
+- Start state: signed-in workspace on the current Week (desktop) or phone viewport (today view).
+- End state: destructive actions are trustworthy (undo), moved meetings refresh cleanly, early/late real life fits the grid, the weekly ritual closes with reflection, and the plan is executable from a phone.
+- Confusions to kill: "deleted means gone forever", "re-import duplicates my calendar", "my 7:00 gym can't exist", "reflection lives nowhere".
+- Guardrails: no schema migration (additive JSONB fields only), no live calendar sync, no production mutation/commit/deploy, historical Weeks render unchanged.
+
+**Rubric**
+
+1. Every [C] case in `etc/loop/daily-execution-eval.md` passes against the running local app.
+2. Full test suite (in three timezones), lint, and production build pass; new pure logic has behavior tests.
+3. A fresh browser-driving subagent (Pareto sweep) finds no blocker; Safari spot-checks pass including the leftover Sunday-column submenu check.
+
+**Implementation summary**
+
+- **Timezone fixes:** `getWeekId` is now UTC-pure (round-trips `parseWeekId` in any zone); `getCurrentWeekId` anchors explicitly to the local calendar day; `buildWeekShell` derives `startDate` from the week id's UTC Monday at local midnight (was a real one-week-early bug in negative offsets). Suite passes under `TZ=America/New_York`, `UTC`, and positive offsets.
+- **Day Bounds:** `Week.dayBounds` snapshot field (default 8:00–20:00; start 5–12, end 16–24); `TimeSlotIndex` widened to `number`; time-model/scheduling/overlap parameterized by bounds; grid, labels, current-time line, draw/resize hooks, drop preview, and `.ics` classification all read `weekDayBounds(week)`; `updateDayBounds` re-indexes slots to preserve wall-clock times and refuses stranding narrows; Settings "Planning day" UI; handoff carries bounds.
+- **Undo:** single-level, week-scoped, entity-restore undo (`lastUndo` + `undoLastDelete`) for priority/block/evening/goal-cascade deletions; sonner toast surface (`UndoToasts`); integrity-checked restore with honest partial messages; expires on navigation and bounds changes; stale-toast ids can't undo newer deletions.
+- **Goal notes:** `GoalNotesPopover` (notes textarea + this-week placement list) in the goal row's reserved trailing slot; indicator stays visible when notes exist; goal-delete confirm copy now mentions cascade + undo.
+- **Import refresh:** `.ics` re-import matches UID + recurrence-id; moved/resized events classify as preselected updates, title-only renames as unselected updates positioned from the planned item; converted items and cross-type changes are honestly skipped; conservative span/cap reservation; `importWeekItems` applies in-place updates preserving completion/role/recurrence in the same single commit.
+- **Reflection:** Weekly Handoff opens with a close-out step (per-role recap via `buildRoleRecaps` + optional textarea) saved to the Source Week at the step transition; `ReflectionCard` in the Rail displays/edits it; never copied to the Target Week.
+- **Role trends:** `getAllWeeks` + `buildRoleTrends` (Weekly Balance weighting, durable Role identity, current display values, last 8 weeks); lazy `RoleTrendsCard` sparklines in the expanded Rail with live overlay of the viewed week.
+- **Mobile Today view:** CSS-swapped at ≤768px (`TodayView`): day strip, priorities with toggles + capped quick capture, time-ordered schedule, evening; bounds-aware labels; desktop workspace unchanged at ≥769px.
+- **Trust fixes from browser findings:** `weekPersistence.flush()` awaited before sign-out (in-flight saves were aborted — observed data loss from the mobile flow); undo hardened against the navigate-while-loading race (selected-id check + expiry on navigation) with regression tests.
+
+**Verification and evidence**
+
+- `npm run test:run` — 27 files, 329 tests passed; also green under `TZ=America/New_York` and `TZ=UTC`. `npm run lint` — clean. `npm run build` — production build passed.
+- Browser pass 1 (fresh Sonnet subagent, agent-browser/Chromium, real magic-link auth): graded `etc/loop/daily-execution-eval.md` — U/GN/IR/DBo/WR/RT/MT criticals PASS (details in the judge section); zero console errors.
+- Browser pass 2 (fresh Sonnet subagent, Playwright WebKit = Safari engine): 10/10 checks PASS, including the leftover Sunday-column role-submenu spot-check (submenu fully visible, role assign works, clean Escape/focus).
+- Retained evidence: this log; transient scripts/screenshots in the session scratchpad (not retained).
+
+**Judge pass 1 (Chromium sweep subagent)**
+
+- Verdict: blockers found → fixed. 40+ eval cases PASS.
+- Blockers: (1) undo could restore into the prior week if clicked during the navigation loading window — fixed (expire on navigate + selected-id guard, regression tests); (2) sign-out shortly after mobile edits silently lost them — fixed (`flush()` before sign-out); (3) one non-reproducible stray empty block after an import update — rejected as an import bug: the update path structurally cannot create blocks (updates map existing ids; appends always carry candidate titles); signature matches an accidental harness click-drag draw (1h default, empty title, unassigned).
+- Not covered: IR7/IR8/DBo8/RT5 in-browser (all covered by unit tests except DBo8 metrics audit, which is arithmetic-safe by construction).
+
+**Judge pass 2 (WebKit subagent)**
+
+- Verdict: PASS (10/10).
+- Flagged: intermittent headless-WebKit render flake where a loaded column briefly rendered empty on some fresh loads (data confirmed intact via direct DB reads; not reproduced in Chromium; screenshot-timing suspected). Left as a real-Safari watch item. Minor: on minimum-height blocks the resize handle can cover the dropdown trigger's hit area (right-click context menu works) — pre-existing, logged as polish.
+
+**Completion**
+
+- Final verdict: `GOAL MET`
+- Commit/deploy/release: not requested; working tree left uncommitted for User review (builds on the also-uncommitted table-stakes milestone). Local Supabase + dev server left running.
+- Follow-up explicitly left out: real-Safari (non-WebKit-proxy) spot-check by the User; the headless-WebKit render-flake watch item; min-height-block menu-trigger hit area polish; morning sweep / quick capture ⌘K / extended import surfaces (not in this milestone's chosen scope).

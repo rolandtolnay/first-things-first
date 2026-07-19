@@ -36,8 +36,13 @@ Spreadsheets expose the whole Week but are cumbersome to edit and use across dev
 - Define weekly Goals under Role Snapshots.
 - Place Goals into Day Priorities, Time Blocks, or Evening Blocks and add Freestyle Blocks when needed.
 - Capture real-life commitments directly: create Freestyle Day Priorities and freestyle Evening Blocks in place, assign any freestyle item to a Role without creating a Goal, and mark routine blocks as repeating weekly.
-- Import external calendar commitments into the viewed Week through explicit `.ics` review.
-- Review Weekly Balance, Week Metrics, and the current Week’s Daily Streak while planning.
+- Import external calendar commitments into the viewed Week through explicit `.ics` review; re-import a refreshed export to update moved or renamed events in place.
+- Review Weekly Balance, Week Metrics, cross-week Role Trends, and the current Week’s Daily Streak while planning.
+- Recover instantly from a wrong deletion: priorities, blocks, and Goals offer a toast Undo.
+- Keep the “why” attached to a Goal: notes and this-week placement in a detail popover.
+- Adjust a Week’s planning-day hours (default 8:00–20:00) when real life starts earlier or ends later.
+- Close each Week with a short Reflection during Weekly Handoff, revisitable from the Rail.
+- Execute the plan from a phone: a single-Day Today view with completion toggles and quick priority capture.
 - Start a Target Week through Weekly Handoff, deliberately carrying selected unfinished Goals from the viewed Source Week.
 - Return on another device and continue from the same private cloud-backed plan.
 
@@ -50,10 +55,11 @@ Spreadsheets expose the whole Week but are cumbersome to edit and use across dev
 - Weekly Goals, Day Priorities, Time Blocks, Evening Blocks, completion state, drag-and-drop scheduling, and Weekly Handoff.
 - Desktop-first seven-Day workspace with Sidebar, calendar, and collapsible Rail.
 - Table-stakes completeness (shipped 2026-07-19): Freestyle Day Priorities and freestyle Evening Blocks created in place, Role assignment on freestyle items without goal-list involvement, weekly Repeating Blocks carried at Weekly Handoff, and manual `.ics` calendar import with review per `etc/prd/manual-ics-calendar-import.md`. The eval set is `etc/loop/table-stakes-eval.md`.
+- Daily-execution completeness (shipped 2026-07-19): toast-based Undo for deletions, Goal notes with this-week placement, `.ics` import refresh (moved/renamed events update in place by UID), per-Week configurable Day Bounds, a Reflection step in Weekly Handoff stored on the Source Week, Role Trends in the Rail, and the phone-width Today view. The eval set is `etc/loop/daily-execution-eval.md`.
 
 ### Not part of the current shipped baseline
 
-- Sharpen the Saw and a dedicated mobile single-Day experience appear in the original brief but are not implemented. They require an explicit goal and current product decision before work begins.
+- The full Sharpen the Saw surface from the original brief is not implemented; the Weekly Handoff Reflection is its deliberate lightweight form. A native/installable mobile app is not implemented — the Today view is a responsive companion inside the web app.
 
 ## Out of Scope by Default
 
@@ -107,6 +113,11 @@ Spreadsheets expose the whole Week but are cumbersome to edit and use across dev
 | Freestyle items may carry a Role without creating a Goal | Real commitments deserve color/balance accounting, but the goal list stays a deliberate weekly commitment surface | Implemented |
 | Recurring events are weekly-repeating Freestyle Blocks carried forward at Weekly Handoff | Fits the Week-snapshot model; no background mutation of existing Weeks, and goal-linked blocks already have carryover semantics via Goals | Implemented |
 | Freestyle Day Priorities exist as first-class peers of goal-linked priorities | All-day commitments and one-off must-dos belong in the priorities surface without inventing fake Goals | Implemented |
+| Day Bounds live on the Week snapshot and carry forward at Weekly Handoff | Historical Weeks keep the hours they were planned under; no settings table or background migration | Implemented |
+| Undo restores deleted entities, single-level and week-scoped, never a whole-Week rollback | Trustworthy deletion without hidden history or clobbering edits made after the deletion | Implemented |
+| Import refresh updates in place by UID + recurrence id through the same review | A moved meeting should move the planned block, not duplicate it — still nothing applies without confirmation | Implemented |
+| Reflection is written at Weekly Handoff and stays on the Source Week | Closing a week deserves a ritual moment; history keeps its own reflection | Implemented |
+| The Today view executes the plan; the desktop workspace makes it | Whole-Week visibility stays the planning advantage; the phone surface is completion + quick capture only | Implemented |
 
 ---
-*Last updated: 2026-07-19 — table-stakes completion shipped: freestyle priorities/evening creation, role assignment on freestyle items, weekly Repeating Blocks, and manual `.ics` import are part of the verified baseline.*
+*Last updated: 2026-07-19 — daily-execution milestone shipped: undo, goal notes, import refresh, configurable day bounds, weekly reflection, role trends, and the mobile Today view join the verified baseline.*

@@ -51,3 +51,27 @@ Lightweight, non-obvious implementation choices future runs should not repeatedl
 **Decision:** `src/lib/ics-import.ts` wraps `ical.js` 2.x: register embedded VTIMEZONEs, relate exceptions to parents, iterate recurrences from DTSTART (never seed the iterator with the window start — that corrupts occurrence times), filter to the viewed Week by local calendar day, and additionally include exception instances moved into the window. Classification (out-of-grid, misalignment, overlap, cap, duplicates-by-fingerprint) is sequential in day/time order so earlier importable candidates reserve their span/cap.
 
 **Why:** Hand-rolling RRULE/timezone handling is the classic ICS correctness trap; ical.js is browser-capable and testable. The iterator-seeding pitfall was observed directly (occurrences inherit the seed's time-of-day).
+
+## 2026-07-19 — Day Bounds are a Week-snapshot field with slot re-indexing
+
+**Decision:** The configurable planning-day window (`Week.dayBounds`, default 8:00–20:00) lives on the Week JSONB snapshot — no settings table, no migration. Slot `0` stays anchored to the day-start hour, so `updateDayBounds` shifts every Time Block's `startSlot` by the start-hour delta to preserve wall-clock times, and refuses (with the conflicting block named) when narrowing would strand a block. Weekly Handoff copies the Source Week's bounds into the Target Week; `buildEmptyWeek` uses the default. `TimeSlotIndex` is now a plain `number`; validity is enforced by the scheduling resolvers against the week's bounds.
+
+**Why:** Bounds are part of how a Week was planned — historical Weeks must keep rendering under their own hours (snapshot model), and the daily driver's bounds follow the handoff ritual without a durable-preferences table. Refusal over silent moving matches "explicit over automatic". Pending undo entries are expired on a bounds change because their captured slot indices go stale.
+
+## 2026-07-19 — Undo restores entities, single-level, week-scoped
+
+**Decision:** Deletions (Day Priority, Time Block, Evening Block, Goal + cascade) capture the removed entities in `weekStore.lastUndo`; the toast's Undo re-appends them after integrity checks (no overlap, one evening per day, priorities cap) and reports partial restores honestly. Most-recent-wins; the toast carries its entry id so a stale toast can never undo a newer deletion; abandoned inline creations (empty titles) are not captured.
+
+**Why:** Restoring a whole pre-mutation Week snapshot would clobber edits made between delete and undo; entity restore keeps them. Integrity checks keep the "no overlapping blocks" and cap constraints unconditional.
+
+## 2026-07-19 — Import refresh matches UID + recurrence id, conservatively
+
+**Decision:** Re-import classifies an entry whose UID(+recurrence id) matches an already-imported item as an `update` when the fingerprint differs (moved/resized — defaults to selected) or when only the title differs from the planned item (rename — defaults to unselected, position taken from the PLANNED item, since it may be the User's own rename). The old block's span stays reserved during classification so a deselected update can never confirm an overlap; items the User converted to another surface are never auto-updated. Confirmed updates preserve completion, Role assignment, and recurrence. The fingerprint formula is unchanged (title exclusive) for backward compatibility with previously imported items.
+
+**Why:** A moved meeting should move the planned block, not duplicate it — but everything still flows through the explicit Import Review, and user edits to planned items must never be silently clobbered.
+
+## 2026-07-19 — Today view is a CSS-swapped companion, not a planning surface
+
+**Decision:** At phone widths (≤768px) the workspace route renders `TodayView` (one Day: priorities with toggles and quick freestyle capture, time-ordered schedule, evening) instead of the seven-Day grid, via a CSS-only breakpoint swap in `src/app/(app)/page.tsx` — both trees mount, media queries pick one. No drag-and-drop, no block drawing, no goal management on the phone.
+
+**Why:** PROJECT.md keeps whole-Week desktop planning primary; the phone moment is executing a day that isn't going to plan. The CSS swap avoids matchMedia hydration mismatches and keeps a single route.

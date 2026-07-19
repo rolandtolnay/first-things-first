@@ -15,8 +15,12 @@ One weekday column inside a Week, indexed Monday `0` through Sunday `6`.
 _Avoid_: date cell, column.
 
 **Slot**:
-A 30-minute interval on a Day’s time grid from 8:00 to 20:00, where slot `0` is 8:00 and slot `23` is 19:30.
+A 30-minute interval on a Day’s time grid, counted from the Week’s Day Bounds start; slot `0` is the day-start hour. Under the default 8:00–20:00 bounds, slot `0` is 8:00 and slot `23` is 19:30.
 _Avoid_: row, cell, timeslot.
+
+**Day Bounds**:
+A Week’s planning-day window in whole hours (default 8:00–20:00, configurable 5:00–12:00 start and 16:00–24:00 end). Stored on the Week snapshot and carried into the Target Week at Weekly Handoff.
+_Avoid_: working hours setting, grid range, office hours.
 
 **Role**:
 A durable life area or responsibility defined by a User, with a user-controlled default color and order used when planning Weeks.
@@ -39,7 +43,7 @@ A scheduled block placed on a Day’s Slot grid.
 _Avoid_: event, appointment, calendar item.
 
 **Evening Block**:
-A single after-hours block attached to a Day outside the Slot grid.
+A single after-hours block attached to a Day outside the Slot grid (after the Day Bounds end hour).
 _Avoid_: night slot, evening task, after-hours event.
 
 **Freestyle Block**:
@@ -59,8 +63,16 @@ Calendar-event provenance and useful event details preserved on an imported Free
 _Avoid_: sync state, provider cache, hidden event.
 
 **Import Review**:
-The selection screen produced by manual `.ics` import: candidates for the viewed Week classified as importable, skipped, conflict, or duplicate. Nothing persists until the User confirms.
+The selection screen produced by manual `.ics` import: candidates for the viewed Week classified as importable, update, skipped, conflict, or duplicate. Nothing persists until the User confirms.
 _Avoid_: sync preview, staging area.
+
+**Import Update**:
+A re-imported entry whose UID (+ recurrence id) matches an already-imported item but whose time or title changed. Confirming it refreshes the planned item in place — completion, Role assignment, and recurrence survive.
+_Avoid_: sync, merge, upsert.
+
+**Undo**:
+The toast-based restore of the most recent deletion (Day Priority, Time Block, Evening Block, or Goal with its cascade). Single-level, scoped to the Week the deletion happened in, and refused when planning integrity would break.
+_Avoid_: rollback, revert, history.
 
 ### Weekly transition
 
@@ -73,8 +85,12 @@ The Week that will be created or replaced by a Weekly Handoff.
 _Avoid_: destination board, output calendar.
 
 **Weekly Handoff**:
-The flow for starting a new Week by choosing the Target Week and deciding which unfinished Goals continue forward from the Source Week.
+The flow for starting a new Week: a Reflection step closing out the Source Week, then choosing the Target Week and deciding which unfinished Goals continue forward.
 _Avoid_: reset wizard, migration, rollover.
+
+**Reflection**:
+The short free-text closing note written during Weekly Handoff (or edited later from the Rail), stored on the Source Week and never copied forward.
+_Avoid_: journal, retro, review notes.
 
 ### Progress and summaries
 
@@ -89,6 +105,10 @@ _Avoid_: stats, analytics, dashboard.
 **Daily Streak**:
 The Rail indicator for consecutive complete Days within the viewed Week.
 _Avoid_: habit streak, rolling streak.
+
+**Role Trends**:
+The Rail’s small recent-weeks sparkline of planned hours per active Role, grouped by durable Role identity and shown with current Role display values.
+_Avoid_: analytics dashboard, reports, insights.
 
 **Donut**:
 The SVG progress ring showing completed-of-total progress.
@@ -111,8 +131,12 @@ The left workspace column containing Weekly Balance and Roles & Goals.
 _Avoid_: left panel, nav, drawer.
 
 **Rail**:
-The right workspace column containing Week Metrics and Daily Streak, collapsed by default to a 44px metrics dock and expandable to 304px.
+The right workspace column containing Week Metrics, Daily Streak, Role Trends, and the Week’s Reflection, collapsed by default to a 44px metrics dock and expandable to 304px.
 _Avoid_: right sidebar, panel, aside.
+
+**Today View**:
+The phone-width companion surface: one Day’s priorities, schedule, and evening plan with completion toggles and quick freestyle-priority capture. It executes the plan; the seven-Day desktop workspace remains the planning surface.
+_Avoid_: mobile app, day mode, agenda view.
 
 **Section Label**:
 A monospaced uppercase micro-label that names a workspace section.
@@ -129,7 +153,7 @@ _Avoid_: primary color palette, highlight color.
 ## Relationships
 
 - A **User** owns many **Roles** and many **Weeks**; each **Role** and **Week** belongs to exactly one **User**.
-- A **Week** contains seven **Days**, many **Role Snapshots**, many **Goals**, many **Day Priorities**, many **Time Blocks**, and up to seven **Evening Blocks**.
+- A **Week** contains seven **Days**, many **Role Snapshots**, many **Goals**, many **Day Priorities**, many **Time Blocks**, up to seven **Evening Blocks**, its **Day Bounds**, and optionally a **Reflection**.
 - A **Role Snapshot** belongs to exactly one **Role** and preserves that Role's planning display values for one **Week**.
 - A newly created **Week** starts with Role Snapshots for the User's active Roles.
 - **Roles** have user-controlled default order; **Role Snapshots** preserve the order used within each **Week**.
@@ -151,12 +175,15 @@ _Avoid_: primary color palette, highlight color.
 - A **Daily Streak** Day is complete only when it has at least one **Day Priority** and all of that Day’s Day Priorities are complete.
 - A **Weekly Handoff** considers a **Goal** unfinished when the Goal itself is incomplete; Day Priority, Time Block, and Evening Block completion remain separate instance state.
 - A **Weekly Handoff** creates or replaces a **Target Week** snapshot; it does not move Goals out of the **Source Week**.
+- A **Weekly Handoff** carries the Source Week’s **Day Bounds** into the **Target Week**; the **Reflection** stays on the Source Week.
+- Changing a Week’s **Day Bounds** re-indexes its Time Block Slots so wall-clock times are preserved, and is refused when a Time Block would fall outside the new window.
 - A **Weekly Handoff** creates the Target Week's Role Snapshots from active Role defaults and carries selected unfinished Goals forward by Role identity; Goals under archived Roles are not carried forward. Day Priorities start empty; Time Blocks and Evening Blocks start empty except for **Repeating Blocks**, which are copied with completion reset (Role assignments survive only for still-active Roles).
 - The **Sidebar** and expanded **Rail** frame the calendar; the collapsed **Rail** remains as a metrics dock.
 
 ### Manual calendar import relationships
 
 - Manual `.ics` import targets only the currently viewed **Week** and persists nothing until the User confirms the **Import Review**.
+- An **Import Update** matches by UID + recurrence id: a moved/resized event refreshes the planned item’s day and time; a title-only change defaults to unselected because it may collide with the User’s own rename; items converted to another surface are never auto-updated.
 - Imported timed entries become unassigned **Freestyle Blocks** on the Slot grid; imported all-day entries become **Freestyle Day Priorities**.
 - **Import Metadata** belongs only to imported **Freestyle Day Priorities** and imported **Freestyle Blocks**, and follows the item through conversions between planner surfaces.
 

@@ -58,7 +58,11 @@ Weeks are the primary saved plan. Failure to load durable Role defaults must not
 
 ### Week-id is the calendar-day source of truth
 
-`Week.startDate` is produced by local-midnight math, so its ISO date component is the **Sunday before** the week in positive-UTC-offset timezones. Never derive calendar days from `startDate`'s string; derive them from the canonical `week.id` via `parseWeekId` (this shifted every `.ics` import by a day before the 2026-07-19 fix). Several older utils tests share this latent timezone sensitivity and only pass in positive-offset zones.
+`Week.startDate` is produced by local-midnight math, so its ISO date component is the **Sunday before** the week in positive-UTC-offset timezones. Never derive calendar days from `startDate`'s string; derive them from the canonical `week.id` via `parseWeekId` (this shifted every `.ics` import by a day before the 2026-07-19 fix). Week-id math (`getWeekId`, next/prev) is UTC-pure and `getCurrentWeekId` anchors to the local calendar day; the full suite passes under `TZ=America/New_York`, `TZ=UTC`, and positive offsets — keep it that way.
+
+### Day Bounds and slot indexing
+
+Slots are bounds-relative: slot `0` is the Week's `dayBounds.startHour` (default 8:00), and `TimeSlotIndex` is a plain `number`. Never hardcode 24 slots, `MAX_SLOT_INDEX`, or "8:00" in week-rendering code — read `weekDayBounds(week)` and use the parameterized `time-model`/`scheduling` functions. Changing bounds re-indexes block slots (see `updateDayBounds`); historical Weeks keep their own bounds.
 
 ## Stack and boundaries
 
