@@ -45,17 +45,28 @@ export function removeRoleSnapshotCascade(week: Week, roleId: string): Week {
     week.goals.filter((goal) => goal.roleId === roleId).map((goal) => goal.id),
   );
 
+  // Goal-linked items cascade away with their Goals. Freestyle items are the
+  // User's own entries: they survive, but a Role assignment pointing at the
+  // removed snapshot is cleared so they render (and count) as unassigned.
+  const clearedRoleId = <T extends { roleId?: string }>(item: T): T =>
+    item.roleId === roleId ? { ...item, roleId: undefined } : item;
+
   return {
     ...week,
     roles: week.roles.filter((snapshot) => snapshot.id !== roleId),
     goals: week.goals.filter((goal) => goal.roleId !== roleId),
-    dayPriorities: week.dayPriorities.filter((priority) => !removedGoalIds.has(priority.goalId)),
-    timeBlocks: week.timeBlocks.filter(
-      (block) => block.type === "freestyle" || !removedGoalIds.has(block.goalId!),
-    ),
-    eveningBlocks: week.eveningBlocks.filter(
-      (block) => block.type === "freestyle" || !removedGoalIds.has(block.goalId!),
-    ),
+    dayPriorities: week.dayPriorities
+      .filter(
+        (priority) =>
+          priority.type === "freestyle" || !removedGoalIds.has(priority.goalId ?? ""),
+      )
+      .map((priority) => (priority.type === "freestyle" ? clearedRoleId(priority) : priority)),
+    timeBlocks: week.timeBlocks
+      .filter((block) => block.type === "freestyle" || !removedGoalIds.has(block.goalId!))
+      .map((block) => (block.type === "freestyle" ? clearedRoleId(block) : block)),
+    eveningBlocks: week.eveningBlocks
+      .filter((block) => block.type === "freestyle" || !removedGoalIds.has(block.goalId!))
+      .map((block) => (block.type === "freestyle" ? clearedRoleId(block) : block)),
   };
 }
 

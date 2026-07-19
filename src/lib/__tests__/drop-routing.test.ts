@@ -48,6 +48,7 @@ const timegridZone: DropZoneData = { zone: "timegrid", dayIndex: TARGET_DAY, slo
 function fullPriorities(dayIndex: number): DayPriority[] {
   return Array.from({ length: MAX_PRIORITIES_PER_DAY }, (_, i) => ({
     id: `p${i}`,
+    type: "goal" as const,
     goalId: "goal-1",
     dayIndex: dayIndex as DayPriority["dayIndex"],
     order: i,
@@ -154,7 +155,7 @@ describe("resolveDropRoute — routing matrix", () => {
   it("goal → priorities", () => {
     expect(resolveDropRoute(goalDrag, prioritiesZone)).toEqual({
       action: "addDayPriority",
-      input: { goalId: "goal-1", dayIndex: TARGET_DAY, completed: false },
+      input: { type: "goal", goalId: "goal-1", dayIndex: TARGET_DAY, completed: false },
     });
   });
 
@@ -341,7 +342,7 @@ describe("dispatchDropIntent", () => {
 
   it("routes addDayPriority with the input object", () => {
     const actions = spyActions();
-    const input = { goalId: "goal-1", dayIndex: 2 as const, completed: false };
+    const input = { type: "goal" as const, goalId: "goal-1", dayIndex: 2 as const, completed: false };
     dispatchDropIntent({ action: "addDayPriority", input }, actions);
     expect(actions.addDayPriority).toHaveBeenCalledWith(input);
   });

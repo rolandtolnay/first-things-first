@@ -240,7 +240,7 @@ describe("buildWeeklyHandoffModel", () => {
         goal({ id: "also-open", completed: false }),
       ],
       dayPriorities: [
-        { id: "priority-1", goalId: "open", dayIndex: 0, order: 0, completed: true },
+        { id: "priority-1", type: "goal", goalId: "open", dayIndex: 0, order: 0, completed: true },
       ],
       timeBlocks: [
         {
@@ -262,6 +262,7 @@ describe("buildWeeklyHandoffModel", () => {
       totalGoals: 3,
       unfinishedGoals: 2,
       completionPercent: 33,
+      repeatingBlocks: 0,
     });
 
     expect(buildModel({ sourceWeek: week() }).summary).toEqual({
@@ -269,6 +270,7 @@ describe("buildWeeklyHandoffModel", () => {
       totalGoals: 0,
       unfinishedGoals: 0,
       completionPercent: 0,
+      repeatingBlocks: 0,
     });
 
     expect(
@@ -277,7 +279,13 @@ describe("buildWeeklyHandoffModel", () => {
           goals: [goal({ id: "done-1", completed: true }), goal({ id: "done-2", completed: true })],
         }),
       }).summary
-    ).toEqual({ completedGoals: 2, totalGoals: 2, unfinishedGoals: 0, completionPercent: 100 });
+    ).toEqual({
+      completedGoals: 2,
+      totalGoals: 2,
+      unfinishedGoals: 0,
+      completionPercent: 100,
+      repeatingBlocks: 0,
+    });
   });
 
   it("groups only unfinished Goals under their Role Snapshot in Role order", () => {

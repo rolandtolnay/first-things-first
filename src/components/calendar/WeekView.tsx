@@ -17,6 +17,7 @@ import { DayColumn } from "./DayColumn";
 import { TimeLabelsColumn } from "./TimeLabelsColumn";
 import { WeekNavigation } from "./WeekNavigation";
 import { CarryoverDialog } from "./CarryoverDialog";
+import { ImportCalendarDialog } from "./ImportCalendarDialog";
 
 interface WeekViewProps {
   toolbarActions?: ReactNode;
@@ -28,6 +29,7 @@ export function WeekView({ toolbarActions }: WeekViewProps) {
   const isLoading = useWeekStore((s) => s.isLoading);
 
   const [isCarryoverOpen, setIsCarryoverOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   function openCarryover() {
     setIsCarryoverOpen(true);
@@ -58,7 +60,11 @@ export function WeekView({ toolbarActions }: WeekViewProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Navigation header */}
-      <WeekNavigation onNewWeek={openCarryover} actions={toolbarActions} />
+      <WeekNavigation
+        onNewWeek={openCarryover}
+        onImportCalendar={currentWeek ? () => setIsImportOpen(true) : undefined}
+        actions={toolbarActions}
+      />
 
       {/* Carryover dialog */}
       <CarryoverDialog
@@ -66,6 +72,13 @@ export function WeekView({ toolbarActions }: WeekViewProps) {
         onClose={closeCarryover}
         sourceWeek={currentWeek}
         viewedWeekId={selectedWeekId}
+      />
+
+      {/* Calendar import dialog */}
+      <ImportCalendarDialog
+        open={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        week={currentWeek}
       />
 
       {/* Day columns with shared time labels */}

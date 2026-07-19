@@ -16,6 +16,8 @@ import {
   resolveResize,
 } from "@/lib/scheduling";
 import { buildEmptyWeek, buildTargetWeek } from "@/lib/weekly-handoff";
+import { priorityRoleId, priorityText } from "@/lib/priorities";
+import { MAX_PRIORITIES_PER_DAY } from "@/lib/constants";
 import { getNextRoleColor } from "@/lib/role-colors";
 import {
   appendRoleSnapshot,
@@ -100,6 +102,12 @@ interface WeekStore {
 
   // Day priority operations
   addDayPriority: (input: CreateDayPriorityInput) => Promise<DayPriority>;
+  /** Create an empty Freestyle Day Priority for inline titling; null when the day is at capacity. */
+  addFreestylePriority: (dayIndex: DayOfWeek) => Promise<DayPriority | null>;
+  updateDayPriority: (
+    priorityId: string,
+    updates: Partial<Pick<DayPriority, "text" | "roleId">>
+  ) => Promise<void>;
   removeDayPriority: (priorityId: string) => Promise<void>;
   toggleDayPriorityCompleted: (priorityId: string) => Promise<void>;
   reorderDayPriorities: (dayIndex: number, priorityIds: string[]) => Promise<void>;
@@ -109,6 +117,12 @@ interface WeekStore {
   updateTimeBlock: (blockId: string, updates: Partial<Omit<TimeBlock, "id">>) => Promise<void>;
   deleteTimeBlock: (blockId: string) => Promise<void>;
   toggleTimeBlockCompleted: (blockId: string) => Promise<void>;
+
+  // Calendar import (single-commit bulk append; see etc/prd/manual-ics-calendar-import.md)
+  importWeekItems: (input: {
+    timeBlocks: CreateTimeBlockInput[];
+    dayPriorities: Omit<DayPriority, "id" | "order">[];
+  }) => Promise<void>;
 
   // Evening block operations
   addEveningBlock: (input: CreateEveningBlockInput) => Promise<EveningBlock>;
@@ -171,16 +185,6 @@ function nextPriorityOrder(week: Week, dayIndex: number): number {
 function withWeekId(ids: WeekId[], weekId: WeekId): WeekId[] {
   if (ids.includes(weekId)) return ids;
   return [...ids, weekId].sort();
-}
-
-/**
- * Role color id + display title carried from a goal onto a derived block/evening.
- * Returns empty title / undefined role when the goal can't be found (unreachable
- * in practice — a priority/evening always references an existing goal).
- */
-function goalFields(week: Week, goalId: string): { roleId: string | undefined; title: string } {
-  const goal = week.goals.find((g) => g.id === goalId);
-  return { roleId: goal?.roleId, title: goal?.text ?? "" };
 }
 
 function normalizedRoleName(name: string): string {
@@ -704,9 +708,8 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     if (!week) throw new Error("No week loaded");
 
     const priority: DayPriority = {
+      ...input,
       id: generateId(),
-      goalId: input.goalId,
-      dayIndex: input.dayIndex,
       order: nextPriorityOrder(week, input.dayIndex), // append to end of day's priorities
       completed: input.completed ?? false,
     };
@@ -716,6 +719,29 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
       dayPriorities: [...week.dayPriorities, priority],
     });
     return priority;
+  },
+
+  addFreestylePriority: async (dayIndex: DayOfWeek) => {
+    const week = get().currentWeek;
+    if (!week) return null;
+
+    const dayCount = week.dayPriorities.filter((p) => p.dayIndex === dayIndex).length;
+    if (dayCount >= MAX_PRIORITIES_PER_DAY) return null;
+
+    return get().addDayPriority({
+      type: "freestyle",
+      text: "",
+      dayIndex,
+      completed: false,
+    });
+  },
+
+  updateDayPriority: async (priorityId, updates) => {
+    await withWeek(get, set, (week) => ({
+      dayPriorities: week.dayPriorities.map((p) =>
+        p.id === priorityId ? { ...p, ...updates } : p
+      ),
+    }));
   },
 
   removeDayPriority: async (priorityId: string) => {
@@ -771,6 +797,35 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     await withWeek(get, set, (week) => ({
       timeBlocks: week.timeBlocks.map((b) => (b.id === blockId ? { ...b, completed: !b.completed } : b)),
     }));
+  },
+
+  // Calendar Import
+
+  importWeekItems: async ({ timeBlocks, dayPriorities }) => {
+    if (timeBlocks.length === 0 && dayPriorities.length === 0) return;
+
+    // One Week update for the whole confirmation so a failure never leaves the
+    // Week partially imported (PRD: single-commit bulk append).
+    await withWeek(get, set, (week) => {
+      const perDayCounts = new Map<number, number>();
+      const appendedPriorities = dayPriorities.map((input) => {
+        const offset = perDayCounts.get(input.dayIndex) ?? 0;
+        perDayCounts.set(input.dayIndex, offset + 1);
+        return {
+          ...input,
+          id: generateId(),
+          order: nextPriorityOrder(week, input.dayIndex) + offset,
+        };
+      });
+
+      return {
+        timeBlocks: [
+          ...week.timeBlocks,
+          ...timeBlocks.map((input) => ({ ...input, id: generateId() })),
+        ],
+        dayPriorities: [...week.dayPriorities, ...appendedPriorities],
+      };
+    });
   },
 
   // Evening Block Operations
@@ -892,6 +947,8 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
       dayIndex,
       title: block.title,
       completed: false,
+      recurrence: block.recurrence,
+      importMeta: block.importMeta,
     };
     await withWeek(get, set, (w) => ({
       eveningBlocks: [...w.eveningBlocks, evening],
@@ -905,15 +962,27 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     if (!week) return null;
 
     const block = week.timeBlocks.find((b) => b.id === blockId);
-    if (!block || !block.goalId) return null;
+    if (!block) return null;
 
-    const priority: DayPriority = {
-      id: generateId(),
-      goalId: block.goalId,
-      dayIndex,
-      order: nextPriorityOrder(week, dayIndex),
-      completed: false,
-    };
+    const priority: DayPriority = block.goalId
+      ? {
+          id: generateId(),
+          type: "goal",
+          goalId: block.goalId,
+          dayIndex,
+          order: nextPriorityOrder(week, dayIndex),
+          completed: false,
+        }
+      : {
+          id: generateId(),
+          type: "freestyle",
+          text: block.title,
+          roleId: block.roleId,
+          dayIndex,
+          order: nextPriorityOrder(week, dayIndex),
+          completed: false,
+          importMeta: block.importMeta,
+        };
     await withWeek(get, set, (w) => ({
       dayPriorities: [...w.dayPriorities, priority],
       timeBlocks: w.timeBlocks.filter((b) => b.id !== blockId),
@@ -932,17 +1001,17 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     const placement = resolveNewPlacement(startSlot, dayBlocks);
     if (!placement.ok) return null;
 
-    const { roleId, title } = goalFields(week, priority.goalId);
     const block: TimeBlock = {
       id: generateId(),
-      type: "goal",
+      type: priority.type,
       goalId: priority.goalId,
-      roleId,
+      roleId: priorityRoleId(priority, week.goals),
       dayIndex,
       startSlot: placement.startSlot as TimeSlotIndex,
       duration: placement.duration,
-      title,
+      title: priorityText(priority, week.goals),
       completed: false,
+      importMeta: priority.importMeta,
     };
     await withWeek(get, set, (w) => ({
       timeBlocks: [...w.timeBlocks, block],
@@ -959,15 +1028,15 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     if (!priority) return null;
     if (week.eveningBlocks.some((b) => b.dayIndex === dayIndex)) return null;
 
-    const { roleId, title } = goalFields(week, priority.goalId);
     const evening: EveningBlock = {
       id: generateId(),
-      type: "goal",
+      type: priority.type,
       goalId: priority.goalId,
-      roleId,
+      roleId: priorityRoleId(priority, week.goals),
       dayIndex,
-      title,
+      title: priorityText(priority, week.goals),
       completed: false,
+      importMeta: priority.importMeta,
     };
     await withWeek(get, set, (w) => ({
       eveningBlocks: [...w.eveningBlocks, evening],
@@ -985,8 +1054,8 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     if (priority.dayIndex === dayIndex) return null; // same-day no-op
 
     const moved: DayPriority = {
+      ...priority,
       id: generateId(),
-      goalId: priority.goalId,
       dayIndex,
       order: nextPriorityOrder(week, dayIndex),
       completed: false,
@@ -1021,6 +1090,8 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
       duration: placement.duration,
       title: evening.title,
       completed: false,
+      recurrence: evening.recurrence,
+      importMeta: evening.importMeta,
     };
     await withWeek(get, set, (w) => ({
       timeBlocks: [...w.timeBlocks, block],
@@ -1034,15 +1105,27 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     if (!week) return null;
 
     const evening = week.eveningBlocks.find((b) => b.id === eveningBlockId);
-    if (!evening || !evening.goalId) return null;
+    if (!evening) return null;
 
-    const priority: DayPriority = {
-      id: generateId(),
-      goalId: evening.goalId,
-      dayIndex,
-      order: nextPriorityOrder(week, dayIndex),
-      completed: false,
-    };
+    const priority: DayPriority = evening.goalId
+      ? {
+          id: generateId(),
+          type: "goal",
+          goalId: evening.goalId,
+          dayIndex,
+          order: nextPriorityOrder(week, dayIndex),
+          completed: false,
+        }
+      : {
+          id: generateId(),
+          type: "freestyle",
+          text: evening.title,
+          roleId: evening.roleId,
+          dayIndex,
+          order: nextPriorityOrder(week, dayIndex),
+          completed: false,
+          importMeta: evening.importMeta,
+        };
     await withWeek(get, set, (w) => ({
       dayPriorities: [...w.dayPriorities, priority],
       eveningBlocks: w.eveningBlocks.filter((b) => b.id !== eveningBlockId),
@@ -1060,12 +1143,9 @@ export const useWeekStore = create<WeekStore>((set, get) => ({
     if (week.eveningBlocks.some((b) => b.dayIndex === dayIndex)) return null;
 
     const moved: EveningBlock = {
+      ...evening,
       id: generateId(),
-      type: evening.type,
-      goalId: evening.goalId,
-      roleId: evening.roleId,
       dayIndex,
-      title: evening.title,
       completed: false, // Reset completed status on move (matches prior behaviour)
     };
     await withWeek(get, set, (w) => ({

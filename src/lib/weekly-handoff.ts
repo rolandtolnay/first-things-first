@@ -7,7 +7,7 @@ import {
   parseWeekId,
 } from "@/lib/utils";
 import { seedRoleSnapshots, snapshotFromRole } from "@/lib/role-snapshots";
-import type { Goal, Role, RoleSnapshot, Week, WeekId } from "@/types";
+import type { EveningBlock, Goal, Role, RoleSnapshot, TimeBlock, Week, WeekId } from "@/types";
 
 export interface WeeklyHandoffModelInput {
   sourceWeek: Week | null;
@@ -22,6 +22,8 @@ export interface WeeklyHandoffSummary {
   totalGoals: number;
   unfinishedGoals: number;
   completionPercent: number;
+  /** Weekly repeating Freestyle Blocks that will be copied into the Target Week. */
+  repeatingBlocks: number;
 }
 
 export interface WeeklyHandoffGoalGroup {
@@ -72,6 +74,24 @@ export interface BuildTargetWeekOptions {
 
 function activeRoleIdsForCarryover(activeRoles: readonly Role[]): Set<string> {
   return new Set(activeRoles.filter((role) => role.archivedAt === null).map((role) => role.id));
+}
+
+/**
+ * Recurrence only applies to Freestyle Blocks: goal-linked blocks carry forward
+ * through explicit Goal selection, and their Goal identity does not survive the
+ * Target Week's goal re-iding.
+ */
+function isRepeatingFreestyle(block: TimeBlock | EveningBlock): boolean {
+  return block.recurrence === "weekly" && !block.goalId;
+}
+
+/** Count the repeating Freestyle Blocks a handoff would copy forward. */
+export function countRepeatingBlocks(sourceWeek: Week | null | undefined): number {
+  if (!sourceWeek) return 0;
+  return (
+    sourceWeek.timeBlocks.filter(isRepeatingFreestyle).length +
+    sourceWeek.eveningBlocks.filter(isRepeatingFreestyle).length
+  );
 }
 
 function seedTargetRoleSnapshots(
@@ -174,6 +194,37 @@ export function buildTargetWeek({
     }];
   });
 
+  // Weekly repeating Freestyle Blocks copy forward with fresh identity and reset
+  // completion. Role assignments survive only when the Role is still in the
+  // Target Week; otherwise the block continues unassigned.
+  const carriedRoleId = (roleId: string | undefined) =>
+    roleId !== undefined && activeRoleIds.has(roleId) ? roleId : undefined;
+
+  week.timeBlocks = (sourceWeek?.timeBlocks ?? [])
+    .filter(isRepeatingFreestyle)
+    .map((block) => ({
+      ...block,
+      id: nextId(),
+      roleId: carriedRoleId(block.roleId),
+      completed: false,
+    }));
+
+  const seenEveningDays = new Set<number>();
+  week.eveningBlocks = (sourceWeek?.eveningBlocks ?? [])
+    .filter(isRepeatingFreestyle)
+    .filter((block) => {
+      // Defensive: a Day keeps at most one Evening Block.
+      if (seenEveningDays.has(block.dayIndex)) return false;
+      seenEveningDays.add(block.dayIndex);
+      return true;
+    })
+    .map((block) => ({
+      ...block,
+      id: nextId(),
+      roleId: carriedRoleId(block.roleId),
+      completed: false,
+    }));
+
   return week;
 }
 
@@ -272,6 +323,7 @@ export function buildWeeklyHandoffModel({
       totalGoals,
       unfinishedGoals: unfinishedGoals.length,
       completionPercent: totalGoals === 0 ? 0 : Math.round((completedGoals / totalGoals) * 100),
+      repeatingBlocks: countRepeatingBlocks(sourceWeek),
     },
     unfinishedGoalGroups,
     unfinishedGoalIds,

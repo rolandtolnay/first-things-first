@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { Repeat } from "lucide-react";
 import { useWeekStore } from "@/stores/weekStore";
 import {
   formatWeekId,
@@ -213,6 +214,14 @@ export function CarryoverDialog({
               <p className="mt-3 text-caption leading-relaxed text-muted-foreground">
                 {targetExplanation}
               </p>
+              {model.summary.repeatingBlocks > 0 && (
+                <p className="mt-2 flex items-center gap-1.5 text-caption leading-relaxed text-muted-foreground">
+                  <Repeat className="size-3 shrink-0" strokeWidth={1.8} aria-hidden={true} />
+                  {model.summary.repeatingBlocks === 1
+                    ? "1 repeating event will be added to next week."
+                    : `${model.summary.repeatingBlocks} repeating events will be added to next week.`}
+                </p>
+              )}
             </section>
           </div>
 

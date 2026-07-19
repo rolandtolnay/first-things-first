@@ -58,13 +58,13 @@ function BlockOverlay({ data, sourceRect }: { data: BlockDragData; sourceRect?: 
 
 function PriorityOverlay({ data, sourceRect }: { data: PriorityDragData; sourceRect?: SourceRect }) {
   const roleColor = useWeekStore((state) =>
-    state.currentWeek?.roles.find((r) => r.id === data.roleId)?.color
+    data.roleId ? state.currentWeek?.roles.find((r) => r.id === data.roleId)?.color : undefined
   ) as RoleColor | undefined;
 
   return (
     <DragPreview
       text={data.text}
-      roleColor={roleColor ?? "teal"}
+      roleColor={data.roleId ? (roleColor ?? "teal") : undefined}
       roleBorder="uniform"
       width={sourceRect?.width}
       height={sourceRect?.height}

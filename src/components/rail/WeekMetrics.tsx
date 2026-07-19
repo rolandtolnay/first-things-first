@@ -4,21 +4,22 @@ import { Target } from "lucide-react";
 
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatRow } from "@/components/ui/StatRow";
-import { computeRoleBalance } from "@/lib/role-balance";
+import { computePlannedHours } from "@/lib/role-balance";
 import { WEEKLY_TARGET_HOURS } from "@/lib/constants";
 import { useWeekStore } from "@/stores/weekStore";
 
 /**
  * Week Metrics — the Rail's weekly load/progress summary.
  *
- * Planned/Unfilled hours come from the shared role-balance aggregation;
+ * Planned/Unfilled hours count every block — including unassigned Freestyle
+ * Blocks — because a commitment fills the week whether or not it has a Role;
  * Completed counts done-of-total across day priorities, time blocks, and
  * evening blocks. The Sharpen-the-Saw row from the prototype is out of scope.
  */
 export function WeekMetrics() {
   const week = useWeekStore((s) => s.currentWeek);
 
-  const { totalPlanned } = computeRoleBalance({
+  const { planned: totalPlanned } = computePlannedHours({
     timeBlocks: week?.timeBlocks,
     eveningBlocks: week?.eveningBlocks,
   });

@@ -18,7 +18,7 @@ function makeWeek(): Week {
       { id: "goal-1", roleId: "role-1", text: "Ship", notes: "by Friday", completed: false },
     ],
     dayPriorities: [
-      { id: "prio-1", goalId: "goal-1", dayIndex: 1, order: 0, completed: false },
+      { id: "prio-1", type: "goal", goalId: "goal-1", dayIndex: 1, order: 0, completed: false },
     ],
     timeBlocks: [
       {

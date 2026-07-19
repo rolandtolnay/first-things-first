@@ -10,6 +10,7 @@ function makePriority(
 ): DayPriority {
   return {
     id,
+    type: "goal",
     goalId: "g",
     dayIndex: dayIndex as DayPriority["dayIndex"],
     order: 0,

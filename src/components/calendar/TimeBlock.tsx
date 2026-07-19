@@ -1,11 +1,13 @@
 "use client";
 
 import { useDraggable } from "@dnd-kit/core";
+import { Repeat } from "lucide-react";
 import type { TimeBlock as TimeBlockType, DayOfWeek } from "@/types";
 import type { BlockDragData } from "@/types/dnd";
 import { useWeekStore } from "@/stores/weekStore";
 import { useBlockResize } from "@/hooks/useBlockResize";
 import { BlockCard } from "@/components/ui/BlockCard";
+import { AssignRoleMenuItems, RepeatMenuItem } from "./BlockMenuExtras";
 import { cn } from "@/lib/utils";
 import { formatBlockMetaParts, slotToPixels, durationToPixels } from "@/lib/time-model";
 
@@ -28,6 +30,7 @@ export function TimeBlock({
 
   const isNewFreestyle = editingBlockId === block.id && block.title === "";
   const isFreestyle = !block.goalId;
+  const isRecurring = block.recurrence === "weekly";
 
   const { handleProps, isResizing, previewDuration } = useBlockResize(block, dayBlocks);
 
@@ -93,7 +96,35 @@ export function TimeBlock({
         roleTint="strong"
         height={height}
         autoEdit={isNewFreestyle}
-        metaItems={formatBlockMetaParts(block.startSlot, displayDuration)}
+        metaItems={[
+          ...formatBlockMetaParts(block.startSlot, displayDuration),
+          ...(isRecurring
+            ? [
+                <span key="repeat" className="flex items-center gap-1">
+                  <Repeat className="size-2.5" strokeWidth={1.8} aria-hidden={true} />
+                  Weekly
+                </span>,
+              ]
+            : []),
+        ]}
+        menuExtras={
+          isFreestyle ? (
+            <>
+              <AssignRoleMenuItems
+                currentRoleId={block.roleId}
+                onAssign={(roleId) => updateTimeBlock(block.id, { roleId })}
+              />
+              <RepeatMenuItem
+                recurring={isRecurring}
+                onToggle={() =>
+                  updateTimeBlock(block.id, {
+                    recurrence: isRecurring ? undefined : "weekly",
+                  })
+                }
+              />
+            </>
+          ) : undefined
+        }
         onToggle={() => toggleTimeBlockCompleted(block.id)}
         onDelete={isNewFreestyle ? handleAutoDelete : () => deleteTimeBlock(block.id)}
         onEdit={isFreestyle ? handleEdit : undefined}

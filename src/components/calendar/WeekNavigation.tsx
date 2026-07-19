@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, CalendarPlus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useWeekStore } from "@/stores/weekStore";
 import { formatWeekId, getCurrentWeekId, getWeekDates } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,11 @@ import type { WeekId } from "@/types";
 
 interface WeekNavigationProps {
   onNewWeek: () => void;
+  onImportCalendar?: () => void;
   actions?: ReactNode;
 }
 
-export function WeekNavigation({ onNewWeek, actions }: WeekNavigationProps) {
+export function WeekNavigation({ onNewWeek, onImportCalendar, actions }: WeekNavigationProps) {
   const selectedWeekId = useWeekStore((s) => s.selectedWeekId);
   const navigateToWeek = useWeekStore((s) => s.navigateToWeek);
 
@@ -118,6 +119,21 @@ export function WeekNavigation({ onNewWeek, actions }: WeekNavigationProps) {
             <span className="font-mono text-label uppercase tracking-[0.12em] text-muted-foreground tabular-nums max-[1180px]:hidden">
               {selectedWeekId ? formatWeekId(selectedWeekId) : ""}
             </span>
+          )}
+          {onImportCalendar && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={onImportCalendar}
+                  aria-label="Import calendar"
+                >
+                  <CalendarPlus className="size-3.5" strokeWidth={1.4} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Import calendar</TooltipContent>
+            </Tooltip>
           )}
           <Button variant="outline" size="sm" onClick={onNewWeek}>
             + New

@@ -16,6 +16,7 @@
 
 import type { Database, Json } from "@/lib/supabase/database.types";
 import type { Week, WeekId } from "@/types";
+import { normalizeWeek } from "@/lib/priorities";
 
 type DbWeekRow = Database["public"]["Tables"]["weeks"]["Row"];
 type DbWeekInsert = Database["public"]["Tables"]["weeks"]["Insert"];
@@ -44,6 +45,7 @@ export function rowToWeek(row: DbWeekRow | WeekRow): Week {
   // Trust the JSONB snapshot per ADR-0004, but keep the id branded from the
   // promoted column so a caller selecting a narrow projection still gets a
   // well-typed WeekId. The domain cast lives here, at the mapping boundary.
-  const snapshot = row.data as unknown as Week;
+  // Normalize legacy Day Priorities (pre-freestyle documents have no `type`).
+  const snapshot = normalizeWeek(row.data as unknown as Week);
   return { ...snapshot, id: row.id as WeekId };
 }

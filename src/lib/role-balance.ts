@@ -25,6 +25,31 @@ export interface RoleBalance {
 }
 
 /**
+ * Total planned/completed hours across ALL blocks, including Freestyle Blocks
+ * with no Role. The Rail's Week Metrics use this — a real commitment fills the
+ * week whether or not it was filed under a Role. Weekly Balance stays on the
+ * role-scoped aggregation below.
+ */
+export function computePlannedHours(input: {
+  timeBlocks?: TimeBlock[];
+  eveningBlocks?: EveningBlock[];
+}): RoleHours {
+  const totals: RoleHours = { planned: 0, completed: 0 };
+
+  for (const tb of input.timeBlocks ?? []) {
+    const hours = slotsToHours(tb.duration);
+    totals.planned += hours;
+    if (tb.completed) totals.completed += hours;
+  }
+  for (const eb of input.eveningBlocks ?? []) {
+    totals.planned += EVENING_BLOCK_HOURS;
+    if (eb.completed) totals.completed += EVENING_BLOCK_HOURS;
+  }
+
+  return totals;
+}
+
+/**
  * Aggregate planned/completed hours per role across time blocks and evening
  * blocks. Blocks without a roleId are skipped. Undefined arrays are treated as
  * empty (the store exposes them via optional chaining).

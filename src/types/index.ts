@@ -108,20 +108,72 @@ export interface Goal {
 }
 
 /**
- * DayPriority - a goal instance in the Day Priorities section
- * Independent completion from the goal's role column status.
+ * Import Metadata - provenance and safe event details preserved on an imported
+ * Freestyle Day Priority or Freestyle Block (manual `.ics` import). Never stores
+ * raw VEVENT text, attendees, alarms, or provider payloads.
+ */
+export interface ImportMetadata {
+  /** Import source type */
+  source: "ics";
+  /** Name of the imported file */
+  sourceFilename: string;
+  /** Calendar display name (X-WR-CALNAME) when available */
+  calendarName?: string;
+  /** ICS UID when available */
+  uid?: string;
+  /** Recurrence instance identifier (RECURRENCE-ID / occurrence start) */
+  recurrenceId?: string;
+  /** Original start as interpreted from the ICS (ISO) */
+  originalStart: string;
+  /** Original end as interpreted from the ICS (ISO) */
+  originalEnd?: string;
+  /** Whether the source entry was an all-day entry */
+  allDay: boolean;
+  /** Source timezone identifier when known */
+  timezone?: string;
+  /** ISO datetime when the import was confirmed */
+  importedAt: string;
+  /** Stable fingerprint used for duplicate detection */
+  fingerprint: string;
+  /** Original ICS status (e.g. CONFIRMED, TENTATIVE) when available */
+  status?: string;
+  /** Original availability (TRANSP) when available */
+  availability?: string;
+  /** Notes/description text when available */
+  notes?: string;
+  /** Location when available */
+  location?: string;
+  /** URL when available */
+  url?: string;
+  /** Best-effort meeting link extracted from URL, location, or notes */
+  meetingLink?: string;
+}
+
+/**
+ * DayPriority - an item in the Day Priorities section.
+ * Goal-linked priorities reference a Goal; Freestyle Day Priorities carry their
+ * own text and may be assigned a Role without creating a Goal.
+ * Completion is independent from the Goal and other instances.
  */
 export interface DayPriority {
   /** UUID */
   id: string;
-  /** References Goal.id */
-  goalId: string;
+  /** Priority kind: goal-linked or freestyle */
+  type: "goal" | "freestyle";
+  /** References Goal.id (only if type === 'goal') */
+  goalId?: string;
+  /** Own text (only if type === 'freestyle') */
+  text?: string;
+  /** Optional Role assignment for freestyle priorities (color/balance only) */
+  roleId?: string;
   /** Day index 0-6 (Monday-Sunday) */
   dayIndex: DayOfWeek;
   /** Position in the priorities list for this day */
   order: number;
   /** Independent completion status */
   completed: boolean;
+  /** Provenance for imported freestyle priorities */
+  importMeta?: ImportMetadata;
 }
 
 /**
@@ -135,7 +187,7 @@ export interface TimeBlock {
   type: "goal" | "freestyle";
   /** References Goal.id (only if type === 'goal') */
   goalId?: string;
-  /** Role ID for goal-linked color coding; Freestyle Blocks stay role-less */
+  /** Role ID for color coding and Weekly Balance; optional on Freestyle Blocks */
   roleId?: string;
   /** Day index 0-6 (Monday-Sunday) */
   dayIndex: DayOfWeek;
@@ -153,6 +205,10 @@ export interface TimeBlock {
   title: string;
   /** Completion status */
   completed: boolean;
+  /** Weekly repetition for Freestyle Blocks: carried into the Target Week at Weekly Handoff */
+  recurrence?: "weekly";
+  /** Provenance for imported Freestyle Blocks */
+  importMeta?: ImportMetadata;
 }
 
 /**
@@ -166,7 +222,7 @@ export interface EveningBlock {
   type: "goal" | "freestyle";
   /** References Goal.id (only if type === 'goal') */
   goalId?: string;
-  /** Role ID for goal-linked color coding; Freestyle Blocks stay role-less */
+  /** Role ID for color coding and Weekly Balance; optional on Freestyle Blocks */
   roleId?: string;
   /** Day index 0-6 (Monday-Sunday) */
   dayIndex: DayOfWeek;
@@ -174,6 +230,10 @@ export interface EveningBlock {
   title: string;
   /** Completion status */
   completed: boolean;
+  /** Weekly repetition for freestyle Evening Blocks: carried at Weekly Handoff */
+  recurrence?: "weekly";
+  /** Provenance for imported freestyle Evening Blocks (via conversion) */
+  importMeta?: ImportMetadata;
 }
 
 // ============================================================================

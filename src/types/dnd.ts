@@ -35,12 +35,13 @@ export interface BlockDragData {
 /**
  * Data attached to draggable priority items.
  * Allows moving priorities between days or back to sidebar.
+ * Freestyle Day Priorities have no goalId and may have no roleId.
  */
 export interface PriorityDragData {
   type: "priority";
   priorityId: string;
-  goalId: string;
-  roleId: string;
+  goalId?: string;
+  roleId?: string;
   text: string;
   sourceDayIndex: DayOfWeek;
 }
@@ -107,8 +108,8 @@ export function isCalendarDragData(data: unknown): data is DragData {
     case "priority":
       return (
         isString(data.priorityId) &&
-        isString(data.goalId) &&
-        isString(data.roleId) &&
+        isOptionalString(data.goalId) &&
+        isOptionalString(data.roleId) &&
         isString(data.text) &&
         isDayOfWeek(data.sourceDayIndex)
       );

@@ -37,6 +37,10 @@ interface BlockCardProps {
   roleTint?: "default" | "strong";
   roleBorder?: "accent" | "uniform";
   metaItems?: ReactNode[];
+  /** Extra menu items rendered between the completion toggle and Delete. */
+  menuExtras?: ReactNode;
+  /** Placeholder for the inline title input while creating a new item. */
+  editPlaceholder?: string;
   leading?: ReactNode;
   hideCompletedIndicator?: boolean;
   menuLabel?: string;
@@ -61,6 +65,8 @@ export function BlockCard({
   roleTint = "default",
   roleBorder = "accent",
   metaItems,
+  menuExtras,
+  editPlaceholder = "Block title...",
   leading,
   hideCompletedIndicator = false,
   menuLabel = "Open block menu",
@@ -213,6 +219,7 @@ export function BlockCard({
             {completed ? "Mark incomplete" : "Mark complete"}
           </AppMenuItem>
         )}
+        {menuExtras}
         {onDelete && (
           <AppMenuItem
             icon={Trash2}
@@ -281,7 +288,7 @@ export function BlockCard({
           onKeyDown={handleKeyDown}
           className="flex-1 font-semibold"
           style={{ fontSize: "inherit", lineHeight: "1.4" }}
-          placeholder={autoEdit ? "Block title..." : ""}
+          placeholder={autoEdit ? editPlaceholder : ""}
         />
       ) : (
         <div className={cn("flex-1 min-w-0", (hasMenu || completed) && "pr-5")}>

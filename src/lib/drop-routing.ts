@@ -138,7 +138,7 @@ export function resolveDropRoute(
       if (dropData.zone === "priorities") {
         return {
           action: "addDayPriority",
-          input: { goalId: dragData.goalId, dayIndex: day, completed: false },
+          input: { type: "goal", goalId: dragData.goalId, dayIndex: day, completed: false },
         };
       }
       if (dropData.zone === "timegrid" && slot !== undefined) {

@@ -85,7 +85,7 @@ describe("role snapshot rules", () => {
         { id: "ship", roleId: "work", text: "Ship", completed: false },
         { id: "run", roleId: "health", text: "Run", completed: false },
       ],
-      dayPriorities: [{ id: "prio", goalId: "ship", dayIndex: 1, order: 0, completed: false }],
+      dayPriorities: [{ id: "prio", type: "goal", goalId: "ship", dayIndex: 1, order: 0, completed: false }],
       timeBlocks: [
         { id: "goal-block", type: "goal", goalId: "ship", roleId: "work", dayIndex: 1, startSlot: 0, duration: 2, title: "Ship", completed: false },
         { id: "free-block", type: "freestyle", dayIndex: 2, startSlot: 0, duration: 2, title: "Think", completed: false },

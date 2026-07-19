@@ -409,7 +409,7 @@ describe("cross-zone atomicity", () => {
       currentWeek: {
         ...s.currentWeek!,
         timeBlocks: [],
-        dayPriorities: [{ id: "prio-1", goalId: "goal-1", dayIndex: 1, order: 0, completed: false }],
+        dayPriorities: [{ id: "prio-1", type: "goal", goalId: "goal-1", dayIndex: 1, order: 0, completed: false }],
       },
     }));
     vi.clearAllMocks();
@@ -453,7 +453,7 @@ function makeRichWeek(): Week {
       { id: "goal-2", roleId: "role-2", text: "Run", completed: false },
     ],
     dayPriorities: [
-      { id: "prio-1", goalId: "goal-1", dayIndex: 1, order: 0, completed: false },
+      { id: "prio-1", type: "goal", goalId: "goal-1", dayIndex: 1, order: 0, completed: false },
     ],
     timeBlocks: [
       {
@@ -704,10 +704,10 @@ describe("addDayPriority", () => {
   it("orders by the count already on that day and persists once each", async () => {
     const first = await useWeekStore
       .getState()
-      .addDayPriority({ goalId: "goal-1", dayIndex: 3, completed: false });
+      .addDayPriority({ type: "goal", goalId: "goal-1", dayIndex: 3, completed: false });
     const second = await useWeekStore
       .getState()
-      .addDayPriority({ goalId: "goal-1", dayIndex: 3, completed: false });
+      .addDayPriority({ type: "goal", goalId: "goal-1", dayIndex: 3, completed: false });
 
     expect(first.order).toBe(0);
     expect(second.order).toBe(1);
@@ -719,14 +719,14 @@ describe("addDayPriority", () => {
     // `?? false` — cast to exercise that runtime default explicitly.
     const priority = await useWeekStore
       .getState()
-      .addDayPriority({ goalId: "goal-1", dayIndex: 3 } as CreateDayPriorityInput);
+      .addDayPriority({ type: "goal", goalId: "goal-1", dayIndex: 3 } as CreateDayPriorityInput);
     expect(priority.completed).toBe(false);
   });
 
   it("honors an explicit completed flag", async () => {
     const priority = await useWeekStore
       .getState()
-      .addDayPriority({ goalId: "goal-1", dayIndex: 3, completed: true });
+      .addDayPriority({ type: "goal", goalId: "goal-1", dayIndex: 3, completed: true });
     expect(priority.completed).toBe(true);
   });
 });
@@ -735,7 +735,7 @@ describe("removeDayPriority", () => {
   it("removes the priority and persists once", async () => {
     seed({
       ...makeWeek(),
-      dayPriorities: [{ id: "p1", goalId: "goal-1", dayIndex: 1, order: 0, completed: false }],
+      dayPriorities: [{ id: "p1", type: "goal", goalId: "goal-1", dayIndex: 1, order: 0, completed: false }],
     });
     vi.clearAllMocks();
 
@@ -750,7 +750,7 @@ describe("toggleDayPriorityCompleted", () => {
   it("flips the completion flag", async () => {
     seed({
       ...makeWeek(),
-      dayPriorities: [{ id: "p1", goalId: "goal-1", dayIndex: 1, order: 0, completed: false }],
+      dayPriorities: [{ id: "p1", type: "goal", goalId: "goal-1", dayIndex: 1, order: 0, completed: false }],
     });
     vi.clearAllMocks();
 
@@ -765,9 +765,9 @@ describe("reorderDayPriorities", () => {
     seed({
       ...makeWeek(),
       dayPriorities: [
-        { id: "d1-a", goalId: "goal-1", dayIndex: 1, order: 0, completed: false },
-        { id: "d1-b", goalId: "goal-1", dayIndex: 1, order: 1, completed: false },
-        { id: "d2-a", goalId: "goal-1", dayIndex: 2, order: 0, completed: false },
+        { id: "d1-a", type: "goal", goalId: "goal-1", dayIndex: 1, order: 0, completed: false },
+        { id: "d1-b", type: "goal", goalId: "goal-1", dayIndex: 1, order: 1, completed: false },
+        { id: "d2-a", type: "goal", goalId: "goal-1", dayIndex: 2, order: 0, completed: false },
       ],
     });
     vi.clearAllMocks();
@@ -874,7 +874,7 @@ describe("convertPriorityToEvening", () => {
   it("derives role/title from the goal, removes the priority, one persist", async () => {
     seed({
       ...makeWeek(),
-      dayPriorities: [{ id: "prio-1", goalId: "goal-1", dayIndex: 1, order: 0, completed: false }],
+      dayPriorities: [{ id: "prio-1", type: "goal", goalId: "goal-1", dayIndex: 1, order: 0, completed: false }],
     });
     vi.clearAllMocks();
 
@@ -897,7 +897,7 @@ describe("convertPriorityToEvening", () => {
   it("rejects (null, no persist) when the evening slot is occupied", async () => {
     seed({
       ...makeWeek(),
-      dayPriorities: [{ id: "prio-1", goalId: "goal-1", dayIndex: 1, order: 0, completed: false }],
+      dayPriorities: [{ id: "prio-1", type: "goal", goalId: "goal-1", dayIndex: 1, order: 0, completed: false }],
       eveningBlocks: [{ id: "ev-x", type: "freestyle", dayIndex: 1, title: "Taken", completed: false }],
     });
     vi.clearAllMocks();
@@ -915,8 +915,8 @@ describe("movePriorityToDay", () => {
     seed({
       ...makeWeek(),
       dayPriorities: [
-        { id: "prio-1", goalId: "goal-1", dayIndex: 1, order: 0, completed: true },
-        { id: "prio-2", goalId: "goal-1", dayIndex: 2, order: 0, completed: false },
+        { id: "prio-1", type: "goal", goalId: "goal-1", dayIndex: 1, order: 0, completed: true },
+        { id: "prio-2", type: "goal", goalId: "goal-1", dayIndex: 2, order: 0, completed: false },
       ],
     });
     vi.clearAllMocks();
@@ -934,7 +934,7 @@ describe("movePriorityToDay", () => {
   it("rejects a same-day move (null, no persist)", async () => {
     seed({
       ...makeWeek(),
-      dayPriorities: [{ id: "prio-1", goalId: "goal-1", dayIndex: 1, order: 0, completed: false }],
+      dayPriorities: [{ id: "prio-1", type: "goal", goalId: "goal-1", dayIndex: 1, order: 0, completed: false }],
     });
     vi.clearAllMocks();
 
@@ -1007,17 +1007,27 @@ describe("convertEveningToPriority", () => {
     expect(week.dayPriorities).toHaveLength(1);
   });
 
-  it("rejects (null, no persist) when the evening block has no goalId", async () => {
+  it("converts a freestyle evening into a Freestyle Day Priority keeping text and role", async () => {
     seed({
       ...makeWeek(),
-      eveningBlocks: [{ id: "ev-1", type: "freestyle", dayIndex: 1, title: "Read", completed: false }],
+      eveningBlocks: [
+        { id: "ev-1", type: "freestyle", roleId: "role-1", dayIndex: 1, title: "Read", completed: false },
+      ],
     });
     vi.clearAllMocks();
 
-    const result = await useWeekStore.getState().convertEveningToPriority("ev-1", 1);
+    const priority = await useWeekStore.getState().convertEveningToPriority("ev-1", 1);
 
-    expect(result).toBeNull();
-    expect(saveWeek).not.toHaveBeenCalled();
-    expect(useWeekStore.getState().currentWeek!.eveningBlocks).toHaveLength(1);
+    expect(saveWeek).toHaveBeenCalledTimes(1);
+    expect(priority).toMatchObject({
+      type: "freestyle",
+      text: "Read",
+      roleId: "role-1",
+      dayIndex: 1,
+      completed: false,
+    });
+    const week = useWeekStore.getState().currentWeek!;
+    expect(week.eveningBlocks).toHaveLength(0);
+    expect(week.dayPriorities).toHaveLength(1);
   });
 });
