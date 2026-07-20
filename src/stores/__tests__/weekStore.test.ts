@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock the Supabase persistence adapter so the store runs in a plain node env
+// Mock the persistence adapter so the store runs in a plain node environment.
 // and we can count persists. saveWeek is the single write path withWeek funnels
 // through; getWeek / getAllWeekIds / getActiveRoles back loadWeek / bootstrap.
 vi.mock("@/lib/db", () => ({

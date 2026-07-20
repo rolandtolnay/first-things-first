@@ -58,5 +58,11 @@ next-env.d.ts
 .agents/browser-state/
 .agents/goal-work/
 
+# Firebase emulator runtime and exported local state
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
 # Audit logs
 etc/audit/

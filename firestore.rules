@@ -1,0 +1,45 @@
+rules_version = '2';
+
+// Every persisted document is nested under the authenticated User's uid.
+// There is no public collection, shared tenant, or owner field a client can forge.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read, write: if false;
+
+      match /weeks/{weekId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.id == weekId;
+      }
+
+      match /roles/{roleId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.id == roleId
+          && request.resource.data.name is string
+          && request.resource.data.order is int
+          && request.resource.data.createdAt is string
+          && request.resource.data.updatedAt is string;
+      }
+
+      // Transactional active-name claims preserve the old database uniqueness
+      // invariant under concurrent tabs. They are private seam metadata only.
+      match /roleNames/{nameKey} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['roleId', 'normalizedName'])
+          && request.resource.data.roleId is string
+          && request.resource.data.normalizedName is string;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

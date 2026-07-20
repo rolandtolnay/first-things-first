@@ -1,51 +1,21 @@
-/**
- * Pure mapping between a `weeks` row and a `Week`.
- *
- * The row promotes only the columns needed for ownership, filtering, and sorting
- * (`id`, `user_id`, `start_date`, `created_at`, `updated_at`); write payloads
- * include `user_id` from the authenticated Session. The whole Week
- * snapshot is carried verbatim in `data` (ADR-0004). Because `data` IS the
- * snapshot, the reverse mapping reads straight from it — the promoted columns
- * are derived projections, never a second source of truth. Writes may include
- * `user_id` as the authenticated owner hint required for PostgREST composite-key
- * upserts; RLS still enforces that it matches `auth.uid()`.
- *
- * No Supabase imports here on purpose: this is the isolation-testable core, and
- * the adapter in `db.ts` is the thin I/O around it.
- */
+/** Provider-neutral Week document mapping (ADR-0004). */
 
-import type { Database, Json } from "@/lib/supabase/database.types";
-import type { Week, WeekId } from "@/types";
 import { normalizeWeek } from "@/lib/priorities";
+import type { Week, WeekId } from "@/types";
 
-type DbWeekRow = Database["public"]["Tables"]["weeks"]["Row"];
-type DbWeekInsert = Database["public"]["Tables"]["weeks"]["Insert"];
+export type WeekDocument = Week;
 
-/** App-facing interpretation of a `public.weeks` row. */
-export type WeekRow = Omit<DbWeekRow, "data"> & { data: Week };
-
-/** Insert/upsert payload. `user_id` is supplied by the authenticated client when writing. */
-export type WeekInsert = Omit<DbWeekInsert, "data" | "user_id"> & { data: Json; user_id: string };
-
-/** Project a Week and its authenticated owner onto a `weeks` upsert payload. */
-export function weekToRow(week: Week, userId: string): WeekInsert {
-  return {
-    id: week.id,
-    user_id: userId,
-    // `startDate` is an ISO datetime at UTC midnight; the column is a plain date.
-    start_date: week.startDate.slice(0, 10),
-    data: week as unknown as Json,
-    created_at: week.createdAt,
-    updated_at: week.updatedAt,
-  };
+/**
+ * Firestore accepts JSON-like objects but rejects `undefined`. Week is already
+ * the app's JSON document boundary, so a JSON round-trip removes only absent
+ * optional properties and keeps its persisted shape unchanged.
+ */
+export function weekToDocument(week: Week): WeekDocument {
+  return JSON.parse(JSON.stringify(week)) as WeekDocument;
 }
 
-/** Reconstruct a Week from a `weeks` row — the snapshot lives in `data`. */
-export function rowToWeek(row: DbWeekRow | WeekRow): Week {
-  // Trust the JSONB snapshot per ADR-0004, but keep the id branded from the
-  // promoted column so a caller selecting a narrow projection still gets a
-  // well-typed WeekId. The domain cast lives here, at the mapping boundary.
-  // Normalize legacy Day Priorities (pre-freestyle documents have no `type`).
-  const snapshot = normalizeWeek(row.data as unknown as Week);
-  return { ...snapshot, id: row.id as WeekId };
+/** Normalize legacy documents while keeping the path/document id authoritative. */
+export function documentToWeek(id: string, data: unknown): Week {
+  const snapshot = normalizeWeek(data as Week);
+  return { ...snapshot, id: id as WeekId };
 }

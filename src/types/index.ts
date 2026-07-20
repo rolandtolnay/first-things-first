@@ -1,4 +1,3 @@
-import type { Database } from "@/lib/supabase/database.types";
 import type { DayBounds } from "@/lib/time-model";
 
 /**
@@ -21,7 +20,16 @@ export type WeekId = string & { readonly __brand: "WeekId" };
  * Allowed role colors from the design system palette.
  * Each role gets auto-assigned a unique color.
  */
-export type RoleColor = Database["public"]["Enums"]["role_color"];
+export type RoleColor =
+  | "teal"
+  | "amber"
+  | "rose"
+  | "violet"
+  | "emerald"
+  | "orange"
+  | "sky"
+  | "fuchsia"
+  | "blue";
 
 /**
  * Day of week index (0 = Monday through 6 = Sunday)

@@ -18,7 +18,7 @@ function saveErrorMessage(error: unknown): string {
 /**
  * Session-scoped coordinator for Week persistence.
  *
- * Owns the mutable mechanics around Supabase I/O: ordered full-week saves,
+ * Owns the mutable mechanics around provider I/O: ordered full-week saves,
  * aborting stale session work, and pending optimistic snapshots. The Zustand
  * store owns UI state and domain mutations; this module owns whether an async DB
  * continuation still belongs to the current Session.

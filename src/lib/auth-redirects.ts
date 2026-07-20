@@ -1,16 +1,13 @@
-import type { EmailOtpType } from "@supabase/supabase-js";
-
 const DEFAULT_RETURN_PATH = "/";
 const LOGIN_PATH = "/login";
 
 /** Paths reachable without a Session: the login screen and auth callbacks. */
 export function isPublicAuthPath(pathname: string): boolean {
-  return pathname === LOGIN_PATH || pathname === "/auth/confirm";
-}
-
-/** Supabase magic-link callbacks in this app only use the email OTP flow. */
-export function isEmailOtpType(value: string | null): value is EmailOtpType {
-  return value === "email";
+  return (
+    pathname === LOGIN_PATH ||
+    pathname === "/auth/confirm" ||
+    pathname === "/auth/session"
+  );
 }
 
 /**
@@ -48,8 +45,14 @@ export function buildLoginRedirectUrl(requestUrl: URL): URL {
 /** Authenticated users have no reason to remain on the login route. */
 export function buildAuthenticatedHomeUrl(requestUrl: URL): URL {
   const url = new URL(requestUrl);
-  url.pathname = DEFAULT_RETURN_PATH;
+  const returnPath = parseReturnPath(
+    requestUrl.searchParams.get("redirectTo"),
+    requestUrl.origin,
+  );
+  const destination = new URL(returnPath, requestUrl.origin);
+  url.pathname = destination.pathname;
   url.search = "";
+  destination.searchParams.forEach((value, key) => url.searchParams.append(key, value));
   return url;
 }
 

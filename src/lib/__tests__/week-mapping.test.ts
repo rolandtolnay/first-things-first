@@ -1,14 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { weekToRow, rowToWeek, type WeekRow } from "@/lib/week-mapping";
+import { describe, expect, it } from "vitest";
+
+import { documentToWeek, weekToDocument } from "@/lib/week-mapping";
 import type { Week, WeekId } from "@/types";
 
-const USER_ID = "11111111-1111-1111-1111-111111111111";
-
-/**
- * A fully-populated Week touching every nested array, so round-trip fidelity
- * covers roles, goals, priorities, time blocks (goal + freestyle), and an
- * evening block — not just the empty shell.
- */
 function makeWeek(): Week {
   return {
     id: "2026-W21" as WeekId,
@@ -40,62 +34,39 @@ function makeWeek(): Week {
         duration: 1,
         title: "Gym",
         completed: true,
+        recurrence: "weekly",
       },
     ],
     eveningBlocks: [
       { id: "ev-1", type: "freestyle", dayIndex: 3, title: "Read", completed: false },
     ],
+    dayBounds: { startHour: 7, endHour: 21 },
+    reflection: "Protected what mattered.",
     createdAt: "2026-05-18T08:00:00.000Z",
     updatedAt: "2026-05-19T09:30:00.000Z",
   };
 }
 
-describe("weekToRow", () => {
-  it("promotes id, required owner, and timestamps verbatim", () => {
+describe("Week document mapping", () => {
+  it("round-trips the complete Week document without provider metadata", () => {
     const week = makeWeek();
-    const row = weekToRow(week, USER_ID);
-
-    expect(row.id).toBe("2026-W21");
-    expect(row.user_id).toBe(USER_ID);
-    expect(row.created_at).toBe(week.createdAt);
-    expect(row.updated_at).toBe(week.updatedAt);
+    const document = weekToDocument(week);
+    expect(document).toEqual(week);
+    expect(documentToWeek(week.id, document)).toEqual(week);
   });
 
-  it("promotes start_date as a plain date (drops the time component)", () => {
-    const row = weekToRow(makeWeek(), USER_ID);
-    expect(row.start_date).toBe("2026-05-18");
-  });
-
-  it("carries the whole snapshot into data untouched", () => {
+  it("removes absent optional properties that Firestore rejects as undefined", () => {
     const week = makeWeek();
-    const row = weekToRow(week, USER_ID);
-    expect(row.data).toEqual(week);
+    week.goals[0] = { ...week.goals[0], notes: undefined };
+    expect(weekToDocument(week).goals[0]).not.toHaveProperty("notes");
   });
-});
 
-describe("rowToWeek", () => {
-  it("reconstructs the Week from the snapshot, keeping the id from the column", () => {
+  it("normalizes a legacy goal priority at the read boundary", () => {
     const week = makeWeek();
-    const row: WeekRow = { ...weekToRow(week, USER_ID), data: week };
-    expect(rowToWeek(row)).toEqual(week);
-  });
-});
-
-describe("round-trip fidelity", () => {
-  it("rowToWeek(weekToRow(w)) reconstructs w exactly with an owner", () => {
-    const week = makeWeek();
-    expect(rowToWeek({ ...weekToRow(week, USER_ID), data: week })).toEqual(week);
-  });
-
-  it("preserves an empty Week (no roles/goals/blocks)", () => {
-    const empty: Week = {
-      ...makeWeek(),
-      roles: [],
-      goals: [],
-      dayPriorities: [],
-      timeBlocks: [],
-      eveningBlocks: [],
+    const legacy = {
+      ...week,
+      dayPriorities: [{ ...week.dayPriorities[0], type: undefined }],
     };
-    expect(rowToWeek({ ...weekToRow(empty, USER_ID), data: empty })).toEqual(empty);
+    expect(documentToWeek(week.id, legacy).dayPriorities[0].type).toBe("goal");
   });
 });

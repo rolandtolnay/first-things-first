@@ -1,14 +1,19 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { onAuthStateChanged, sendSignInLinkToEmail } from "firebase/auth";
 import { MailCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { AppWindow } from "@/components/layout/AppWindow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TextActionButton } from "@/components/ui/TextActionButton";
 import { parseReturnPath } from "@/lib/auth-redirects";
-import { createClient } from "@/lib/supabase/client";
+import { EMAIL_FOR_SIGN_IN_KEY } from "@/lib/firebase/auth-constants";
+import { emailLinkSendError } from "@/lib/firebase/auth-errors";
+import { firebaseAuth } from "@/lib/firebase/client";
+import { syncServerSession } from "@/lib/firebase/session-client";
 
 /**
  * Login surface — a small state machine:
@@ -22,7 +27,25 @@ import { createClient } from "@/lib/supabase/client";
  */
 type Status = "entry" | "sending" | "sent" | "error";
 
+async function withResponseTimeout<T>(operation: Promise<T>, timeoutMs = 12_000): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error("The sign-in service did not respond. Check your connection and try again.")),
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("entry");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -36,6 +59,19 @@ export default function LoginPage() {
     }
   }, []);
 
+  // A valid Firebase browser Session can outlive the short-lived server cookie.
+  // Re-synchronize it here instead of making the User request another email.
+  useEffect(() => {
+    return onAuthStateChanged(firebaseAuth(), (user) => {
+      if (!user) return;
+      void syncServerSession(user).then(() => {
+        const requested = new URLSearchParams(window.location.search).get("redirectTo");
+        router.replace(parseReturnPath(requested, window.location.origin));
+        router.refresh();
+      });
+    });
+  }, [router]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = email.trim();
@@ -44,25 +80,23 @@ export default function LoginPage() {
     setStatus("sending");
     setErrorMessage(null);
 
-    // The magic-link template routes through /auth/confirm itself; emailRedirectTo
-    // is the page to land on afterward (the path middleware preserved, else root).
     const redirectTo = new URLSearchParams(window.location.search).get("redirectTo");
-    const emailRedirectTo = `${window.location.origin}${parseReturnPath(
-      redirectTo,
-      window.location.origin,
-    )}`;
+    const next = parseReturnPath(redirectTo, window.location.origin);
+    const continueUrl = new URL("/auth/confirm", window.location.origin);
+    continueUrl.searchParams.set("next", next);
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email: trimmed,
-      options: { emailRedirectTo },
-    });
-
-    if (error) {
-      setErrorMessage(error.message);
-      setStatus("error");
-    } else {
+    try {
+      await withResponseTimeout(
+        sendSignInLinkToEmail(firebaseAuth(), trimmed, {
+          url: continueUrl.toString(),
+          handleCodeInApp: true,
+        }),
+      );
+      window.localStorage.setItem(EMAIL_FOR_SIGN_IN_KEY, trimmed);
       setStatus("sent");
+    } catch (error) {
+      setErrorMessage(emailLinkSendError(error));
+      setStatus("error");
     }
   }
 

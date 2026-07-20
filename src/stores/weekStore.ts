@@ -1,7 +1,7 @@
 /**
  * First Things First - Week Store
  *
- * Zustand store for week data with Supabase persistence.
+ * Zustand store for week data with cloud persistence.
  * Implements optimistic updates for instant UI feedback.
  */
 
@@ -290,8 +290,8 @@ function roleLoadErrorMessage(error: unknown): string {
 }
 
 /**
- * Postgres unique_violation (SQLSTATE 23505). Reaches us when an edit upserts a
- * durable Role whose name already belongs to a different active durable row —
+ * Provider-neutral duplicate-name compatibility code. Reaches us when an edit
+ * upserts a durable Role whose name already belongs to a different active Role;
  * the durable defaults already exist elsewhere, so we keep the snapshot edit
  * and skip the durable write instead of failing.
  */

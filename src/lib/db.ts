@@ -1,30 +1,37 @@
 /**
- * First Things First — persistence adapter (Supabase Postgres).
+ * First Things First persistence adapter (Firebase Auth + Cloud Firestore).
  *
- * The browser talks to Supabase directly; Row Level Security (`auth.uid() =
- * user_id`) is the access boundary, so reads are auto-scoped to the signed-in
- * user and writes include the authenticated `user_id` so PostgREST can target
- * the per-user composite key while RLS still verifies ownership (ADR-0003).
- * Each Week is a JSONB document — the row mapping lives in `week-mapping.ts`
- * (ADR-0004).
- *
- * The function surface mirrors the seam the store already depends on, so the
- * store's optimistic-update / `withWeek` semantics are unchanged.
+ * The browser talks directly to Firestore. Documents live below the current
+ * User path and checked-in Security Rules enforce that ownership. Weeks remain
+ * whole-snapshot documents; durable Roles remain separately queryable defaults.
+ * The public function surface is unchanged so the Zustand store and its
+ * ordered optimistic persistence coordinator do not know which provider backs it.
  */
 
-import { createClient } from "@/lib/supabase/client";
 import {
-  roleArchiveUpsert,
-  roleDefaultsToInsert,
-  roleDefaultsToUpsert,
-  roleRestoreUpdate,
-  rowToRole,
-} from "@/lib/role-mapping";
-import { rowToWeek, weekToRow } from "@/lib/week-mapping";
-import type { Role, RoleColor, Week, WeekId } from "@/types";
+  collection,
+  doc,
+  documentId,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  runTransaction,
+  setDoc,
+  type DocumentReference,
+} from "firebase/firestore/lite";
 
-const WEEKS_TABLE = "weeks";
-const ROLES_TABLE = "roles";
+import { firebaseAuth, firestoreDb } from "@/lib/firebase/client";
+import {
+  archiveRoleDocument,
+  createRoleDocument,
+  documentToRole,
+  restoreRoleDocument,
+  updateRoleDocument,
+  type RoleDocument,
+} from "@/lib/role-mapping";
+import { documentToWeek, weekToDocument } from "@/lib/week-mapping";
+import type { Role, RoleColor, Week, WeekId } from "@/types";
 
 export interface DbRequestOptions {
   signal?: AbortSignal;
@@ -36,187 +43,226 @@ export interface CreateRoleInput {
   order: number;
 }
 
-/** The shared browser client (createBrowserClient memoizes per env). */
-function client() {
-  return createClient();
+interface RoleNameClaim {
+  roleId: string;
+  normalizedName: string;
+}
+
+class DuplicateRoleNameError extends Error {
+  readonly code = "23505";
+
+  constructor() {
+    super("A role with that name already exists");
+    this.name = "DuplicateRoleNameError";
+  }
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new DOMException("The request was aborted", "AbortError");
+}
+
+async function abortable<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+  throwIfAborted(signal);
+  if (!signal) return promise;
+  return await Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      signal.addEventListener(
+        "abort",
+        () => reject(new DOMException("The request was aborted", "AbortError")),
+        { once: true },
+      );
+    }),
+  ]);
 }
 
 async function currentUserId(): Promise<string> {
-  const supabase = client();
-  const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession();
-
-  if (error) throw error;
-  if (!session?.user.id) throw new Error("You are not signed in");
-  return session.user.id;
+  const auth = firebaseAuth();
+  await auth.authStateReady();
+  if (!auth.currentUser) throw new Error("You are not signed in");
+  return auth.currentUser.uid;
 }
 
-/**
- * Get a week by id. RLS scopes the lookup to the current user, so the per-user
- * id is unique and `maybeSingle()` is safe.
- */
+function userCollection(uid: string, name: "weeks" | "roles" | "roleNames") {
+  return collection(firestoreDb(), "users", uid, name);
+}
+
+function weekRef(uid: string, weekId: WeekId) {
+  return doc(userCollection(uid, "weeks"), weekId);
+}
+
+function roleRef(uid: string, roleId: string): DocumentReference<RoleDocument> {
+  return doc(userCollection(uid, "roles"), roleId) as DocumentReference<RoleDocument>;
+}
+
+function normalizedRoleName(name: string): string {
+  return name.trim().toLocaleLowerCase("en-US");
+}
+
+function roleNameKey(name: string): string {
+  return encodeURIComponent(normalizedRoleName(name));
+}
+
+function roleNameRef(uid: string, name: string): DocumentReference<RoleNameClaim> {
+  return doc(userCollection(uid, "roleNames"), roleNameKey(name)) as DocumentReference<RoleNameClaim>;
+}
+
 export async function getWeek(
   weekId: WeekId,
   options: DbRequestOptions = {},
 ): Promise<Week | undefined> {
-  const baseQuery = client().from(WEEKS_TABLE).select("*").eq("id", weekId);
-  const query = options.signal
-    ? baseQuery.abortSignal(options.signal)
-    : baseQuery;
-
-  const { data, error } = await query.maybeSingle();
-  if (error) throw error;
-  return data ? rowToWeek(data) : undefined;
+  const uid = await currentUserId();
+  const snapshot = await abortable(getDoc(weekRef(uid, weekId)), options.signal);
+  return snapshot.exists() ? documentToWeek(snapshot.id, snapshot.data()) : undefined;
 }
 
-/** Upsert a week for the current user (last-write-wins on the whole snapshot). */
 export async function saveWeek(
   week: Week,
   options: DbRequestOptions = {},
 ): Promise<WeekId> {
-  const userId = await currentUserId();
-  const baseQuery = client()
-    .from(WEEKS_TABLE)
-    .upsert(weekToRow(week, userId), { onConflict: "user_id,id" });
-  const query = options.signal
-    ? baseQuery.abortSignal(options.signal)
-    : baseQuery;
-
-  const { error } = await query;
-  if (error) throw error;
+  const uid = await currentUserId();
+  await abortable(setDoc(weekRef(uid, week.id), weekToDocument(week)), options.signal);
   return week.id;
 }
 
-/**
- * Get the current user's week ids, ascending — the lightweight feed for the
- * store's reactive `availableWeekIds` (navigation, carry-over target list).
- * WeekIds sort lexically in chronological order ("2026-W02" < "2026-W10").
- */
 export async function getAllWeekIds(
   options: DbRequestOptions = {},
 ): Promise<WeekId[]> {
-  const baseQuery = client().from(WEEKS_TABLE).select("id");
-  const query = options.signal
-    ? baseQuery.abortSignal(options.signal)
-    : baseQuery;
-
-  const { data, error } = await query.order("id", { ascending: true });
-  if (error) throw error;
-  return (data ?? []).map((row) => row.id as WeekId);
+  const uid = await currentUserId();
+  const weeks = query(userCollection(uid, "weeks"), orderBy(documentId(), "asc"));
+  const snapshot = await abortable(getDocs(weeks), options.signal);
+  return snapshot.docs.map((item) => item.id as WeekId);
 }
 
-/**
- * All of the current user's Weeks, ascending by id. Used by cross-week Role
- * trends (Rail); fetched lazily on demand, not part of bootstrap.
- */
 export async function getAllWeeks(
   options: DbRequestOptions = {},
 ): Promise<Week[]> {
-  const baseQuery = client().from(WEEKS_TABLE).select("*");
-  const query = options.signal
-    ? baseQuery.abortSignal(options.signal)
-    : baseQuery;
+  const uid = await currentUserId();
+  const weeks = query(userCollection(uid, "weeks"), orderBy(documentId(), "asc"));
+  const snapshot = await abortable(getDocs(weeks), options.signal);
+  return snapshot.docs.map((item) => documentToWeek(item.id, item.data()));
+}
 
-  const { data, error } = await query.order("id", { ascending: true });
-  if (error) throw error;
-  return (data ?? []).map(rowToWeek);
+async function allRoles(uid: string, signal?: AbortSignal): Promise<Role[]> {
+  const snapshot = await abortable(getDocs(userCollection(uid, "roles")), signal);
+  return snapshot.docs.map((item) => documentToRole(item.id, item.data()));
 }
 
 export async function getActiveRoles(
   options: DbRequestOptions = {},
 ): Promise<Role[]> {
-  const baseQuery = client()
-    .from(ROLES_TABLE)
-    .select("*")
-    .is("archived_at", null)
-    .order("order_index", { ascending: true });
-  const query = options.signal ? baseQuery.abortSignal(options.signal) : baseQuery;
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data ?? []).map(rowToRole);
+  const uid = await currentUserId();
+  const roles = await allRoles(uid, options.signal);
+  return roles
+    .filter((role) => role.archivedAt === null)
+    .sort((left, right) => left.order - right.order);
 }
 
 export async function searchArchivedRoles(
   queryText: string,
   options: DbRequestOptions = {},
 ): Promise<Role[]> {
-  const query = queryText.trim();
-  if (!query) return [];
-
-  const baseQuery = client()
-    .from(ROLES_TABLE)
-    .select("*")
-    .not("archived_at", "is", null)
-    .ilike("name", `%${query}%`)
-    .order("updated_at", { ascending: false })
-    .limit(5);
-  const request = options.signal ? baseQuery.abortSignal(options.signal) : baseQuery;
-
-  const { data, error } = await request;
-  if (error) throw error;
-  return (data ?? []).map(rowToRole);
+  const needle = normalizedRoleName(queryText);
+  if (!needle) return [];
+  const uid = await currentUserId();
+  const roles = await allRoles(uid, options.signal);
+  return roles
+    .filter(
+      (role) =>
+        role.archivedAt !== null && normalizedRoleName(role.name).includes(needle),
+    )
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+    .slice(0, 5);
 }
 
 export async function createRole(
   input: CreateRoleInput,
   options: DbRequestOptions = {},
 ): Promise<Role> {
-  const userId = await currentUserId();
-  const baseQuery = client()
-    .from(ROLES_TABLE)
-    .insert(roleDefaultsToInsert(input, userId));
-  const query = options.signal ? baseQuery.abortSignal(options.signal) : baseQuery;
+  throwIfAborted(options.signal);
+  const uid = await currentUserId();
+  const ref = doc(userCollection(uid, "roles")) as DocumentReference<RoleDocument>;
+  const claimRef = roleNameRef(uid, input.name);
+  const role = createRoleDocument(ref.id, input);
 
-  const { data, error } = await query.select("*").single();
-  if (error) throw error;
-  return rowToRole(data);
+  await abortable(
+    runTransaction(firestoreDb(), async (transaction) => {
+      const claim = await transaction.get(claimRef);
+      if (claim.exists() && claim.data().roleId !== ref.id) throw new DuplicateRoleNameError();
+      transaction.set(ref, role);
+      transaction.set(claimRef, {
+        roleId: ref.id,
+        normalizedName: normalizedRoleName(input.name),
+      });
+    }),
+    options.signal,
+  );
+  return role;
 }
 
-/**
- * Persist a Role's durable defaults, upserting on `id`. Editing flows through a
- * week's Role Snapshot, whose id may not yet have a durable `roles` row (weeks
- * created before the table existed are never backfilled); upsert materializes
- * the row instead of failing the `.single()` with a 0-row 406. Callers pass the
- * full snapshot so an insert has every NOT NULL column.
- */
 export async function updateRoleDefaults(
-  role: CreateRoleInput & { id: string },
+  input: CreateRoleInput & { id: string },
   options: DbRequestOptions = {},
 ): Promise<Role> {
-  const userId = await currentUserId();
-  const baseQuery = client()
-    .from(ROLES_TABLE)
-    .upsert(roleDefaultsToUpsert(role, userId), { onConflict: "id" });
-  const query = options.signal ? baseQuery.abortSignal(options.signal) : baseQuery;
+  throwIfAborted(options.signal);
+  const uid = await currentUserId();
+  const ref = roleRef(uid, input.id);
+  let result: RoleDocument | null = null;
 
-  const { data, error } = await query.select("*").single();
-  if (error) throw error;
-  return rowToRole(data);
+  await abortable(
+    runTransaction(firestoreDb(), async (transaction) => {
+      const existingSnapshot = await transaction.get(ref);
+      const existing = existingSnapshot.exists() ? existingSnapshot.data() : null;
+      const nextClaimRef = roleNameRef(uid, input.name);
+      const nextClaim = await transaction.get(nextClaimRef);
+      const oldClaimRef =
+        existing && existing.archivedAt === null ? roleNameRef(uid, existing.name) : null;
+      const oldClaim =
+        oldClaimRef && oldClaimRef.path !== nextClaimRef.path
+          ? await transaction.get(oldClaimRef)
+          : null;
+
+      if (nextClaim.exists() && nextClaim.data().roleId !== input.id) {
+        throw new DuplicateRoleNameError();
+      }
+
+      result = updateRoleDocument(existing, input);
+      transaction.set(ref, result);
+      if (oldClaimRef && oldClaim?.exists() && oldClaim.data().roleId === input.id) {
+        transaction.delete(oldClaimRef);
+      }
+      transaction.set(nextClaimRef, {
+        roleId: input.id,
+        normalizedName: normalizedRoleName(input.name),
+      });
+    }),
+    options.signal,
+  );
+  return result as unknown as Role;
 }
 
-/**
- * Archive a Role, upserting on `id` for the same reason `updateRoleDefaults`
- * does: deleting flows through a week's Role Snapshot whose id may have no
- * durable row yet, so we materialize-then-archive instead of failing the
- * `.single()` with a 0-row 406. Callers pass the full snapshot so an insert has
- * every NOT NULL column.
- */
 export async function archiveRole(
-  role: CreateRoleInput & { id: string },
+  input: CreateRoleInput & { id: string },
   options: DbRequestOptions = {},
 ): Promise<Role> {
-  const userId = await currentUserId();
-  const baseQuery = client()
-    .from(ROLES_TABLE)
-    .upsert(roleArchiveUpsert(role, userId), { onConflict: "id" });
-  const query = options.signal ? baseQuery.abortSignal(options.signal) : baseQuery;
+  throwIfAborted(options.signal);
+  const uid = await currentUserId();
+  const ref = roleRef(uid, input.id);
+  let result: RoleDocument | null = null;
 
-  const { data, error } = await query.select("*").single();
-  if (error) throw error;
-  return rowToRole(data);
+  await abortable(
+    runTransaction(firestoreDb(), async (transaction) => {
+      const existingSnapshot = await transaction.get(ref);
+      const existing = existingSnapshot.exists() ? existingSnapshot.data() : null;
+      const claimRef = roleNameRef(uid, existing?.name ?? input.name);
+      const claim = await transaction.get(claimRef);
+      result = archiveRoleDocument(existing, input);
+      transaction.set(ref, result);
+      if (claim.exists() && claim.data().roleId === input.id) transaction.delete(claimRef);
+    }),
+    options.signal,
+  );
+  return result as unknown as Role;
 }
 
 export async function restoreRole(
@@ -224,25 +270,52 @@ export async function restoreRole(
   updates: Pick<Role, "name" | "order">,
   options: DbRequestOptions = {},
 ): Promise<Role> {
-  const baseQuery = client()
-    .from(ROLES_TABLE)
-    .update(roleRestoreUpdate(updates))
-    .eq("id", roleId);
-  const query = options.signal ? baseQuery.abortSignal(options.signal) : baseQuery;
+  throwIfAborted(options.signal);
+  const uid = await currentUserId();
+  const ref = roleRef(uid, roleId);
+  const claimRef = roleNameRef(uid, updates.name);
+  let result: RoleDocument | null = null;
 
-  const { data, error } = await query.select("*").single();
-  if (error) throw error;
-  return rowToRole(data);
+  await abortable(
+    runTransaction(firestoreDb(), async (transaction) => {
+      const existingSnapshot = await transaction.get(ref);
+      if (!existingSnapshot.exists()) throw new Error("Role not found");
+      const claim = await transaction.get(claimRef);
+      if (claim.exists() && claim.data().roleId !== roleId) throw new DuplicateRoleNameError();
+      result = restoreRoleDocument(existingSnapshot.data(), updates);
+      transaction.set(ref, result);
+      transaction.set(claimRef, {
+        roleId,
+        normalizedName: normalizedRoleName(updates.name),
+      });
+    }),
+    options.signal,
+  );
+  return result as unknown as Role;
 }
 
 export async function persistRoleOrder(
   roleIds: readonly string[],
   options: DbRequestOptions = {},
 ): Promise<Role[]> {
-  const baseQuery = client().rpc("reorder_roles", { role_ids: [...roleIds] });
-  const query = options.signal ? baseQuery.abortSignal(options.signal) : baseQuery;
+  throwIfAborted(options.signal);
+  const uid = await currentUserId();
+  let ordered: Role[] = [];
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data ?? []).map(rowToRole).sort((left, right) => left.order - right.order);
+  await abortable(
+    runTransaction(firestoreDb(), async (transaction) => {
+      const snapshots = await Promise.all(
+        roleIds.map((roleId) => transaction.get(roleRef(uid, roleId))),
+      );
+      if (snapshots.some((snapshot) => !snapshot.exists())) throw new Error("Role not found");
+      const now = new Date().toISOString();
+      ordered = snapshots.map((snapshot, order) => {
+        if (!snapshot.exists()) throw new Error("Role not found");
+        return { ...snapshot.data(), order, updatedAt: now };
+      });
+      ordered.forEach((role) => transaction.set(roleRef(uid, role.id), role));
+    }),
+    options.signal,
+  );
+  return ordered;
 }
