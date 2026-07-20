@@ -1,18 +1,17 @@
 # First Things First
 
-Help users focus on what matters by making the connection between life roles, weekly goals, and scheduled time explicit and actionable.
+Help users focus on what matters by making the connection between life Roles, weekly Goals, and scheduled time explicit and actionable.
 
-Built with Next.js, React, Zustand, dnd-kit, and Supabase.
+Built with Next.js, React, Zustand, dnd-kit, Firebase Auth, and Cloud Firestore.
 
-Product intent and autonomous-run guidance live in [`PROJECT.md`](PROJECT.md) and [`AGENTS.md`](AGENTS.md). The complete local build and verification method is in [`etc/playbook.md`](etc/playbook.md).
+Product intent and autonomous-run guidance live in [`PROJECT.md`](PROJECT.md) and [`AGENTS.md`](AGENTS.md). The complete build and verification method is in [`etc/playbook.md`](etc/playbook.md).
 
-## Getting Started
+## Getting started
 
 Prerequisites:
 
 - Node.js/npm
-- Supabase CLI
-- Docker-compatible container runtime
+- Java (required by the Firestore emulator)
 
 ```bash
 npm install
@@ -20,39 +19,30 @@ npm run dev:setup
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000). Local development uses the isolated Firebase Auth and Firestore emulators under the `demo-first-things-first` id; it never falls back to production. See [`docs/firebase-local-development.md`](docs/firebase-local-development.md).
 
-Development uses local Supabase only. Production is the only hosted Supabase project. See [`docs/supabase-local-development.md`](docs/supabase-local-development.md) for details.
+Enter a synthetic email on `/login`, then open the generated email sign-in link from the Auth Emulator UI at [http://127.0.0.1:4000/auth](http://127.0.0.1:4000/auth) or the emulator terminal output.
 
-Local login:
-
-1. Enter `dev@example.com` on the login screen.
-2. Open local Inbucket at [http://127.0.0.1:54324](http://127.0.0.1:54324).
-3. Click the magic link.
-
-## Available Scripts
+## Available scripts
 
 | Command | Description |
-|---------|-------------|
+|---|---|
 | `npm run dev` | Start the Next.js development server |
-| `npm run dev:setup` | Start/reset local Supabase, load seed data, and generate local env |
-| `npm run build` | Create production build |
-| `npm run start` | Serve production build |
-| `npm run db:start` | Start local Supabase |
-| `npm run db:reset` | Reset local Supabase from migrations and seed data |
-| `npm run db:stop` | Stop local Supabase |
-| `npm run db:push:prod` | Dry-run, confirm, and apply checked-in migrations to production |
+| `npm run dev:setup` | Configure isolated local Firebase and start the emulators |
+| `npm run emulators:start` | Run Auth + Firestore emulators in the foreground |
+| `npm run emulators:stop` | Stop emulators started by the setup script |
+| `npm run emulators:test` | Run adapter integration and Firestore rules tests against emulators |
+| `npm run typecheck` | Run strict TypeScript checking |
 | `npm run lint` | Run ESLint |
-| `npm run test:run` | Run tests once |
+| `npm run test:run` | Run deterministic tests once |
+| `npm run build` | Create the production build |
+| `npm run start` | Serve the production build |
 
-## Manual Testing Checklist
+## Manual testing checklist
 
-After making changes, verify the following as relevant:
-
-- **Auth**: Sign in locally with `dev@example.com` through Inbucket
-- **Sidebar**: Add and edit Roles and Goals; archive and restore Roles; delete Goals
-- **Calendar**: Drag Goals to Day Priorities, Time Blocks, and Evening Blocks
-- **Calendar**: Drag Time Blocks and Day Priorities between Days
-- **Evening**: Drag Evening Blocks between Days
-- **Remove**: Role archive and item delete actions work for Roles, Goals, Day Priorities, Time Blocks, and Evening Blocks
-- **Dark mode**: Toggle works without visual issues
+- **Auth:** email-link sign-in, reload/new-tab continuity, sign-out, and signed-out server redirect
+- **Sidebar:** add/edit/reorder/archive/restore Roles; add/edit/delete Goals
+- **Calendar:** priorities, block draw/drag/resize/conversion, evenings, repeat, and `.ics` import/refresh
+- **Weekly Handoff:** reflection, selected Goal carry, repeating blocks, and Day Bounds
+- **Trust:** deletion Undo, save-error visibility, reload persistence, cross-User rules denial
+- **Today:** phone-width quick capture and completion reflect the same saved Week

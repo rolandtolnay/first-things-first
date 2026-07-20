@@ -34,7 +34,7 @@ The foundation does not add analytics UI yet. It creates the durable Role identi
   - A Role Snapshot is the Week-contained display copy used by that Week.
 - A Role Snapshot uses the durable Role ID as its own ID. Goals and goal-linked Time Blocks / Evening Blocks continue to reference `roleId`; that ID is now stable across Weeks.
 - Weeks remain JSONB planning snapshots. This work selectively promotes Roles only; Goals, Day Priorities, Time Blocks, and Evening Blocks stay nested in the Week document.
-- Add a user-owned Roles table with Row Level Security matching the existing client-direct Supabase model. The table stores durable Role defaults and archive state.
+- Add user-owned durable Role documents with Firestore Security Rules matching the client-direct model. The collection stores durable Role defaults and archive state.
 - No backwards-compatible data migration or backfill is required because existing production data is not a concern for this change. The implementation can choose the simplest clean schema and app model.
 - New Users receive no starter Roles. They create their own Roles through the existing Sidebar flow.
 - New Weeks are seeded from active durable Roles. If there are no active Roles, the Week starts with no Role Snapshots.
@@ -49,7 +49,7 @@ The foundation does not add analytics UI yet. It creates the durable Role identi
 - Weekly Handoff creates the Target Week’s Role Snapshots from active Role defaults, not from Source Week Role Snapshots.
 - Weekly Handoff carries selected unfinished Goals forward by Role identity. Goals whose Role is archived or otherwise absent from active Role defaults are not carried forward.
 - Cross-week Role analytics are out of scope, but the data model should support future aggregation by durable Role identity. Aggregate analytics should use the current Role display values; individual Week detail views may show historical Role Snapshots.
-- Stay with the client-direct Supabase architecture. Do not introduce a Postgres RPC transaction for combined Role/default + current Week snapshot updates in this foundation. The store coordinates direct Supabase calls and existing optimistic/error patterns.
+- Stay with the client-direct Firebase architecture. Do not introduce a backend relay for combined Role/default + current Week snapshot updates. The store coordinates direct Firestore calls and existing optimistic/error patterns.
 - Sidebar remains the only Role management surface for this PRD. Do not add a dedicated Role settings screen.
 - Freestyle Block Role assignment is out of scope. The current feature should preserve today’s user-facing behavior: Freestyle Blocks are not assigned to Roles.
 - Add a pure Role Snapshot rules module. This should be a deep module that owns seeding, appending, updating, removing/cascading, reordering, and restored-name conflict resolution for Role Snapshots.
@@ -82,7 +82,7 @@ The foundation does not add analytics UI yet. It creates the durable Role identi
   - Goals under archived or inactive Roles are not carried forward;
   - Day Priorities, Time Blocks, Evening Blocks, and Freestyle Blocks still start empty in the Target Week.
 - Existing store tests can be updated as needed to keep the suite passing, but this PRD does not require a comprehensive new store-orchestration test matrix beyond what implementation changes make necessary.
-- Schema and RLS should be manually smoke-verified during implementation because the app relies on Supabase RLS as the security boundary.
+- Firestore ownership rules must be emulator-tested and manually smoke-verified because they are the security boundary.
 
 ## Out of Scope
 

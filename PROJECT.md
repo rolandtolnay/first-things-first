@@ -74,7 +74,7 @@ Spreadsheets expose the whole Week but are cumbersome to edit and use across dev
 
 - **Planning integrity:** a Day cannot contain overlapping Time Blocks, and a Day has at most one Evening Block.
 - **Historical truth:** edits to durable Role defaults affect the current Week and future Week creation, not unrelated historical Role Snapshots.
-- **Privacy:** Supabase Row Level Security is the data boundary; a User must only see their own Roles and Weeks.
+- **Privacy:** auth-scoped Firestore Security Rules are the data boundary; a User must only see their own Roles and Weeks.
 - **Fast interaction:** optimistic updates should keep editing and scheduling responsive; persistence failures must never be silent.
 - **Desktop first:** preserve the legibility of all seven Days on the primary wide-screen workspace. Narrower layouts may reduce surrounding surfaces before redesigning the planning model.
 - **Design coherence:** use the Dark Workspace token system and shared shadcn/Radix primitives rather than one-off visual or interaction languages.
@@ -95,9 +95,9 @@ Spreadsheets expose the whole Week but are cumbersome to edit and use across dev
 ## Technical Context
 
 - Next.js 16, React 19, TypeScript, Zustand, dnd-kit, Tailwind CSS 4, and shadcn/Radix UI.
-- Supabase Auth and Postgres are the online source of truth. The browser accesses Supabase directly under RLS.
-- Weeks persist as JSONB documents; durable Roles are selectively normalized. See ADR-0003 through ADR-0005.
-- Vercel is the production hosting environment; local development uses the local Supabase stack only.
+- Firebase Auth and Cloud Firestore are the online source of truth. The browser accesses Firestore directly under auth-scoped Security Rules.
+- Weeks persist as whole Firestore documents; durable Roles are selectively first-class. See ADR-0003 through ADR-0005.
+- Vercel is the production hosting environment; local development uses isolated Firebase Auth and Firestore emulators only.
 
 ## Key Product Decisions
 
@@ -120,4 +120,4 @@ Spreadsheets expose the whole Week but are cumbersome to edit and use across dev
 | The Today view executes the plan; the desktop workspace makes it | Whole-Week visibility stays the planning advantage; the phone surface is completion + quick capture only | Implemented |
 
 ---
-*Last updated: 2026-07-19 — daily-execution milestone shipped: undo, goal notes, import refresh, configurable day bounds, weekly reflection, role trends, and the mobile Today view join the verified baseline.*
+*Last updated: 2026-07-20 — Firebase Auth + Firestore replace the former backend without changing the shipped planning model or flows.*

@@ -1,9 +1,9 @@
-/goal Replace Supabase in First Things First’s auth and persistence layers with Firebase so I can use every existing planning flow with the same behavior and saved state in local development and the single production deployment.
+/goal Replace Supabase with Firebase Auth + Firestore in First Things First’s auth and persistence seams so I can use every shipped planning flow with the same private saved state in local emulators and one production Firebase project.
 
-Success: passwordless sign-in, session/route gating, authenticated Week and durable Role persistence, reloads, and Weekly Handoff work end to end; existing typecheck, lint, tests, and build stay green; Supabase runtime/config dependencies are removed; production passes a normal-auth browser smoke test with auth-scoped Firestore rules.
+Success: sign-in, session/route gating, Week + durable Role persistence across reload, and the full shipped baseline (core scheduling + Weekly Handoff + table-stakes freestyle/repeat/import + daily-execution undo/notes/bounds/reflection/trends/Today) work end to end; existing typecheck/lint/test/build stay green; Supabase is gone from runtime and config; production passes a normal-auth smoke with auth-scoped Firestore rules.
 
-Match the existing domain model, UI, store/db seams, and documented behavior. Follow `../llm-toolkit/hobby-bundle/playbook.md`, its judged goal loop, and assisting skills.
+Match the existing domain model, UI, store/`db` seam, and documented behavior. Use the Firebase wiring pattern proven in `/Users/rolandtolnay/Documents/Development/hannas-rythm` (Auth enabled independently of the console; emulators locally; one production project).
 
-Use one production Firebase setup and Firebase emulators for all local development. Don’t redesign the product or persistence model, add backend infrastructure beyond Firebase, weaken the bundle’s baseline security rules, or migrate production data.
+Don’t redesign the product or Week/Role persistence shape; don’t migrate existing Supabase data (Firebase starts fresh); don’t add backend infrastructure beyond Firebase; don’t weaken security rules or reuse Hanna’s project IDs.
 
-Before building, derive about 15 realistic and edge cases into `etc/loop/firebase-backend-replacement-eval.md`. After building, drive them locally and smoke-test the critical flows in production; fix regressions and friction until a full pass finds none.
+Before building, derive ~15 Firebase-seam realistic and edge cases into `etc/loop/firebase-backend-replacement-eval.md`. After building, drive them locally and smoke the critical flows in production; fix regressions and friction until a full pass finds none.

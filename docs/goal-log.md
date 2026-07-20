@@ -284,3 +284,75 @@ User-selected scope from the post-table-stakes proposal: toast-based undo for de
 - Final verdict: `GOAL MET`
 - Commit/deploy/release: not requested; working tree left uncommitted for User review (builds on the also-uncommitted table-stakes milestone). Local Supabase + dev server left running.
 - Follow-up explicitly left out: real-Safari (non-WebKit-proxy) spot-check by the User; the headless-WebKit render-flake watch item; min-height-block menu-trigger hit area polish; morning sweep / quick capture ⌘K / extended import surfaces (not in this milestone's chosen scope).
+
+## 2026-07-20 — Firebase backend replacement
+
+**Exact goal**
+
+> /goal Replace Supabase with Firebase Auth + Firestore in First Things First’s auth and persistence seams so I can use every shipped planning flow with the same private saved state in local emulators and one production Firebase project.
+>
+> Success: sign-in, session/route gating, Week + durable Role persistence across reload, and the full shipped baseline (core scheduling + Weekly Handoff + table-stakes freestyle/repeat/import + daily-execution undo/notes/bounds/reflection/trends/Today) work end to end; existing typecheck/lint/test/build stay green; Supabase is gone from runtime and config; production passes a normal-auth smoke with auth-scoped Firestore rules.
+>
+> Match the existing domain model, UI, store/`db` seam, and documented behavior. Use the Firebase wiring pattern proven in `/Users/rolandtolnay/Documents/Development/hannas-rythm` (Auth enabled independently of the console; emulators locally; one production project).
+>
+> Don’t redesign the product or Week/Role persistence shape; don’t migrate existing Supabase data (Firebase starts fresh); don’t add backend infrastructure beyond Firebase; don’t weaken security rules or reuse Hanna’s project IDs.
+>
+> Before building, derive ~15 Firebase-seam realistic and edge cases into `etc/loop/firebase-backend-replacement-eval.md`. After building, drive them locally and smoke the critical flows in production; fix regressions and friction until a full pass finds none.
+
+**Working-tree baseline**
+
+- Initial `git status --short --branch`: `main...origin/main [ahead 6]` with only `M etc/loop/firebase-backend-replacement.md`.
+- Pre-existing change and ownership: the modified loop file is the User's current goal wording, supplied with this run; preserve it as the scope source.
+- Overlap risk: intentional only. No implementation files were dirty at the baseline.
+
+**Assumptions and guardrails**
+
+- Firebase starts with no migrated Supabase data. The stored Week document and durable Role shapes remain unchanged at the domain and `db` seam.
+- Local development uses Firebase emulators. Production uses one new First Things First Firebase project; Hanna's identifiers, data, and credentials are reference-only and must never be reused.
+- The explicit requirement for a production normal-auth smoke authorizes the minimum Firebase/Vercel production configuration and deployment needed to prove the result, but not unrelated billing, messaging, or infrastructure changes.
+- Auth and Firestore ownership rules are trust boundaries. Verification must prove signed-out denial and cross-user isolation, not merely that an owner can read and write.
+- Existing UI/domain behavior remains in scope only as regression surface. No product redesign, Supabase data migration, or new backend tier is permitted.
+- Secrets, auth links, tokens, browser profiles, and production User data must not enter tracked files or retained evidence. Use synthetic accounts and planning state.
+
+**Falsifiable rubric**
+
+1. The pre-authored cases in `etc/loop/firebase-backend-replacement-eval.md` all pass against the local emulators and running app, including persistence, failure recovery, and ownership boundaries.
+2. Every shipped planning flow remains usable after reload through the unchanged Week/Role domain seam; full tests, lint, typecheck when configured, and production build pass.
+3. Supabase has no runtime/config/dependency residue; local setup documentation and commands operate only Firebase emulators.
+4. A deployed production build completes normal passwordless auth and persists/reloads synthetic Week + durable Role state under auth-scoped Firestore rules; unauthenticated and cross-user access are denied.
+5. A fresh judge finds `BLOCKERS: none` and returns `VERDICT: GOAL MET` after the final local and production evidence pass.
+
+**Implementation summary**
+
+- Replaced the Supabase client, middleware, Auth provider, and persistence implementation with Firebase Auth, an HttpOnly verified-session cookie, and Firestore while preserving the existing Week/Role domain objects and public `db` seam.
+- Added local Auth/Firestore emulator configuration, demo-project safety guards, passwordless email-link Auth configuration, owner-scoped Firestore rules, and emulator integration/rules tests.
+- Preserved ordered optimistic persistence, lossless sign-out, durable Role materialization and active-name conflict behavior, degraded Role bootstrap, Week sorting, and every shipped planning flow without adding a backend tier or migrating Supabase data.
+- Removed Supabase runtime packages, environment/configuration, migrations, scripts, source modules, and canonical setup guidance. Firebase starts fresh in the dedicated production project `first-things-first-roland`.
+
+**Verification and production evidence**
+
+- All 15 pre-authored cases in `etc/loop/firebase-backend-replacement-eval.md`: PASS.
+- `npm run typecheck`: PASS. `npm run lint`: PASS. `npm run build`: PASS.
+- `npm run test:run`: 31 files, 29 passed and 2 emulator-only skipped; 345 tests, 338 passed and 7 skipped. The full ordinary suite also passed under `TZ=UTC`, `TZ=America/New_York`, and `TZ=Europe/Bucharest`.
+- `npm run emulators:test`: 2 files and 7 tests passed. The retained rules test explicitly executes and denies a real `collectionGroup(db, "weeks")` query.
+- `git diff --check`: PASS. Non-historical runtime/config/package/path scanning found no Supabase residue.
+- Local real-browser drive passed route gating, email-link Auth and recovery, reload/session continuity, Week/Role persistence, the complete shipped-flow regression surface, sign-out, and clean console checks.
+- Production `https://first-things-first-five.vercel.app` passed two delivered email-link Auth runs, reload persistence, Weekly Handoff, Today, sign-out/gating, and owner/cross-User/signed-out Firestore probes (`200`/`403` as expected). All disposable mailboxes, Auth Users, and synthetic Firestore data were deleted and rechecked absent.
+
+**Fresh judge**
+
+```text
+BLOCKERS:
+none
+
+POLISH:
+none
+
+VERDICT: GOAL MET
+```
+
+**Completion**
+
+- Final verdict: `GOAL MET`.
+- Commit/push: not requested; the working tree remains uncommitted for User review.
+- Production configuration/deploy: completed only to the extent authorized by the explicit production smoke requirement.

@@ -75,3 +75,15 @@ Lightweight, non-obvious implementation choices future runs should not repeatedl
 **Decision:** At phone widths (≤768px) the workspace route renders `TodayView` (one Day: priorities with toggles and quick freestyle capture, time-ordered schedule, evening) instead of the seven-Day grid, via a CSS-only breakpoint swap in `src/app/(app)/page.tsx` — both trees mount, media queries pick one. No drag-and-drop, no block drawing, no goal management on the phone.
 
 **Why:** PROJECT.md keeps whole-Week desktop planning primary; the phone moment is executing a day that isn't going to plan. The CSS swap avoids matchMedia hydration mismatches and keeps a single route.
+
+## 2026-07-20 — Firebase keeps the provider seam and adds transactional Role-name claims
+
+**Decision:** Replace the auth/persistence provider behind the existing store/`db` interface with Firebase Auth + Firestore. Weeks are stored verbatim at `users/{uid}/weeks/{weekId}`; durable Roles at `users/{uid}/roles/{roleId}`. A small `roleNames/{normalizedName}` claim document is written in the same Firestore transaction as active Role changes so two tabs cannot create the same active name. Claim conflicts expose code `23505` to preserve the store's orphan-snapshot behavior without leaking provider-specific errors.
+
+**Why:** Firestore has no unique index, but the domain invariant and historical orphan trap still matter. The claim is seam metadata, not a redesign of Week or Role persistence. Keeping the existing error contract avoids provider conditionals in the store. The adapter uses Firestore Lite deliberately: the established online-first contract needs failed saves to reject visibly, not queue an old full-Week snapshot that can land after newer work.
+
+## 2026-07-20 — Firebase browser Auth is bridged to a verified server gate
+
+**Decision:** Email-link auth stays in the Firebase Web SDK. `/auth/session` verifies the Firebase ID token and stores it in a short-lived HttpOnly cookie; `src/proxy.ts` re-verifies issuer/audience/signature before private routes render. `/login` resynchronizes the cookie from a still-valid Firebase browser Session after cookie expiry. Emulator tokens are accepted only through the local Auth emulator when the project id is `demo-*`.
+
+**Why:** Firebase's browser persistence alone cannot gate a Next.js server request. A UI-only redirect would expose the private shell and violate the existing route-gating requirement; a full custom backend/session store would exceed scope.

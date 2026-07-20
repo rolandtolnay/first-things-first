@@ -8,7 +8,7 @@ Standing routing and safety guidance for autonomous work. The task-specific outc
 - Domain vocabulary and relationships → `CONTEXT.md`.
 - Lightweight implementation decisions → `docs/decisions.md`; hard-to-reverse architecture → `docs/adr/`.
 - Feature-specific intended behavior → `etc/prd/`. A PRD is not evidence that a feature is implemented; confirm in source/tests.
-- Non-secret local Supabase facts → `docs/supabase-local-development.md`; magic-link template operations → `docs/supabase-magic-link-email.md`.
+- Non-secret local Firebase facts → `docs/firebase-local-development.md`; production auth/project operations → `docs/firebase-production.md`.
 - Goal history/evidence → `docs/goal-log.md` and `docs/goal-evidence/`.
 - Full build, verification, mutation, blocker, and release method → `etc/playbook.md`.
 - Fresh judging and goal-writing guidance → `etc/judged-goal-loop.md` and `etc/writing-goals.md`.
@@ -42,9 +42,9 @@ Preserve the menu/focus rules in `docs/decisions.md`, especially reserved traili
 
 ### Auth and request gating
 
-Next.js 16 request gating lives in `src/proxy.ts`, next to `src/app/`; the session logic lives in `src/lib/supabase/middleware.ts`. A root proxy or legacy `middleware.ts` can appear to build while doing nothing at runtime. Verify an actual unauthenticated redirect as specified in the playbook.
+Next.js 16 request gating lives in `src/proxy.ts`, next to `src/app/`. Firebase's browser Session is synchronized into a verified HttpOnly ID-token cookie through `src/app/auth/session/route.ts`; production verification lives in `src/lib/firebase/server-auth.ts`. A root proxy, legacy `middleware.ts`, or UI-only gate can appear to build while doing nothing at runtime. Verify an actual unauthenticated redirect and invalid-token denial as specified in the playbook.
 
-Supabase Auth/Postgres is the online source of truth. The browser talks directly to Supabase and RLS is the security boundary; do not add an API relay by default or weaken policies for test convenience. Development uses local Supabase only; production is the only hosted project. Never relink or mutate production without explicit authority.
+Firebase Auth/Firestore is the online source of truth. The browser talks directly to Firestore and `firestore.rules` is the ownership boundary; do not add a data API relay by default or weaken rules for test convenience. Development uses the `demo-first-things-first` Auth + Firestore emulators only; production is one distinct hosted project. `NEXT_PUBLIC_FIREBASE_USE_EMULATORS=true` is valid only with a `demo-*` project id so missing emulators fail closed instead of reaching cloud. Never reuse another app's project identifiers or mutate production without explicit authority.
 
 ### Canonical terms and customer copy
 
@@ -52,7 +52,7 @@ Use `CONTEXT.md` terms in code and technical docs: Week, Role, Role Snapshot, Go
 
 ### Durable Roles and the orphan trap
 
-A durable Role lives in `public.roles`; each Week contains Role Snapshots. Historical snapshots can predate the durable row. Snapshot-driven durable writes must materialize missing rows with a full upsert-on-`id` payload containing name, color, and order; never assume `UPDATE ... .single()` will find a row. An active-name `23505` during `updateRole` keeps the snapshot edit and skips the conflicting durable write.
+A durable Role lives at `users/{uid}/roles/{roleId}`; each Week contains Role Snapshots. Historical snapshots can predate the durable document. Snapshot-driven durable writes must materialize missing documents with a full payload containing id, name, color, order, archive state, and timestamps. Per-User `roleNames` claim documents preserve active-name uniqueness transactionally. Their provider-neutral conflict keeps code `23505`, so `updateRole` keeps the snapshot edit and skips the conflicting durable write as before.
 
 Weeks are the primary saved plan. Failure to load durable Role defaults must not block existing Week bootstrap: retain the Week list/current Week, use `activeRoles: []`, and surface a non-fatal error.
 
@@ -66,7 +66,7 @@ Slots are bounds-relative: slot `0` is the Week's `dayBounds.startHour` (default
 
 ## Stack and boundaries
 
-Next.js 16 + React 19 + TypeScript render the app; Zustand owns optimistic Week state; pure planning rules live under `src/lib/`; `src/lib/db.ts` is the Supabase seam; dnd-kit owns scheduling interactions. Weeks remain JSONB snapshots (ADR-0004); Roles are the deliberate selective normalization (ADR-0005).
+Next.js 16 + React 19 + TypeScript render the app; Zustand owns optimistic Week state; pure planning rules live under `src/lib/`; `src/lib/db.ts` is the Firebase seam; dnd-kit owns scheduling interactions. Weeks remain whole snapshot documents (ADR-0004); Roles are the deliberate selective first-class entities (ADR-0005).
 
 Do not add adjacent features, abstractions, infrastructure, or release work without outcome pressure.
 

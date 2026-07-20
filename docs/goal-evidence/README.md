@@ -6,7 +6,7 @@ Good evidence includes selected screenshots from the real planner, sanitized fix
 
 Do not store:
 
-- Supabase credentials, auth cookies, magic links, or `.env.local` values;
+- Firebase identifiers beyond public config, auth cookies/tokens, email sign-in links, or `.env.local` values;
 - production or real User planning data;
 - full build/test logs, browser profiles, videos, caches, or temporary worktrees;
 - local database dumps or raw calendar imports containing personal data.
